@@ -79,10 +79,65 @@ except Exception as _re_err:
     redis_client = None
 
 
+class ClinicalTriageIntelligence:
+    """
+    Advanced Multi-System Clinical Triage Classifier & Adaptive Question Generator.
+    Categorizes complaints across 8 clinical domains and dynamically generates
+    targeted diagnostic questions based on missing clinical evidence.
+    """
+    DOMAINS = {
+        "gastroenterology": {
+            "keywords": ["stomach", "vomit", "vomiting", "nausea", "diarrhea", "food poisoning", "poo", "stool", "cramps", "ulcer", "gastritis", "acid", "reflux", "gerd", "bloating", "gas", "constipation", "gut"],
+            "question": "Did this start abruptly after eating a specific meal or eating out? Are you experiencing nausea, vomiting, watery stools, or burning acid reflux?"
+        },
+        "endocrinology_metabolic": {
+            "keywords": ["diabetes", "diabetic", "sugar", "blood sugar", "glucose", "urination", "thirst", "hba1c", "insulin", "metabolic", "thyroid", "pancreas"],
+            "question": "Have you been diagnosed with Type 1 or Type 2 diabetes or pre-diabetes? What is your recent blood sugar level or HbA1c if known, and are you experiencing frequent urination or unquenchable thirst?"
+        },
+        "nutritional_wasting": {
+            "keywords": ["malnutrition", "weight loss", "losing weight", "skinny", "weakness", "fatigue", "appetite", "deficiency", "starving", "anemia", "pale", "iron", "malnourished"],
+            "question": "Can you describe your typical daily food intake? Have you noticed involuntary weight loss, extreme physical fatigue, muscle wasting, or hair/nail changes?"
+        },
+        "dermatology_skin": {
+            "keywords": ["skin", "rash", "eczema", "psoriasis", "itch", "itching", "boil", "acne", "spots", "fungal", "ringworm", "lesion", "dermatitis", "hives", "wound", "scalp"],
+            "question": "Where on your body is the skin irritation located? Is it red, dry, scaly, oozing, or blistering, and does contact with water, heat, or specific foods trigger it?"
+        },
+        "cardiovascular": {
+            "keywords": ["blood pressure", "hypertension", "high bp", "cholesterol", "palpitations", "heart rate", "circulation", "swollen ankles", "edema"],
+            "question": "What is your typical blood pressure reading if known? Are you experiencing leg/ankle swelling (edema), chest tightness, or palpitations?"
+        },
+        "respiratory": {
+            "keywords": ["cough", "bronchitis", "asthma", "wheezing", "phlegm", "mucus", "sinus", "congestion", "throat", "cold", "flu"],
+            "question": "Is your cough dry or producing sputum/mucus? Do you experience chest tightness, seasonal allergies, or difficulty breathing when lying flat?"
+        },
+        "musculoskeletal": {
+            "keywords": ["joint", "knee", "back pain", "arthritis", "gout", "rheumatism", "muscle pain", "stiffness", "swelling in joint", "spine", "neck"],
+            "question": "Which joints or muscles are affected? Is there visible swelling, warmth, or morning stiffness lasting over 30 minutes?"
+        },
+        "neurological_mind": {
+            "keywords": ["anxiety", "insomnia", "sleep", "headache", "migraine", "stress", "panic", "memory", "brain fog", "dizziness", "numbness", "neuropathy"],
+            "question": "How is your sleep quality and stress level? If experiencing headaches or brain fog — is the pain throbbing, one-sided, or associated with numbness?"
+        }
+    }
+
+    @classmethod
+    def detect_domain(cls, text: str) -> Optional[str]:
+        t = text.lower()
+        for domain_name, data in cls.DOMAINS.items():
+            if any(k in t for k in data["keywords"]):
+                return domain_name
+        return None
+
+    @classmethod
+    def get_domain_question(cls, domain_name: str) -> str:
+        return cls.DOMAINS.get(domain_name, {}).get("question", "Could you describe your main symptom in more detail?")
+
+
 class SessionStore:
     def __init__(self):
         self._sessions: Dict[str, Dict[str, Any]] = {}
         self.redis = redis_client
+
 
     def _save_session(self, session_id: str, session_data: Dict[str, Any]):
         """Persist session state into Upstash Redis and local memory"""
@@ -174,13 +229,9 @@ class SessionStore:
 
         session["conversation"].append({"role": "patient", "text": user_answer})
 
-        # Analyze full conversation context for condition classification
+        # Analyze full conversation context for multi-system clinical domain classification
         all_text = (session.get("complaint", "") + " " + " ".join([c.get("text", "") for c in session.get("conversation", [])])).lower()
-
-        is_food_poisoning = any(w in all_text for w in ["stomach", "vomit", "nausea", "diarrhea", "food poisoning", "poo", "stool", "cramps", "eating", "meal", "poisoning", "purge"])
-        is_diabetes = any(w in all_text for w in ["diabetes", "sugar", "glucose", "urination", "thirst", "diabetic", "hba1c", "insulin"])
-        is_malnutrition = any(w in all_text for w in ["malnutrition", "weight loss", "losing weight", "weakness", "skinny", "appetite", "deficiency", "starving", "eating less", "anemia"])
-        is_skin = any(w in all_text for w in ["skin", "rash", "eczema", "psoriasis", "itch", "itching", "boil", "acne", "spots", "fungal", "ringworm", "lesion", "dermatitis"])
+        detected_domain = ClinicalTriageIntelligence.detect_domain(all_text)
 
         # If user answer is very brief (< 2 words) and vague, ask a clarifying follow-up before moving to next phase
         if len(user_answer.strip().split()) < 2 and current_phase not in ["severity", "medications"] and current_phase != "intent_clarification":
@@ -189,25 +240,22 @@ class SessionStore:
             self._save_session(session_id, session)
             return clarifying_q, session, False
 
+        domain_question = ClinicalTriageIntelligence.get_domain_question(detected_domain) if detected_domain else "Is the symptom constant or does it come and go? How often does it occur?"
+
         SOCRATES_QUESTIONS = {
             "onset": {
                 "question": "When did you first notice this symptom? How long have you been experiencing it?",
-                "follow_up": "condition_deepdive" if (is_food_poisoning or is_diabetes or is_malnutrition or is_skin) else "duration"
+                "follow_up": "condition_deepdive" if detected_domain else "duration"
             },
             "condition_deepdive": {
-                "question": (
-                    "Did this start right after eating a specific meal or eating out? Are you experiencing nausea, vomiting, or watery stools?" if is_food_poisoning else
-                    "Have you been diagnosed with Type 1/Type 2 diabetes or pre-diabetes? What is your recent blood sugar level or HbA1c if known?" if is_diabetes else
-                    "Can you describe your typical daily meals? Have you noticed involuntary weight loss, extreme fatigue, hair thinning, or loss of appetite?" if is_malnutrition else
-                    "Where on your body is the skin issue located? Is it red, itchy, dry, scaly, or oozing? Does contact with water, heat, or certain foods make it worse?" if is_skin else
-                    "Is the symptom constant or does it come and go? How often does it occur?"
-                ),
+                "question": domain_question,
                 "follow_up": "duration"
             },
             "duration": {
                 "question": "Is the symptom constant or does it come and go? How often does it occur?",
                 "follow_up": "character"
             },
+
             "character": {
                 "question": "Can you describe the nature of the symptom? For example, if it's pain — is it sharp, dull, throbbing, or burning?",
                 "follow_up": "severity"
