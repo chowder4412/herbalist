@@ -1057,7 +1057,7 @@
         <div class="view-scroll-area">
             <!-- HERO WELCOME -->
             <div class="hero-welcome" id="hero-welcome">
-                <h1 class="hero-title">What can I help with, funbox?</h1>
+                <h1 class="hero-title" id="hero-title">What can I help with?</h1>
                 <p class="hero-sub">Ask your AI Herbal Doctor for clinical diagnoses, body-weight dosing math, 2-liter pot kitchen recipes, or bioactive matching.</p>
             </div>
 
@@ -1340,11 +1340,28 @@
                         loadRecentsFromBackend();
                         return;
                     }
+                } else {
+                    // Server returned an error (e.g. 500, 422, etc.)
+                    let errorMsg = 'The server encountered an error. Please try again.';
+                    try {
+                        const errData = await response.json();
+                        if (errData.detail) errorMsg = errData.detail;
+                    } catch(e) {}
+                    appendBubble('doctor', `
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                            <h3 style="font-family:'Outfit',sans-serif;font-size:16px;color:#e74c3c;">Server Error</h3>
+                        </div>
+                        <p style="line-height:1.7;font-size:14px;">${errorMsg}</p>
+                    `);
                 }
             } catch (err) {
                 console.log("Backend offline, using fallback:", err);
                 const typingEl = document.getElementById(typingId);
-                if (typingEl) typingEl.closest('div[style]').remove();
+                if (typingEl) {
+                    const bubble = typingEl.closest('.chat-bubble') || typingEl.parentElement;
+                    if (bubble) bubble.remove();
+                }
                 renderFallbackResponse(input, weight);
             }
         }
@@ -2139,14 +2156,18 @@
             const actionBtn = document.getElementById('user-auth-action-btn');
 
             if (user) {
-                const initials = (user.username || user.full_name || user.email || 'US').substring(0, 2).toUpperCase();
+                const displayName = user.username || user.full_name || user.email.split('@')[0];
+                const initials = (displayName || 'US').substring(0, 2).toUpperCase();
                 if (avatarEl) {
                     avatarEl.innerText = initials;
                     avatarEl.style.background = 'var(--accent-green)';
                     avatarEl.style.color = '#000';
                 }
-                if (nameEl) nameEl.innerText = user.username || user.full_name || user.email.split('@')[0];
+                if (nameEl) nameEl.innerText = displayName;
                 if (statusEl) statusEl.innerText = `Age ${user.age || 'N/A'} yrs • ${user.full_name || 'Patient'}`;
+                // Update hero welcome title with user's name
+                const heroTitle = document.getElementById('hero-title');
+                if (heroTitle) heroTitle.innerText = `What can I help with, ${displayName}?`;
                 if (actionBtn) {
                     actionBtn.title = "Sign Out";
                     actionBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>`;
@@ -2159,6 +2180,9 @@
                 }
                 if (nameEl) nameEl.innerText = "Guest Mode";
                 if (statusEl) statusEl.innerText = "Click to Sign In / Register";
+                // Reset hero welcome title for guests
+                const heroTitle = document.getElementById('hero-title');
+                if (heroTitle) heroTitle.innerText = 'What can I help with?';
                 if (actionBtn) {
                     actionBtn.title = "Sign In";
                     actionBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>`;
