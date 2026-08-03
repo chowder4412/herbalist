@@ -1242,6 +1242,12 @@
         let pendingAttachment = null;
 
         function triggerChatFileUpload() {
+            if (!currentUserState) {
+                showToast('🔒 Please sign in or create an account to upload plant images or documents.', 'error');
+                openAuthModal();
+                switchAuthTab('register');
+                return;
+            }
             const input = document.getElementById('chat-file-upload');
             if (input) input.click();
         }
@@ -1288,8 +1294,16 @@
 
         /* ══════ Main Submit Handler — Multi-Turn SOCRATES ══════ */
         async function submitQuery() {
+            if (!currentUserState) {
+                showToast('🔒 Please sign in or create an account to consult with Dr. Herbalist.', 'error');
+                openAuthModal();
+                switchAuthTab('register');
+                return;
+            }
+
             const rawInput = document.getElementById('user-input').value.trim();
             if (!rawInput && !pendingAttachment) return;
+
 
             const input = rawInput || (pendingAttachment ? `Analyze this attached file: ${pendingAttachment.name}` : '');
 
