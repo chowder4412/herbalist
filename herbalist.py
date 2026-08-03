@@ -1452,11 +1452,17 @@ PATIENT CLINICAL SUMMARY:
 💡 SIMPLE PATIENT EXPLANATION (WHAT YOUR BODY NEEDS):
 {formulation.layman_explanation}
 
-🏡 SIMPLE HOME KITCHEN RECIPE (2-LITER POT COOKING GUIDE):
-{kitchen_recipe_block}
+🥗 THERAPEUTIC DIETARY GUIDELINES (WHAT TO EAT vs WHAT TO AVOID):
+• RECOMMENDED FOODS: Focus on easily digestible, nutrient-dense, high-bioactive foods (e.g. cooked leafy greens, bone broth, fresh berries, oats, ginger).
+• FOODS TO AVOID: Avoid refined sugars, ultra-processed foods, simple carbs, fried oils, sodas, and excess dairy.
+• HYDRATION PROTOCOL: Drink at least 2.5–3 Liters of clean water or warm herbal infusions daily.
+
+🧴 TOPICAL & EXTERNAL APPLICATION GUIDANCE (IF APPLICABLE):
+• For Skin Conditions / Localized Pain: Prepare a warm herbal bath, poultice, or topical wash using steeped leaves/bark. Apply to clean skin 1–2 times daily.
 
 ☕ EASY HOME DOSING SCHEDULE:
   • {formulation.household_dose_schedule}
+
 
 --------------------------------------------------------------------------------
 🍃 CLINICAL FORMULATION & COMPONENT RATIOS:
@@ -1525,8 +1531,12 @@ The patient presents with:
 
 Your goal: Perform deep clinical medical reasoning to identify exact micro-vascular bioactives (e.g. Mangiferin, Ginkgolides, Vernodalin, Curcuminoids, Quercetin, Baicalin, Ginsenosides) and match them with safe botanical plants.
 
+CLINICAL PRESCRIPTION REQUIREMENTS:
+1. DIETARY GUIDELINES: Provide precise lists of therapeutic foods to eat vs foods to avoid (e.g. BRAT diet for food poisoning/GI distress; low glycemic index & bitter greens for diabetes; nutrient-dense protein & spirulina for malnutrition; anti-inflammatory low-histamine foods for skin diseases).
+2. TOPICAL APPLICATIONS: If the case involves skin diseases (eczema, rash, fungal, acne) or localized pain, include step-by-step topical herbal wash / poultice / salve preparation.
+
 Generate a JSON object with EXACTLY the following structure (do NOT output markdown backticks, return raw JSON string only):
-{{
+{
   "primary_diagnosis": "string",
   "confidence_score": 98.5,
   "key_bioactives": ["string", "string"],
@@ -1541,15 +1551,21 @@ Generate a JSON object with EXACTLY the following structure (do NOT output markd
   ],
   "dosing_schedule": "1 teacup (approx. 150 mL) warm 3 times daily after meals",
   "layman_explanation": "Detailed clinical explanation of what the patient's body requires",
+  "dietary_guidelines": {
+    "foods_to_eat": ["Therapeutic Food 1", "Therapeutic Food 2"],
+    "foods_to_avoid": ["Prohibited Food 1", "Prohibited Food 2"],
+    "hydration_protocol": "Detailed hydration or liquid rehydration protocol"
+  },
+  "topical_remedy": "Step-by-step topical herbal wash, poultice, or salve recipe (or 'Not applicable for internal condition')",
   "pubmed_citations": [
-    {{
+    {
       "title": "string",
       "journal": "string",
       "doi": "10.1016/...",
       "pmid": "34166712"
-    }}
+    }
   ]
-}}
+}
 """
 
         payload = {

@@ -174,12 +174,52 @@ class SessionStore:
 
         session["conversation"].append({"role": "patient", "text": user_answer})
 
+        # Analyze full conversation context for condition classification
+        all_text = (session.get("complaint", "") + " " + " ".join([c.get("text", "") for c in session.get("conversation", [])])).lower()
+
+        is_food_poisoning = any(w in all_text for w in ["stomach", "vomit", "nausea", "diarrhea", "food poisoning", "poo", "stool", "cramps", "eating", "meal", "poisoning", "purge"])
+        is_diabetes = any(w in all_text for w in ["diabetes", "sugar", "glucose", "urination", "thirst", "diabetic", "hba1c", "insulin"])
+        is_malnutrition = any(w in all_text for w in ["malnutrition", "weight loss", "losing weight", "weakness", "skinny", "appetite", "deficiency", "starving", "eating less", "anemia"])
+        is_skin = any(w in all_text for w in ["skin", "rash", "eczema", "psoriasis", "itch", "itching", "boil", "acne", "spots", "fungal", "ringworm", "lesion", "dermatitis"])
+
+        # If user answer is very brief (< 2 words) and vague, ask a clarifying follow-up before moving to next phase
+        if len(user_answer.strip().split()) < 2 and current_phase not in ["severity", "medications"] and current_phase != "intent_clarification":
+            clarifying_q = f"To help me pinpoint your exact condition, could you share a bit more detail about your {current_phase} (e.g. what triggered it, how it feels, or associated symptoms)?"
+            session["conversation"].append({"role": "doctor", "text": clarifying_q})
+            self._save_session(session_id, session)
+            return clarifying_q, session, False
+
         SOCRATES_QUESTIONS = {
-            "onset": {"question": "When did you first notice this symptom? How long have you been experiencing it?", "follow_up": "duration"},
-            "duration": {"question": "Is the symptom constant or does it come and go? How often does it occur?", "follow_up": "character"},
-            "character": {"question": "Can you describe the nature of the symptom? For example, if it's pain — is it sharp, dull, throbbing, or burning?", "follow_up": "severity"},
-            "severity": {"question": "On a scale of 1–10 (10 being the worst), how severe is this symptom right now?", "follow_up": "medications"},
-            "medications": {"question": "Are you currently taking any medications (prescription or OTC)? This avoids herb-drug interactions.", "follow_up": "ready"}
+            "onset": {
+                "question": "When did you first notice this symptom? How long have you been experiencing it?",
+                "follow_up": "condition_deepdive" if (is_food_poisoning or is_diabetes or is_malnutrition or is_skin) else "duration"
+            },
+            "condition_deepdive": {
+                "question": (
+                    "Did this start right after eating a specific meal or eating out? Are you experiencing nausea, vomiting, or watery stools?" if is_food_poisoning else
+                    "Have you been diagnosed with Type 1/Type 2 diabetes or pre-diabetes? What is your recent blood sugar level or HbA1c if known?" if is_diabetes else
+                    "Can you describe your typical daily meals? Have you noticed involuntary weight loss, extreme fatigue, hair thinning, or loss of appetite?" if is_malnutrition else
+                    "Where on your body is the skin issue located? Is it red, itchy, dry, scaly, or oozing? Does contact with water, heat, or certain foods make it worse?" if is_skin else
+                    "Is the symptom constant or does it come and go? How often does it occur?"
+                ),
+                "follow_up": "duration"
+            },
+            "duration": {
+                "question": "Is the symptom constant or does it come and go? How often does it occur?",
+                "follow_up": "character"
+            },
+            "character": {
+                "question": "Can you describe the nature of the symptom? For example, if it's pain — is it sharp, dull, throbbing, or burning?",
+                "follow_up": "severity"
+            },
+            "severity": {
+                "question": "On a scale of 1–10 (10 being the worst), how severe is this symptom right now?",
+                "follow_up": "medications"
+            },
+            "medications": {
+                "question": "Are you currently taking any medications (prescription or OTC)? This avoids herb-drug interactions.",
+                "follow_up": "ready"
+            }
         }
 
         next_phase = SOCRATES_QUESTIONS.get(current_phase, {}).get("follow_up", "ready")
@@ -193,6 +233,7 @@ class SessionStore:
             session["conversation"].append({"role": "doctor", "text": next_q})
             self._save_session(session_id, session)
             return next_q, session, False
+
 
     def delete_session(self, session_id: str):
         if session_id in self._sessions:
