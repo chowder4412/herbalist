@@ -843,15 +843,10 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
                 "conversational_message": vision_analysis
             }
 
-    # 1. EMERGENCY RED FLAG CHECK
+    # 1. NON-BLOCKING INLINE EMERGENCY SAFETY ALERT
     is_emergency, emergency_msg = AIDoctor.check_emergency_red_flags(complaint)
-    if is_emergency:
-        return JSONResponse(status_code=200, content={
-            "status": "emergency_red_flag",
-            "is_emergency": True,
-            "conversational_message": emergency_msg,
-            "disclaimer": "EMERGENCY PROTOCOL ACTIVATED: Please contact emergency services immediately."
-        })
+    emergency_prefix = f"{emergency_msg}\n\n---\n\n" if (is_emergency and emergency_msg) else ""
+
 
     # 2. CONTINUING AN ACTIVE SOCRATES SESSION (Always takes priority over greeting detection)
     if session_id:
@@ -1020,7 +1015,7 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
                         "treatment_plan": diagnosis.treatment_plan,
                         "herbal_recommendations": diagnosis.herbal_recommendations,
                         "safety_warnings": diagnosis.herb_drug_safety_warnings,
-                        "prescription_card": diagnosis.prescription_card,
+                        "prescription_card": f"{emergency_prefix}{diagnosis.prescription_card}" if diagnosis.prescription_card else None,
                         "formulation": formulation_data,
                         "pubmed_citations": citations_data,
                         "pharmacopeia_matches": matching_herbs[:8],
@@ -1037,7 +1032,7 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
                     "session_id": session_id,
                     "is_triage_question": True,
                     "triage_phase": session["phase"],
-                    "conversational_message": f"🩺 **Dr. Herbalist**: {next_question}",
+                    "conversational_message": f"{emergency_prefix}🩺 **Dr. Herbalist**: {next_question}",
                     "collected_so_far": {k: v for k, v in session["collected"].items() if v}
                 }
 
@@ -1124,7 +1119,7 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
             "is_triage_question": True,
             "triage_phase": "intent_clarification",
             "conversational_message": (
-                f"I noticed you're asking about **{condition_topic or 'a health condition'}**. "
+                f"{emergency_prefix}I noticed you're asking about **{condition_topic or 'a health condition'}**. "
                 f"I'd like to help you in the best way possible. 🌿\n\n"
                 f"Are you currently experiencing symptoms related to this condition, "
                 f"or would you like general herbal medicine information?\n\n"
@@ -1138,17 +1133,15 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
     session_id = session_manager.create_session(complaint, body.age, body.gender, body.weight_kg, user_id=patient_user_id, patient_id=patient_username)
     first_question = "When did you first notice this symptom? How long have you been experiencing it?"
 
-
     return {
         "status": "success",
         "session_id": session_id,
         "is_triage_question": True,
         "triage_phase": "onset",
         "conversational_message": (
-            f"Thank you for sharing that. I want to understand your condition thoroughly before prescribing.\n\n"
+            f"{emergency_prefix}Thank you for sharing that. I want to understand your condition thoroughly before prescribing.\n\n"
             f"🩺 **Dr. Herbalist**: {first_question}"
         ),
-        "collected_so_far": {"complaint": complaint}
     }
 
 # ══════════════════════════════════════════════════════════════

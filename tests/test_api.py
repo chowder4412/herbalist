@@ -33,7 +33,7 @@ class TestFastAPIEndpoints(unittest.TestCase):
         self.assertIn("recents", data)
 
     def test_emergency_red_flag_api_trigger(self):
-        """Test POST /api/diagnose triggers emergency red-flag response for acute chest pain"""
+        """Test POST /api/diagnose includes inline emergency red-flag warning while proceeding with consultation"""
         payload = {
             "complaint": "Crushing chest pain radiating to left arm",
             "age": 55,
@@ -43,9 +43,9 @@ class TestFastAPIEndpoints(unittest.TestCase):
         response = self.client.post("/api/diagnose", json=payload)
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertEqual(data["status"], "emergency_red_flag")
-        self.assertTrue(data["is_emergency"])
-        self.assertIn("CRITICAL EMERGENCY", data["conversational_message"])
+        self.assertEqual(data["status"], "success")
+        self.assertIn("CRITICAL SAFETY ALERT", data["conversational_message"])
+
 
     def test_greeting_api_flow(self):
         """Test POST /api/diagnose greeting response"""

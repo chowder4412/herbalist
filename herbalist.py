@@ -1665,41 +1665,48 @@ class AIDoctor:
     """Main AI Medical Doctor and Scientist System"""
     
     @staticmethod
+    def get_emergency_inline_banner(text: str) -> Optional[str]:
+        """
+        Scans text for critical high-risk symptoms.
+        Returns a non-blocking inline warning banner string if detected.
+        """
+        if not text:
+            return None
+        t = text.lower()
+        
+        red_flag_patterns = [
+            (r"\b(chest pain|crushing pain|pressure in chest|heart attack|pain radiating to arm|arm pain and chest)\b", 
+             "CRITICAL SAFETY ALERT: Severe chest pain / suspected cardiac event."),
+            (r"\b(can't breathe|cannot breathe|gasping|severe shortness of breath|choking|unable to breathe)\b", 
+             "CRITICAL SAFETY ALERT: Severe respiratory distress / airway compromise."),
+            (r"\b(face drooping|slurred speech|arm weakness|stroke|paralysis on one side)\b", 
+             "CRITICAL SAFETY ALERT: Signs of acute stroke / neurological emergency."),
+            (r"\b(throat closing|swollen tongue|severe anaphylaxis|anaphylactic)\b", 
+             "CRITICAL SAFETY ALERT: Severe allergic reaction / anaphylaxis."),
+            (r"\b(unconscious|fainted|unresponsive|coughing up blood|severe trauma|profuse bleeding)\b", 
+             "CRITICAL SAFETY ALERT: Acute life-threatening trauma or blood loss.")
+        ]
+
+        for pattern, warning in red_flag_patterns:
+            if re.search(pattern, t):
+                return (
+                    f"🚨 **{warning}**\n"
+                    f"*If this is an active life-threatening emergency, please call 911 / 999 / 112 or seek immediate emergency care while reviewing the botanical remedy guidelines below.*"
+                )
+
+        return None
+
+    @staticmethod
     def check_emergency_red_flags(text: str) -> Tuple[bool, Optional[str]]:
         """
         Scans text for life-threatening emergency medical symptoms.
         Returns (is_emergency, emergency_warning_message).
         """
-        if not text:
-            return False, None
-            
-        t = text.lower()
-        red_flag_patterns = [
-            (r"\b(chest pain|crushing pain|pressure in chest|heart attack|pain radiating to arm|arm pain and chest)\b", 
-             "CRITICAL EMERGENCY: Severe chest pain or suspected myocardial infarction (heart attack)."),
-            (r"\b(can't breathe|cannot breathe|gasping|severe shortness of breath|choking|unable to breathe)\b", 
-             "CRITICAL EMERGENCY: Severe respiratory distress or airway compromise."),
-            (r"\b(face drooping|slurred speech|arm weakness|stroke|paralysis on one side)\b", 
-             "CRITICAL EMERGENCY: Signs of acute cerebrovascular accident (stroke)."),
-            (r"\b(throat closing|swollen tongue|severe anaphylaxis|anaphylactic)\b", 
-             "CRITICAL EMERGENCY: Severe allergic anaphylactic reaction."),
-            (r"\b(unconscious|fainted|unresponsive|coughing up blood|severe trauma|profuse bleeding)\b", 
-             "CRITICAL EMERGENCY: Acute life-threatening trauma or loss of consciousness.")
-        ]
-        
-        for pattern, warning in red_flag_patterns:
-            if re.search(pattern, t):
-                message = (
-                    f"🚨 **{warning}**\n\n"
-                    "**DO NOT DELAY MEDICAL CARE.** Please stop using this chat and call emergency services immediately:\n"
-                    "• **USA / Canada:** Call 911\n"
-                    "• **UK:** Call 999\n"
-                    "• **Europe:** Call 112\n"
-                    "• **Local Emergency Services:** Proceed to the nearest hospital emergency room."
-                )
-                return True, message
-                
+        banner = AIDoctor.get_emergency_inline_banner(text)
+        if banner:
+            return True, banner
         return False, None
+
 
     @staticmethod
     def scrub_pii_phi(text: str) -> str:

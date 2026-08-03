@@ -8,13 +8,14 @@ class TestHerbalistCore(unittest.TestCase):
         # Test chest pain
         is_emerg, msg = AIDoctor.check_emergency_red_flags("I am having severe crushing chest pain radiating to left arm")
         self.assertTrue(is_emerg)
-        self.assertIn("CRITICAL EMERGENCY", msg)
+        self.assertIn("CRITICAL SAFETY ALERT", msg)
         self.assertIn("911", msg)
 
         # Test respiratory distress
         is_emerg, msg = AIDoctor.check_emergency_red_flags("I can't breathe and my throat is closing")
         self.assertTrue(is_emerg)
-        self.assertIn("CRITICAL EMERGENCY", msg)
+        self.assertIn("CRITICAL SAFETY ALERT", msg)
+
 
         # Test non-emergency complaint
         is_emerg, msg = AIDoctor.check_emergency_red_flags("Mild headache and dry throat")
