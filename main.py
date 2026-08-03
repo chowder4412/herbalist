@@ -5,7 +5,8 @@ import sqlite3
 from typing import Optional, List, Dict, Any
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, HTTPException, Request, Response, BackgroundTasks
+
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -676,8 +677,8 @@ async def vision_ai_scan(body: VisionScanRequest):
 
 
 @app.post("/api/auth/register")
-async def register_user(body: RegisterRequest):
-    """Initiate user registration, generate 6-digit OTP verification code, and dispatch email"""
+async def register_user(body: RegisterRequest, background_tasks: BackgroundTasks):
+    """Initiate user registration, generate 6-digit OTP verification code, and dispatch email in background"""
     if len(body.password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters long")
     
@@ -704,8 +705,8 @@ async def register_user(body: RegisterRequest):
         dob=patient_dob,
         ttl_seconds=600
     )
-    memory_store.send_otp_email_dispatch(body.email, otp_code)
-
+    background_tasks.add_task(memory_store.send_otp_email_dispatch, body.email, otp_code)
+    print(f"🌿 [Herbalist AI] Dispatched 6-digit OTP code [{otp_code}] for user {body.email} in background task.")
 
     return {
         "status": "otp_required",
@@ -741,8 +742,8 @@ async def verify_otp(body: VerifyOtpRequest, response: Response):
     return {"status": "success", "user": user, "access_token": token}
 
 @app.post("/api/auth/resend-otp")
-async def resend_otp(body: ResendOtpRequest):
-    """Resend a fresh 6-digit OTP verification code"""
+async def resend_otp(body: ResendOtpRequest, background_tasks: BackgroundTasks):
+    """Resend a fresh 6-digit OTP verification code in background"""
     conn = sqlite3.connect(memory_store.db_path)
     cursor = conn.cursor()
     cursor.execute('SELECT full_name FROM pending_otps WHERE email = ?', (body.email.lower().strip(),))
@@ -761,8 +762,10 @@ async def resend_otp(body: ResendOtpRequest):
     conn.commit()
     conn.close()
 
-    memory_store.send_otp_email_dispatch(body.email, otp_code)
+    background_tasks.add_task(memory_store.send_otp_email_dispatch, body.email, otp_code)
+    print(f"🌿 [Herbalist AI] Dispatched fresh 6-digit OTP code [{otp_code}] for user {body.email} in background task.")
     return {"status": "success", "message": f"Fresh 6-digit verification code dispatched to {body.email}"}
+
 
 
 @app.post("/api/auth/login")

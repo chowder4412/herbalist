@@ -896,7 +896,13 @@
                 </div>
                 <div class="form-group" id="group-dob" style="display: none;">
                     <label>Date of Birth (DOB)</label>
-                    <input type="date" id="auth-dob" style="color: #ffffff; background: rgba(8, 15, 10, 0.8); border: 1px solid var(--pill-border); border-radius: 10px; padding: 12px 16px; width: 100%; outline: none;">
+                    <div style="position: relative; display: flex; align-items: center;">
+                        <input type="text" id="auth-dob" placeholder="YYYY-MM-DD (e.g. 1995-08-22)" style="color: #ffffff; background: rgba(8, 15, 10, 0.8); border: 1px solid var(--pill-border); border-radius: 10px; padding: 12px 42px 12px 16px; width: 100%; outline: none; font-family: 'Inter', sans-serif;">
+                        <input type="date" id="auth-dob-picker" onchange="if(this.value) document.getElementById('auth-dob').value = this.value;" style="position: absolute; right: 10px; width: 26px; height: 26px; opacity: 0.01; cursor: pointer; color-scheme: dark;">
+                        <button type="button" onclick="const p = document.getElementById('auth-dob-picker'); if(p.showPicker) p.showPicker(); else p.focus();" style="position: absolute; right: 10px; background: none; border: none; color: var(--accent-green); cursor: pointer; padding: 4px; display: flex; align-items: center; pointer-events: none;" title="Pick date from calendar">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                        </button>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Email Address</label>
@@ -916,10 +922,16 @@
             <!-- 6-DIGIT EMAIL OTP VERIFICATION STEP -->
             <div id="otp-form-container" style="display: none;">
                 <div style="text-align: center; margin-bottom: 16px;">
-                    <div style="font-size: 32px; margin-bottom: 8px;">📩</div>
+                    <div style="width: 56px; height: 56px; margin: 0 auto 12px auto; background: rgba(46, 204, 113, 0.12); border: 1px solid var(--accent-green); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(46, 204, 113, 0.35);">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                            <polyline points="22,6 12,13 2,6"></polyline>
+                        </svg>
+                    </div>
                     <h4 style="font-family: 'Outfit', sans-serif; font-size: 16px; color: var(--accent-gold); margin-bottom: 4px;">Enter 6-Digit Verification Code</h4>
                     <p style="font-size: 12px; color: var(--text-muted);" id="otp-email-sent-label">We sent a verification code to your email</p>
                 </div>
+
                 <div class="form-group">
                     <input type="text" id="otp-code-input" placeholder="123456" maxlength="6" style="text-align: center; font-size: 24px; letter-spacing: 8px; font-weight: 700; font-family: 'Outfit', sans-serif; color: var(--accent-green); background: rgba(0,0,0,0.4); border: 1px solid var(--accent-green);">
                 </div>
@@ -2164,6 +2176,46 @@
             }
         }
 
+        /* ══════ Beautiful Modern Toast Notification Component ══════ */
+        function showToast(message, type = 'success') {
+            let toast = document.getElementById('app-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'app-toast';
+                toast.style.cssText = `
+                    position: fixed; top: 24px; right: 24px; z-index: 999999;
+                    padding: 14px 22px; border-radius: 14px; font-family: 'Inter', sans-serif;
+                    font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 12px;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.6); backdrop-filter: blur(16px);
+                    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1); transform: translateY(-20px); opacity: 0;
+                `;
+                document.body.appendChild(toast);
+            }
+
+            const isSuccess = type === 'success';
+            toast.style.background = isSuccess ? 'rgba(18, 30, 23, 0.95)' : 'rgba(38, 15, 15, 0.95)';
+            toast.style.border = isSuccess ? '1px solid #2ecc71' : '1px solid #e74c3c';
+            toast.style.color = isSuccess ? '#2ecc71' : '#e74c3c';
+            toast.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    ${isSuccess ? '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>' : '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>'}
+                </svg>
+                <span style="color:#ffffff;font-size:14px;font-weight:500;">${message}</span>
+            `;
+
+            toast.style.display = 'flex';
+            setTimeout(() => {
+                toast.style.transform = 'translateY(0)';
+                toast.style.opacity = '1';
+            }, 10);
+
+            setTimeout(() => {
+                toast.style.transform = 'translateY(-20px)';
+                toast.style.opacity = '0';
+                setTimeout(() => { toast.style.display = 'none'; }, 350);
+            }, 4500);
+        }
+
         async function handleVerifyOtp() {
             const otpCode = document.getElementById('otp-code-input').value.trim();
             const errEl = document.getElementById('otp-error-msg');
@@ -2186,7 +2238,7 @@
                     localStorage.setItem('herbalist_jwt_token', data.access_token);
                     updateAuthUI(data.user);
                     closeAuthModal();
-                    alert('🎉 Email verified and account activated successfully!');
+                    showToast('🎉 Email verified and patient account activated successfully!', 'success');
                 } else {
                     errEl.innerText = data.detail || 'Invalid or expired verification code.';
                     errEl.style.display = 'block';
@@ -2210,7 +2262,7 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    alert(`📩 Fresh verification code sent to ${pendingEmailForOtp}`);
+                    showToast(`📩 Fresh 6-digit verification code sent to ${pendingEmailForOtp}`, 'success');
                 } else {
                     errEl.innerText = data.detail || 'Failed to resend code.';
                     errEl.style.display = 'block';
@@ -2220,6 +2272,7 @@
                 errEl.style.display = 'block';
             }
         }
+
 
 
         let currentUserState = null;
