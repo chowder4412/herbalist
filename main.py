@@ -137,6 +137,37 @@ class SessionStore:
             return None, None, False
 
         current_phase = session["phase"]
+
+        # Handle intent clarification phase (knowledge question vs personal symptom)
+        if current_phase == "intent_clarification":
+            answer_lower = user_answer.strip().lower()
+            sick_indicators = ["i have it", "yes", "i'm sick", "im sick", "i am sick",
+                               "yes i am", "yes i do", "i do", "i'm experiencing",
+                               "i feel", "i am feeling", "sick", "unwell", "suffering"]
+            info_indicators = ["just info", "info", "i want to learn", "learn", "information",
+                               "just asking", "curious", "no", "not sick", "i'm fine",
+                               "general", "knowledge", "educate"]
+
+            wants_triage = any(ind in answer_lower for ind in sick_indicators)
+            wants_info = any(ind in answer_lower for ind in info_indicators)
+
+            if wants_triage or (not wants_info and not wants_triage):
+                # Route to full SOCRATES triage — reset phase to onset
+                session["phase"] = "onset"
+                session["collected"]["onset"] = None
+                first_question = "When did you first notice this symptom? How long have you been experiencing it?"
+                session["conversation"].append({"role": "patient", "text": user_answer})
+                session["conversation"].append({"role": "doctor", "text": first_question})
+                self._save_session(session_id, session)
+                return first_question, session, False
+            else:
+                # User wants direct knowledge — mark session as ready with info_mode
+                session["phase"] = "ready"
+                session["info_mode"] = True
+                session["conversation"].append({"role": "patient", "text": user_answer})
+                self._save_session(session_id, session)
+                return None, session, True
+
         if current_phase in session["collected"]:
             session["collected"][current_phase] = user_answer
 
@@ -807,6 +838,48 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
             next_question, session, is_ready = session_manager.advance_session(session_id, complaint)
 
             if is_ready:
+                # Check if this is an info_mode session (user wants knowledge, not triage)
+                if session and session.get("info_mode"):
+                    condition_topic = session.get("condition_topic", session["collected"].get("complaint", "this condition"))
+                    original_question = session.get("original_question", condition_topic)
+
+                    # Look up herbs from pharmacopeia
+                    condition_keywords = [w for w in condition_topic.lower().split() if len(w) > 3]
+                    matching_herbs = memory_store.lookup_herbs_for_condition(condition_keywords[:5])
+
+                    # Use Gemini to generate a rich informational answer
+                    try:
+                        info_prompt = (
+                            f"The user asked: \"{original_question}\"\n\n"
+                            f"As Dr. Herbalist, provide a detailed educational answer about herbal/botanical remedies for {condition_topic}. "
+                            f"Include: 1) Brief explanation of the condition, 2) Top 3-5 medicinal plants/herbs traditionally used, "
+                            f"3) How each herb helps (mechanism/bioactives), 4) Traditional preparation method (tea/decoction/tincture), "
+                            f"5) Important safety warnings. Keep the tone warm, professional, and educational. "
+                            f"Format with markdown. Do NOT diagnose the user — this is purely educational information."
+                        )
+                        info_response = doctor._call_gemini(info_prompt) if hasattr(doctor, '_call_gemini') else None
+                    except Exception:
+                        info_response = None
+
+                    if not info_response:
+                        herb_list = ", ".join([h.get("common_name", "Unknown") for h in matching_herbs[:5]]) if matching_herbs else "various traditional herbs"
+                        info_response = (
+                            f"## Herbal Remedies for {condition_topic.title()}\n\n"
+                            f"Several medicinal plants have been traditionally used for **{condition_topic}**, including: **{herb_list}**.\n\n"
+                            f"For a personalized prescription with exact dosing, preparation instructions, and safety checks, "
+                            f"please describe your symptoms directly (e.g., *\"I am having {condition_topic}\"*) and I'll run a full diagnostic consultation.\n\n"
+                            f"⚠️ *This is educational information only. Always consult a healthcare provider before using herbal remedies.*"
+                        )
+
+                    session_manager.delete_session(session_id)
+
+                    return {
+                        "status": "success",
+                        "is_greeting": True,  # Use greeting renderer for clean display
+                        "conversational_message": info_response,
+                        "pharmacopeia_matches": matching_herbs[:6] if matching_herbs else [],
+                    }
+
                 try:
                     collected = session["collected"]
                     enriched_complaint = (
@@ -966,7 +1039,79 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
             )
         }
 
-    # 4. NEW CONSULTATION: Start SOCRATES Triage
+    # 4. SMART INTENT CLASSIFICATION: Knowledge Question vs Personal Symptom
+    # Detect if the user is asking a factual/informational question about conditions or herbs
+    # vs reporting a personal symptom they are experiencing right now
+    knowledge_patterns = [
+        "what is", "what are", "what's", "whats",
+        "how to", "how do", "how can",
+        "tell me about", "explain", "describe",
+        "medication for", "medicine for", "remedy for", "treatment for", "cure for",
+        "herb for", "herbs for", "plant for", "plants for",
+        "can you treat", "can you cure", "can you help with",
+        "what treats", "what cures", "what helps",
+        "is there a", "are there any",
+        "benefits of", "uses of", "side effects of",
+        "difference between",
+        "what causes", "why does", "why do",
+    ]
+
+    personal_symptom_patterns = [
+        "i have", "i am having", "i'm having", "im having",
+        "i feel", "i'm feeling", "im feeling",
+        "i am experiencing", "i'm experiencing",
+        "i suffer", "i'm suffering", "im suffering",
+        "my head", "my stomach", "my body", "my chest", "my back", "my knee", "my leg", "my arm", "my eye",
+        "it hurts", "it pains", "i can't sleep", "i cant sleep",
+        "i've been", "ive been", "i have been",
+        "been having", "been feeling", "been experiencing",
+        "woke up with", "started feeling", "noticed",
+        "pain in my", "ache in my", "swelling in my",
+        "since yesterday", "since last", "for days", "for weeks", "for months",
+    ]
+
+    is_knowledge_question = any(complaint_clean.startswith(p) or p in complaint_clean for p in knowledge_patterns)
+    is_personal_symptom = any(p in complaint_clean for p in personal_symptom_patterns)
+
+    # If it's clearly a knowledge question (and NOT a personal symptom), ask clarifying question
+    if is_knowledge_question and not is_personal_symptom:
+        # Extract the condition/topic they're asking about
+        condition_topic = complaint_clean
+        for prefix in ["what is the medication for", "what is the medicine for", "what is the remedy for",
+                       "what is the treatment for", "what is the cure for", "what are the herbs for",
+                       "what is", "what are", "what's", "how to treat", "how to cure",
+                       "medication for", "medicine for", "remedy for", "treatment for", "cure for",
+                       "herb for", "herbs for", "tell me about", "explain"]:
+            if condition_topic.startswith(prefix):
+                condition_topic = condition_topic[len(prefix):].strip().rstrip("?").strip()
+                break
+
+        # Create a clarification session so the agent can route to the right path
+        clarify_session_id = session_manager.create_session(complaint, body.age, body.gender, body.weight_kg)
+        # Mark this session as a clarification session
+        sess = session_manager.get_session(clarify_session_id)
+        if sess:
+            sess["phase"] = "intent_clarification"
+            sess["original_question"] = complaint
+            sess["condition_topic"] = condition_topic
+
+        return {
+            "status": "success",
+            "session_id": clarify_session_id,
+            "is_triage_question": True,
+            "triage_phase": "intent_clarification",
+            "conversational_message": (
+                f"I noticed you're asking about **{condition_topic or 'a health condition'}**. "
+                f"I'd like to help you in the best way possible. 🌿\n\n"
+                f"Are you currently experiencing symptoms related to this condition, "
+                f"or would you like general herbal medicine information?\n\n"
+                f"• Reply **\"I have it\"** or **\"yes, I'm sick\"** — I'll begin a full diagnostic consultation\n"
+                f"• Reply **\"just info\"** or **\"I want to learn\"** — I'll share herbal knowledge directly"
+            ),
+            "collected_so_far": {"complaint": complaint}
+        }
+
+    # 5. NEW CONSULTATION: Start SOCRATES Triage (personal symptom complaints)
     session_id = session_manager.create_session(complaint, body.age, body.gender, body.weight_kg)
     first_question = "When did you first notice this symptom? How long have you been experiencing it?"
 
