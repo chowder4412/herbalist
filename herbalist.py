@@ -1600,6 +1600,67 @@ Generate a JSON object with EXACTLY the following structure (do NOT output markd
 
         return None
 
+    def analyze_vision_attachment(self, prompt_text: str, attachment_base64: str, mime_type: str = "image/jpeg", file_name: str = "") -> Optional[str]:
+        """Analyzes uploaded plant photos or medical documents using Multimodal Gemini Vision AI"""
+        if not self.api_key or not attachment_base64:
+            return None
+
+        # Clean base64 string if data URL header is attached
+        clean_b64 = attachment_base64
+        if "," in clean_b64:
+            clean_b64 = clean_b64.split(",", 1)[1]
+
+        # Fallback mime type resolution
+        if not mime_type or mime_type == "application/octet-stream":
+            ext = file_name.lower()
+            if ext.endswith(".png"): mime_type = "image/png"
+            elif ext.endswith(".webp"): mime_type = "image/webp"
+            elif ext.endswith(".pdf"): mime_type = "application/pdf"
+            else: mime_type = "image/jpeg"
+
+        system_instruction = (
+            f"You are Dr. Herbalist, a Senior Botanical Scientist and Multimodal Clinical AI Specialist. "
+            f"The user uploaded an attached file ({file_name or 'Specimen'}) with the query: \"{prompt_text or 'Please scan this plant photo/document and explain its medicinal properties.'}\"\n\n"
+            f"CLINICAL VISION AI PROTOCOLS:\n"
+            f"1. **Plant Specimen Identification**: Identify the botanical species, common names, part used (leaf, bark, root, seed), and key active bioactives.\n"
+            f"2. **Therapeutic Action & Recipes**: Explain traditional uses (African Phytotherapy, Ayurveda, TCM) and dynamic preparation (hot infusion for leaves vs 2-liter pot decoction for roots/bark).\n"
+            f"3. **Clinical Lab/Medical Document Scan**: If the file is a lab report or document, extract clinical findings and summarize relevant phytotherapy indications.\n"
+            f"4. **Safety Cautions**: Highlight contraindications or toxicity alerts.\n\n"
+            f"Format response cleanly with markdown headings (## Plant Identification & Bioactives, ## Therapeutic Preparation & Recipe, ## Clinical & Safety Guidelines)."
+        )
+
+        parts = [{"text": system_instruction}]
+        
+        # Attach image/pdf binary inline data if supported mime type
+        if mime_type.startswith("image/") or mime_type == "application/pdf":
+            parts.append({
+                "inlineData": {
+                    "mimeType": mime_type,
+                    "data": clean_b64
+                }
+            })
+
+        payload = {
+            "contents": [{"role": "user", "parts": parts}],
+            "generationConfig": {"temperature": 0.3, "maxOutputTokens": 1500}
+        }
+
+        data_bytes = json.dumps(payload).encode('utf-8')
+
+        for model in self.models:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.api_key}"
+            req = urllib.request.Request(url, data=data_bytes, headers={'Content-Type': 'application/json'})
+            try:
+                with urllib.request.urlopen(req, timeout=12) as resp:
+                    result = json.loads(resp.read().decode('utf-8'))
+                    return result['candidates'][0]['content']['parts'][0]['text']
+            except Exception as e:
+                print(f"[Gemini Vision AI Engine] Model {model} notice: {e}")
+                continue
+
+        return None
+
+
 class AIDoctor:
     """Main AI Medical Doctor and Scientist System"""
     

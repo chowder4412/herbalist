@@ -312,6 +312,10 @@ class DiagnoseRequest(BaseModel):
     severity: int = Field(default=7, ge=1, le=10)
     session_id: Optional[str] = None
     api_key: Optional[str] = None
+    attachment_base64: Optional[str] = None
+    attachment_name: Optional[str] = None
+    attachment_type: Optional[str] = None
+
 
 class RagIngestRequest(BaseModel):
     title: str
@@ -819,6 +823,22 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
     patient_dob = user_auth.get("dob") if user_auth else ""
     patient_age = user_auth.get("age", body.age) if user_auth else body.age
 
+
+    # 0. MULTIMODAL VISION AI SCAN (If image/file attachment is uploaded with (+) button)
+    if body.attachment_base64:
+        engine = doctor.gemini_engine
+        vision_analysis = engine.analyze_vision_attachment(
+            prompt_text=complaint,
+            attachment_base64=body.attachment_base64,
+            mime_type=body.attachment_type or "image/jpeg",
+            file_name=body.attachment_name or "Specimen"
+        )
+        if vision_analysis:
+            return {
+                "status": "success",
+                "is_greeting": True,
+                "conversational_message": vision_analysis
+            }
 
     # 1. EMERGENCY RED FLAG CHECK
     is_emergency, emergency_msg = AIDoctor.check_emergency_red_flags(complaint)
