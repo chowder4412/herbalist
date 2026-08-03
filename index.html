@@ -1233,9 +1233,13 @@
 
             document.getElementById('user-input').value = '';
 
-            const weight = document.getElementById('weight_slider').value;
-            const age = document.getElementById('patient_age').value;
-            const severity = document.getElementById('severity_slider').value;
+            const weightEl = document.getElementById('weight_slider');
+            const ageEl = document.getElementById('patient_age');
+            const severityEl = document.getElementById('severity_slider');
+
+            const weight = weightEl ? weightEl.value : 70;
+            const age = ageEl ? ageEl.value : (currentUserState ? (currentUserState.age || 30) : 30);
+            const severity = severityEl ? severityEl.value : 7;
             const apiKey = document.getElementById('gemini_api_key') ? document.getElementById('gemini_api_key').value : '';
 
             const token = localStorage.getItem('herbalist_jwt_token');
@@ -1246,6 +1250,7 @@
                 const response = await fetch('/api/diagnose', {
                     method: 'POST',
                     headers: headers,
+                    credentials: 'same-origin',
                     body: JSON.stringify({
                         complaint: input,
                         weight_kg: parseFloat(weight),
@@ -1256,9 +1261,13 @@
                     })
                 });
 
-                // Remove typing indicator
+                // Remove typing indicator safely
                 const typingEl = document.getElementById(typingId);
-                if (typingEl) typingEl.closest('div[style]').remove();
+                if (typingEl) {
+                    const bubble = typingEl.closest('.chat-bubble') || typingEl.parentElement;
+                    if (bubble) bubble.remove();
+                }
+
 
                 if (response.ok) {
                     const data = await response.json();
