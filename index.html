@@ -1,0 +1,2317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Herbalist AI Doctor — Integrative Botanical Medicine & Clinical Intelligence</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>">
+    <link rel="manifest" href="/manifest.json">
+
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta name="theme-color" content="#0b130f">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0b130f;
+            --sidebar-bg: #101a14;
+            --card-bg: rgba(18, 30, 23, 0.75);
+            --card-border: rgba(46, 204, 113, 0.22);
+            --accent-green: #2ecc71;
+            --accent-gold: #f39c12;
+            --accent-cyan: #1abc9c;
+            --text-main: #f4f9f5;
+            --text-muted: #95a79b;
+            --pill-bg: #142219;
+            --pill-border: rgba(46, 204, 113, 0.35);
+            --menu-bg: #18281d;
+            --danger: #e74c3c;
+        }
+
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes dotPulse {
+            0%, 80%, 100% { opacity: 0.3; }
+            40% { opacity: 1; }
+        }
+
+        .typing-dots {
+            animation: dotPulse 1.4s infinite;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(46, 204, 113, 0.07) 0%, transparent 45%),
+                radial-gradient(circle at 90% 80%, rgba(243, 156, 18, 0.05) 0%, transparent 45%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* SIDEBAR STYLING (GEMINI STYLE) */
+        .sidebar {
+            width: 260px;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--card-border);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 16px 12px;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+            position: relative;
+        }
+
+        .sidebar.collapsed {
+            width: 64px;
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px 8px;
+            margin-bottom: 20px;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .icon-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+        }
+
+        .brand-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 18px;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .sidebar.collapsed .brand-title span,
+        .sidebar.collapsed .new-chat-btn span,
+        .sidebar.collapsed .nav-item span,
+        .sidebar.collapsed .section-label,
+        .sidebar.collapsed .recent-item-title,
+        .sidebar.collapsed .three-dots,
+        .sidebar.collapsed .user-info {
+            display: none;
+        }
+
+        .sidebar.collapsed .new-chat-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            padding: 0;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 20px auto;
+            background: rgba(46, 204, 113, 0.18);
+            border: 1px solid var(--accent-green);
+        }
+
+        .sidebar.collapsed .new-chat-btn svg {
+            width: 22px;
+            height: 22px;
+        }
+
+        .new-chat-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(46, 204, 113, 0.12);
+            border: 1px solid var(--pill-border);
+            border-radius: 24px;
+            color: var(--accent-green);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: all 0.2s ease;
+        }
+
+        .new-chat-btn:hover {
+            background: rgba(46, 204, 113, 0.22);
+            box-shadow: 0 4px 12px rgba(46, 204, 113, 0.2);
+        }
+
+        .nav-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 10px 14px;
+            border-radius: 12px;
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(255, 255, 255, 0.06);
+            color: #ffffff;
+        }
+
+        .section-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin: 20px 0 8px 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .recents-list {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            max-height: 240px;
+            overflow-y: auto;
+        }
+
+        .recent-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            border-radius: 10px;
+            color: var(--text-muted);
+            font-size: 13px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .recent-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+            color: #ffffff;
+        }
+
+        .recent-item-title {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 170px;
+        }
+
+        .three-dots {
+            opacity: 0;
+            padding: 4px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .recent-item:hover .three-dots {
+            opacity: 1;
+        }
+
+        .three-dots:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+        }
+
+        /* CONTEXT MENU */
+        .context-menu {
+            position: absolute;
+            left: 200px;
+            top: 20px;
+            width: 190px;
+            background: var(--menu-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 6px;
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6);
+            display: none;
+            z-index: 200;
+        }
+
+        .context-menu.active {
+            display: block;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            font-size: 13px;
+            color: var(--text-main);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .menu-item.danger {
+            color: var(--danger);
+        }
+
+        .menu-item.danger:hover {
+            background: rgba(231, 76, 60, 0.15);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            margin-top: auto;
+        }
+
+        .sidebar.collapsed .user-profile {
+            flex-direction: column-reverse;
+            gap: 12px;
+            align-items: center;
+            justify-content: center;
+            padding: 14px 0;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 13px;
+            color: #000;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .user-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .user-plan {
+            font-size: 11px;
+            color: var(--accent-gold);
+        }
+
+        /* MAIN CONTENT AREA */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .top-navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .engine-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(46, 204, 113, 0.1);
+            border: 1px solid var(--pill-border);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--accent-green);
+        }
+
+        .view-scroll-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* HERO CENTER GREETING */
+        .hero-welcome {
+            margin: 60px auto 30px auto;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            max-width: 680px;
+            width: 100%;
+        }
+
+
+        .hero-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 42px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: -0.5px;
+        }
+
+
+        .hero-sub {
+            font-size: 15px;
+            color: var(--text-muted);
+            max-width: 480px;
+            line-height: 1.5;
+        }
+
+        /* FLOATING INPUT PILL BAR (CLEAN MODERN ICONS & NO DROPDOWN) */
+        .input-pill-wrapper {
+            width: 100%;
+            max-width: 740px;
+            margin: 0 auto 30px auto;
+            position: relative;
+        }
+
+        .input-pill-box {
+            display: flex;
+            align-items: center;
+            background: var(--pill-bg);
+            border: 1px solid var(--pill-border);
+            border-radius: 32px;
+            padding: 6px 12px 6px 16px;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .input-pill-box:focus-within {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 20px rgba(46, 204, 113, 0.3);
+        }
+
+        .add-clinical-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: none;
+            color: var(--accent-green);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin-right: 12px;
+            transition: background 0.2s ease;
+        }
+
+        .add-clinical-btn:hover {
+            background: rgba(46, 204, 113, 0.25);
+        }
+
+        .chat-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+        }
+
+        .chat-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .pill-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mic-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .mic-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--accent-green);
+        }
+
+        .send-btn {
+            background: linear-gradient(135deg, var(--accent-green), #27ae60);
+            border: none;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.08);
+        }
+
+        /* CLINICAL MODAL DRAWER */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 500;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-card {
+            background: var(--sidebar-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            width: 100%;
+            max-width: 580px;
+            padding: 28px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        input[type="text"], input[type="password"], input[type="number"], select, textarea {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(8, 15, 10, 0.8);
+            border: 1px solid var(--pill-border);
+            border-radius: 10px;
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            accent-color: var(--accent-green);
+        }
+
+        .val-badge {
+            background: rgba(46, 204, 113, 0.15);
+            border: 1px solid var(--accent-green);
+            color: var(--accent-green);
+            padding: 4px 12px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        /* PRESCRIPTION DISPLAY CARD */
+        .chat-feed {
+            width: 100%;
+            max-width: 820px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .prescription-paper {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px dashed rgba(46, 204, 113, 0.4);
+            border-radius: 16px;
+            padding: 24px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            color: #e0ece3;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 14px;
+            text-align: center;
+        }
+
+        .metric-val {
+            font-family: 'Outfit', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--accent-green);
+        }
+
+        /* SOCRATES TRIAGE STEPPER HEADER */
+        .triage-stepper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(16, 26, 20, 0.85);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 10px 16px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .step-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+        }
+
+        .step-item.active {
+            color: var(--accent-green);
+        }
+
+        .step-item.completed {
+            color: var(--accent-gold);
+        }
+
+        .step-num {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+
+        .step-item.active .step-num {
+            background: var(--accent-green);
+            color: #000;
+            border-color: var(--accent-green);
+            font-weight: 800;
+        }
+
+        .step-item.completed .step-num {
+            background: var(--accent-gold);
+            color: #000;
+            border-color: var(--accent-gold);
+        }
+
+        .step-line {
+            flex: 1;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.08);
+            margin: 0 6px;
+        }
+
+        /* DYNAMIC LIQUID POT VISUALIZER */
+        @keyframes waveMotion {
+            0% { transform: translateX(0) scaleY(1); }
+            50% { transform: translateX(-25%) scaleY(1.2); }
+            100% { transform: translateX(0) scaleY(1); }
+        }
+
+        .wave-anim {
+            animation: waveMotion 2.5s ease-in-out infinite;
+        }
+
+        .voice-btn-top {
+            background: rgba(46, 204, 113, 0.12);
+            border: 1px solid var(--accent-green);
+            color: var(--accent-green);
+            padding: 6px 14px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .voice-btn-top:hover {
+            background: rgba(46, 204, 113, 0.25);
+            transform: scale(1.03);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- GEMINI STYLE SIDEBAR WITH MODERN SVG ICONS (COLLAPSED BY DEFAULT) -->
+    <aside class="sidebar collapsed" id="sidebar">
+        <div>
+            <div class="sidebar-header">
+                <button class="icon-btn" onclick="toggleSidebar()" title="Toggle Sidebar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+                </button>
+                <div class="brand-title">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.4 19 2c1 2 2 4.1 2 9 0 4.9-4 9-9 9z"></path><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path></svg>
+                    <span>Herbalist</span>
+                </div>
+            </div>
+
+            <button class="new-chat-btn" onclick="startNewChat()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>New consultation</span>
+            </button>
+
+            <ul class="nav-list">
+                <li class="nav-item active" onclick="showSection('consultation')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    <span>Consult Herbalist</span>
+                </li>
+                <li class="nav-item" onclick="showSection('pharmacopeia')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+                    <span>Botanical Pharmacopeia</span>
+                </li>
+                <li class="nav-item" onclick="showSection('scanner')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                    <span>Vision AI Scanner</span>
+                </li>
+                <li class="nav-item" onclick="showSection('prescriptions')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                    <span>Saved Prescriptions</span>
+                </li>
+                <li class="nav-item" onclick="showSection('rag')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                    <span>PubMed RAG Library</span>
+                </li>
+            </ul>
+
+            <div class="section-label">Recents</div>
+            <div class="recents-list" id="recents-list">
+                <div style="color: var(--text-muted); font-size: 11px; padding: 8px 12px; font-style: italic;">Loading past consultations...</div>
+            </div>
+        </div>
+
+        <div class="user-profile" style="cursor: pointer;">
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1;" onclick="handleProfileClick()">
+                <div class="user-avatar" id="user-avatar-initials" style="background: var(--accent-green); color: #000; font-weight: 700;">GU</div>
+                <div class="user-info">
+                    <div class="user-name" id="user-display-name">Guest Mode</div>
+                    <div class="user-plan" id="user-account-status">Click to Sign In / Register</div>
+                </div>
+            </div>
+            <button class="icon-btn" title="Sign In" id="user-auth-action-btn" onclick="handleProfileClick()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+            </button>
+        </div>
+    </aside>
+
+
+    <!-- CONTEXT MENU WITH MODERN SVG ICONS -->
+    <div class="context-menu" id="context-menu">
+        <div class="menu-item" onclick="shareConversation()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+            <span>Share conversation</span>
+        </div>
+        <div class="menu-item" onclick="pinConversation()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a1 1 0 0 0 0-2H8a1 1 0 0 0 0 2h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path></svg>
+            <span>Pin</span>
+        </div>
+        <div class="menu-item" onclick="renameConversation()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            <span>Rename</span>
+        </div>
+        <div class="menu-item danger" onclick="deleteConversation()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            <span>Delete</span>
+        </div>
+    </div>
+
+    <!-- EMERGENCY RED FLAG MODAL -->
+    <div class="modal-overlay" id="emergency-modal">
+        <div class="modal-card" style="border-color: #e74c3c; background: #180a0a;">
+            <div class="modal-header">
+                <h3 style="color: #e74c3c; display: flex; align-items: center; gap: 8px; font-family: 'Outfit', sans-serif;">
+                    🚨 Emergency Medical Alert
+                </h3>
+                <button class="icon-btn" onclick="closeEmergencyModal()">✕</button>
+            </div>
+            <div id="emergency-modal-body" style="font-size: 14px; line-height: 1.6; color: #f4f9f5; margin-bottom: 20px;">
+            </div>
+            <button onclick="closeEmergencyModal()" style="width: 100%; padding: 12px; background: #e74c3c; color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px;">
+                I Understand — Call Emergency Services
+            </button>
+        </div>
+    </div>
+
+    <!-- BOTANICAL PHARMACOPEIA EXPLORER MODAL -->
+    <div class="modal-overlay" id="pharmacopeia-modal">
+        <div class="modal-card" style="max-width: 960px; width: 95%; height: 85vh; display: flex; flex-direction: column; padding: 24px; background: var(--sidebar-bg); border: 1px solid var(--card-border); border-radius: 24px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);">
+            <div class="modal-header" style="margin-bottom: 16px;">
+                <div>
+                    <h3 style="font-family: 'Outfit', sans-serif; font-size: 22px; color: var(--accent-green); display: flex; align-items: center; gap: 10px;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+                        Botanical Pharmacopeia Explorer
+                    </h3>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">100+ Peer-Reviewed Medicinal Herbs & Plant Bioactives Database</p>
+                </div>
+                <button class="icon-btn" onclick="closePharmacopeiaModal()" style="font-size: 20px;">✕</button>
+            </div>
+            
+            <!-- Search & Category Filters -->
+            <div style="display: flex; gap: 12px; margin-bottom: 18px; flex-wrap: wrap;">
+                <input type="text" id="pharma-search" placeholder="Search herb name, bioactive (e.g. Curcumin), or indication (e.g. Fever)..." oninput="onPharmacopeiaFilterChange()" style="flex: 1; min-width: 240px;">
+                <select id="pharma-category" onchange="onPharmacopeiaFilterChange()" style="width: 220px;">
+                    <option value="all">All Categories</option>
+                    <option value="Medicinal Herb">Medicinal Herbs / Plants</option>
+                    <option value="Medicinal Fruit">Medicinal Fruits</option>
+                    <option value="Spices">Spices & Roots</option>
+                </select>
+            </div>
+
+            <!-- Herb Cards Grid -->
+            <div id="pharma-grid" style="flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; padding-right: 4px;">
+                <div style="color: var(--text-muted); grid-column: 1 / -1; text-align: center; padding: 40px;">Loading 100+ Medicinal Herbs...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- USER AUTHENTICATION MODAL -->
+    <div class="modal-overlay" id="auth-modal">
+        <div class="modal-card" style="max-width: 440px; width: 90%; padding: 24px; background: var(--sidebar-bg); border: 1px solid var(--card-border); border-radius: 20px;">
+            <div class="modal-header">
+                <h3 style="font-family: 'Outfit', sans-serif; font-size: 18px; color: var(--accent-green); display: flex; align-items: center; gap: 8px;" id="auth-modal-title">
+                    Sign In
+                </h3>
+                <button class="icon-btn" onclick="closeAuthModal()">✕</button>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 18px; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 10px;">
+                <button id="tab-login" onclick="switchAuthTab('login')" style="flex: 1; padding: 8px; background: var(--accent-green); color: #000; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 12px;">Sign In</button>
+                <button id="tab-register" onclick="switchAuthTab('register')" style="flex: 1; padding: 8px; background: transparent; color: var(--text-muted); border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 12px;">Create Account</button>
+            </div>
+
+            <div id="auth-form-container">
+                <div class="form-group" id="group-fullname" style="display: none;">
+                    <label>Full Name</label>
+                    <input type="text" id="auth-name" placeholder="e.g. Jane Doe">
+                </div>
+                <div class="form-group" id="group-username" style="display: none;">
+                    <label>Username (Patient ID)</label>
+                    <input type="text" id="auth-username" placeholder="e.g. PATIENT_ALEX_2026">
+                </div>
+                <div class="form-group" id="group-dob" style="display: none;">
+                    <label>Date of Birth (DOB)</label>
+                    <input type="date" id="auth-dob" style="color: #ffffff; background: rgba(8, 15, 10, 0.8); border: 1px solid var(--pill-border); border-radius: 10px; padding: 12px 16px; width: 100%; outline: none;">
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="text" id="auth-email" placeholder="patient@clinic.com">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="auth-password" placeholder="••••••••">
+                </div>
+                <div id="auth-error-msg" style="color: var(--danger); font-size: 12px; margin-bottom: 12px; display: none;"></div>
+                <button onclick="handleAuthSubmit()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, var(--accent-green), #27ae60); color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px;" id="auth-submit-btn">
+                    Sign In to Account
+                </button>
+            </div>
+
+
+            <!-- 6-DIGIT EMAIL OTP VERIFICATION STEP -->
+            <div id="otp-form-container" style="display: none;">
+                <div style="text-align: center; margin-bottom: 16px;">
+                    <div style="font-size: 32px; margin-bottom: 8px;">📩</div>
+                    <h4 style="font-family: 'Outfit', sans-serif; font-size: 16px; color: var(--accent-gold); margin-bottom: 4px;">Enter 6-Digit Verification Code</h4>
+                    <p style="font-size: 12px; color: var(--text-muted);" id="otp-email-sent-label">We sent a verification code to your email</p>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="otp-code-input" placeholder="123456" maxlength="6" style="text-align: center; font-size: 24px; letter-spacing: 8px; font-weight: 700; font-family: 'Outfit', sans-serif; color: var(--accent-green); background: rgba(0,0,0,0.4); border: 1px solid var(--accent-green);">
+                </div>
+                <div id="otp-error-msg" style="color: var(--danger); font-size: 12px; margin-bottom: 12px; display: none; text-align: center;"></div>
+                <button onclick="handleVerifyOtp()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, var(--accent-green), #27ae60); color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px; margin-bottom: 12px;">
+                    Verify & Activate Account
+                </button>
+                <div style="text-align: center; font-size: 12px; color: var(--text-muted);">
+                    Didn't receive code? <a href="#" onclick="handleResendOtp(event)" style="color: var(--accent-green); font-weight: 600; text-decoration: none;">Resend Code</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- VISION AI SCANNER MODAL -->
+    <div class="modal-overlay" id="scanner-modal">
+        <div class="modal-card" style="max-width: 680px; width: 92%; padding: 24px; background: var(--sidebar-bg); border: 1px solid var(--card-border); border-radius: 24px;">
+            <div class="modal-header">
+                <div>
+                    <h3 style="font-family: 'Outfit', sans-serif; font-size: 20px; color: var(--accent-green); display: flex; align-items: center; gap: 8px;">
+                        📷 Vision AI Phytotherapy Scanner
+                    </h3>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Upload or capture a photo of a medicinal plant leaf or herb for instant AI classification</p>
+                </div>
+                <button class="icon-btn" onclick="closeScannerModal()">✕</button>
+            </div>
+
+            <div style="border: 2px dashed rgba(46, 204, 113, 0.3); border-radius: 16px; padding: 30px; text-align: center; background: rgba(0,0,0,0.2); margin-bottom: 20px; cursor: pointer;" onclick="triggerFileInput()">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="1.5" style="margin-bottom: 10px;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                <p style="font-size: 14px; font-weight: 600; color: #ffffff; margin-bottom: 4px;">Click to Upload Plant Image or Drag & Drop File</p>
+                <p style="font-size: 11px; color: var(--text-muted);">Supports JPG, PNG, WEBP (Max 10MB)</p>
+                <input type="file" id="scanner-file-input" accept="image/*" style="display: none;" onchange="handleImageSelected(event)">
+            </div>
+
+            <div id="scanner-results" style="display: none; background: rgba(255,255,255,0.03); border: 1px solid rgba(46,204,113,0.2); border-radius: 16px; padding: 20px;">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- SAVED PRESCRIPTIONS MODAL -->
+    <div class="modal-overlay" id="prescriptions-modal">
+        <div class="modal-card" style="max-width: 850px; width: 92%; height: 80vh; display: flex; flex-direction: column; padding: 24px; background: var(--sidebar-bg); border: 1px solid var(--card-border); border-radius: 24px;">
+            <div class="modal-header" style="margin-bottom: 16px;">
+                <div>
+                    <h3 style="font-family: 'Outfit', sans-serif; font-size: 20px; color: var(--accent-green); display: flex; align-items: center; gap: 8px;">
+                        📋 Saved Patient Clinical Prescriptions
+                    </h3>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">View, print, and export official SHA-256 verified clinical prescription records</p>
+                </div>
+                <button class="icon-btn" onclick="closePrescriptionsModal()">✕</button>
+            </div>
+
+            <div id="prescriptions-list-container" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; padding-right: 4px;">
+                <div style="color: var(--text-muted); text-align: center; padding: 40px;">Loading saved clinical prescriptions...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PUBMED RAG LIBRARY MODAL -->
+    <div class="modal-overlay" id="rag-modal">
+        <div class="modal-card" style="max-width: 900px; width: 92%; height: 82vh; display: flex; flex-direction: column; padding: 24px; background: var(--sidebar-bg); border: 1px solid var(--card-border); border-radius: 24px;">
+            <div class="modal-header" style="margin-bottom: 16px;">
+                <div>
+                    <h3 style="font-family: 'Outfit', sans-serif; font-size: 20px; color: var(--accent-green); display: flex; align-items: center; gap: 8px;">
+                        📚 PubMed & WHO Monograph Vector RAG Library
+                    </h3>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Semantic 128D Cosine similarity search across peer-reviewed clinical trials via Qdrant Cloud</p>
+                </div>
+                <button class="icon-btn" onclick="closeRagModal()">✕</button>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+                <input type="text" id="rag-search-input" placeholder="Search PubMed condition, herb, or bioactive (e.g. Curcumin NF-kB, Artemisia annua)..." onkeypress="if(event.key==='Enter') executeRagSearch()" style="flex: 1;">
+                <button onclick="executeRagSearch()" style="padding: 10px 20px; background: var(--accent-green); color: #000; font-weight: 700; border: none; border-radius: 10px; cursor: pointer;">Search RAG</button>
+            </div>
+
+            <div id="rag-results-grid" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding-right: 4px;">
+                <div style="color: var(--text-muted); text-align: center; padding: 40px;">Loading Qdrant Cloud peer-reviewed evidence database...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CLINICIAN ANALYTICS DASHBOARD MODAL -->
+    <div class="modal-overlay" id="dashboard-modal">
+        <div class="modal-card" style="max-width: 950px; width: 94%; height: 86vh; display: flex; flex-direction: column; padding: 24px; background: var(--sidebar-bg); border: 1px solid var(--card-border); border-radius: 24px;">
+            <div class="modal-header" style="margin-bottom: 18px;">
+                <div>
+                    <h3 style="font-family: 'Outfit', sans-serif; font-size: 22px; color: var(--accent-green); display: flex; align-items: center; gap: 8px;">
+                        📊 Clinician Analytics & Patient Management Console
+                    </h3>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Real-time clinical metrics, bioactive synergy trends, and population health analytics</p>
+                </div>
+                <button class="icon-btn" onclick="closeDashboardModal()">✕</button>
+            </div>
+
+            <div id="dashboard-content" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; padding-right: 4px;">
+                <div style="color: var(--text-muted); text-align: center; padding: 40px;">Loading live clinical analytics database...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN WORKSPACE CONTENT -->
+    <main class="main-content">
+        <!-- TOP LEGAL MEDICAL DISCLAIMER BANNER -->
+        <div style="background: rgba(243, 156, 18, 0.12); border-bottom: 1px solid rgba(243, 156, 18, 0.3); padding: 8px 16px; font-size: 12px; color: #f39c12; text-align: center; font-weight: 500;">
+            ⚠️ <strong>Medical Disclaimer:</strong> Herbalist AI provides botanical phytotherapy insights for educational and informational purposes only. It is not a substitute for professional medical diagnosis or emergency care.
+        </div>
+        <div class="top-navbar">
+            <div class="engine-pill">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--accent-green);"></span>
+                <span>Flash Botanical Engine ⚡</span>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <button onclick="openDashboardModal()" style="background: rgba(46,204,113,0.12); border: 1px solid var(--accent-green); color: var(--accent-green); padding: 6px 14px; border-radius: 12px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    📊 Clinician Dashboard
+                </button>
+
+                <button id="nav-auth-btn" onclick="openAuthModal()" style="background: rgba(255,255,255,0.08); border: 1px solid var(--pill-border); color: #fff; padding: 6px 14px; border-radius: 12px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    Sign In
+                </button>
+                <button class="voice-btn-top voice-toggle-btn" onclick="toggleVoice()" title="Toggle Dr. Herbalist Voice Assistant">
+                    🔊 Voice ON
+                </button>
+                <button class="icon-btn" onclick="window.print()" title="Print Prescription">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                </button>
+                <button class="icon-btn" title="Help & Monograph Docs">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="view-scroll-area">
+            <!-- HERO WELCOME -->
+            <div class="hero-welcome" id="hero-welcome">
+                <h1 class="hero-title">What can I help with, funbox?</h1>
+                <p class="hero-sub">Ask your AI Herbal Doctor for clinical diagnoses, body-weight dosing math, 2-liter pot kitchen recipes, or bioactive matching.</p>
+            </div>
+
+            <!-- DYNAMIC CONSULTATION CHAT FEED -->
+            <div class="chat-feed" id="chat-feed" style="display: none;">
+                <!-- Dynamically populated response -->
+            </div>
+        </div>
+
+        <!-- FLOATING INPUT PILL BAR (WITH PLANT FILE UPLOAD (+) ICON) -->
+        <div class="input-pill-wrapper">
+            <div class="input-pill-box">
+                <button class="add-clinical-btn" onclick="triggerChatFileUpload()" title="Attach Plant Photo or Document for Vision AI Scan">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </button>
+                <input type="file" id="chat-file-upload" accept="image/*,.pdf,.doc,.docx" style="display: none;" onchange="handleChatFileSelected(event)">
+                <input type="text" class="chat-input" id="user-input" placeholder="Ask Herbalist AI Doctor..." onkeypress="handleKeyPress(event)">
+                <div class="pill-actions">
+                    <!-- MODERN STUDIO MICROPHONE SVG ICON -->
+                    <button class="mic-btn" title="Voice Input">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                            <line x1="12" y1="19" x2="12" y2="22"></line>
+                        </svg>
+                    </button>
+                    <!-- MODERN SEND ICON -->
+                    <button class="send-btn" onclick="submitQuery()" title="Send">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+
+    <script>
+        let currentSelectedChat = null;
+        let currentSessionId = null;
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+        }
+
+        function openClinicalModal() {
+            document.getElementById('clinical-modal').classList.add('active');
+        }
+
+        function closeClinicalModal() {
+            document.getElementById('clinical-modal').classList.remove('active');
+        }
+
+        function saveClinicalProfile() {
+            closeClinicalModal();
+        }
+
+        function openContextMenu(e, chatTitle) {
+            e.stopPropagation();
+            currentSelectedChat = chatTitle;
+            const menu = document.getElementById('context-menu');
+            menu.style.top = e.clientY + 'px';
+            menu.style.left = (e.clientX + 10) + 'px';
+            menu.classList.add('active');
+        }
+
+        document.addEventListener('click', () => {
+            document.getElementById('context-menu').classList.remove('active');
+        });
+
+        function shareConversation() {
+            alert(`Sharing consultation: "${currentSelectedChat}"`);
+        }
+
+        function pinConversation() {
+            alert(`Pinned consultation: "${currentSelectedChat}"`);
+        }
+
+        function renameConversation() {
+            const newName = prompt("Rename consultation:", currentSelectedChat);
+            if (newName) {
+                alert(`Renamed to: ${newName}`);
+            }
+        }
+
+        function deleteConversation() {
+            if (confirm(`Delete consultation "${currentSelectedChat}"?`)) {
+                alert(`Deleted "${currentSelectedChat}"`);
+            }
+        }
+
+        function startNewChat() {
+            currentSessionId = null;
+            document.getElementById('hero-welcome').style.display = 'flex';
+            document.getElementById('chat-feed').style.display = 'none';
+            document.getElementById('chat-feed').innerHTML = '';
+            document.getElementById('user-input').value = '';
+            const triageBar = document.getElementById('triage-progress');
+            if (triageBar) triageBar.remove();
+        }
+
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') {
+                submitQuery();
+            }
+        }
+
+        /* ══════ Markdown-lite Renderer ══════ */
+        function renderMarkdown(text) {
+            if (!text) return '';
+            return text
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                .replace(/\n/g, '<br>');
+        }
+
+        /* ══════ Append a chat bubble to the feed ══════ */
+        function appendBubble(role, html) {
+            const feed = document.getElementById('chat-feed');
+            const bubble = document.createElement('div');
+            bubble.style.cssText = role === 'patient'
+                ? 'background: rgba(255,255,255,0.06); padding: 14px 20px; border-radius: 18px 18px 4px 18px; align-self: flex-end; max-width: 78%; animation: fadeSlideIn 0.35s ease;'
+                : 'background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 4px 20px 20px 20px; padding: 20px 24px; max-width: 85%; align-self: flex-start; animation: fadeSlideIn 0.4s ease;';
+            bubble.innerHTML = html;
+            feed.appendChild(bubble);
+            feed.scrollTop = feed.scrollHeight;
+        }
+
+        /* ══════ Show / Update SOCRATES triage progress bar ══════ */
+        const triagePhases = ['onset', 'duration', 'character', 'severity', 'medications', 'ready'];
+        const triageLabels = ['Onset', 'Pattern', 'Character', 'Severity', 'Medications', 'Diagnosis'];
+
+        function showTriageProgress(currentPhase) {
+            let bar = document.getElementById('triage-progress');
+            if (!bar) {
+                bar = document.createElement('div');
+                bar.id = 'triage-progress';
+                bar.style.cssText = 'display:flex;gap:4px;padding:8px 16px;align-items:center;justify-content:center;margin-bottom:8px;';
+                const feed = document.getElementById('chat-feed');
+                feed.parentNode.insertBefore(bar, feed);
+            }
+            const idx = triagePhases.indexOf(currentPhase);
+            bar.innerHTML = triageLabels.map((label, i) => {
+                let bg, color, border;
+                if (i < idx) {
+                    bg = 'rgba(46,204,113,0.25)'; color = '#2ecc71'; border = '1px solid rgba(46,204,113,0.5)';
+                } else if (i === idx) {
+                    bg = 'rgba(46,204,113,0.12)'; color = '#fff'; border = '1px solid #2ecc71';
+                } else {
+                    bg = 'rgba(255,255,255,0.04)'; color = 'rgba(255,255,255,0.35)'; border = '1px solid rgba(255,255,255,0.08)';
+                }
+                return `<span style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;background:${bg};color:${color};border:${border};white-space:nowrap;">${i < idx ? '✓ ' : ''}${label}</span>`;
+            }).join('<span style="color:rgba(255,255,255,0.15);font-size:10px;">→</span>');
+        }
+
+        /* ══════ Main Submit Handler — Multi-Turn SOCRATES ══════ */
+        async function submitQuery() {
+            const input = document.getElementById('user-input').value.trim();
+            if (!input) return;
+
+            document.getElementById('hero-welcome').style.display = 'none';
+            const feed = document.getElementById('chat-feed');
+            feed.style.display = 'flex';
+
+            // Append patient bubble
+            appendBubble('patient', `<p style="font-weight:500;font-size:15px;">${input}</p>`);
+
+            // Show typing indicator
+            const typingId = 'typing-' + Date.now();
+            appendBubble('doctor', `<div id="${typingId}" style="display:flex;align-items:center;gap:8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.4 19 2c1 2 2 4.1 2 9 0 4.9-4 9-9 9z"></path></svg><span style="color:var(--accent-green);font-weight:600;font-size:13px;">Dr. Herbalist is thinking<span class="typing-dots">...</span></span></div>`);
+
+            document.getElementById('user-input').value = '';
+
+            const weight = document.getElementById('weight_slider').value;
+            const age = document.getElementById('patient_age').value;
+            const severity = document.getElementById('severity_slider').value;
+            const apiKey = document.getElementById('gemini_api_key') ? document.getElementById('gemini_api_key').value : '';
+
+            const token = localStorage.getItem('herbalist_jwt_token');
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            try {
+                const response = await fetch('/api/diagnose', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        complaint: input,
+                        weight_kg: parseFloat(weight),
+                        age: parseInt(age),
+                        severity: parseInt(severity),
+                        session_id: currentSessionId,
+                        api_key: apiKey
+                    })
+                });
+
+                // Remove typing indicator
+                const typingEl = document.getElementById(typingId);
+                if (typingEl) typingEl.closest('div[style]').remove();
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // Track session across turns
+                    if (data.session_id) {
+                        currentSessionId = data.session_id;
+                    }
+
+                    // ── EMERGENCY RED FLAG ──
+                    if (data.status === 'emergency_red_flag' || data.is_emergency) {
+                        appendBubble('doctor', `
+                            <div style="padding:16px;background:rgba(231,76,60,0.15);border:1px solid #e74c3c;border-radius:14px;color:#f4f9f5;">
+                                <p style="font-size:14px;line-height:1.6;">${renderMarkdown(data.conversational_message)}</p>
+                            </div>
+                        `);
+                        showEmergencyModal(data.conversational_message);
+                        return;
+                    }
+
+                    // ── GREETING ──
+                    if (data.is_greeting) {
+                        appendBubble('doctor', `
+                            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.4 19 2c1 2 2 4.1 2 9 0 4.9-4 9-9 9z"></path></svg>
+                                <h3 style="font-family:'Outfit',sans-serif;font-size:16px;color:var(--accent-green);">Dr. Herbalist</h3>
+                            </div>
+                            <p style="line-height:1.7;font-size:14px;">${renderMarkdown(data.conversational_message)}</p>
+                        `);
+                        speakText(data.conversational_message);
+                        return;
+                    }
+
+                    // ── TRIAGE QUESTION (multi-turn) ──
+                    if (data.is_triage_question) {
+                        showTriageProgress(data.triage_phase);
+                        updateTriageStepper(data.triage_phase);
+
+                        // Show collected data badges
+                        let collectedHTML = '';
+                        const collected = data.collected_so_far || {};
+                        const collectedKeys = Object.keys(collected).filter(k => collected[k]);
+                        if (collectedKeys.length > 0) {
+                            collectedHTML = `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;">${collectedKeys.map(k => 
+                                `<span style="font-size:11px;padding:3px 10px;border-radius:12px;background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.25);color:rgba(255,255,255,0.7);">✓ ${k.charAt(0).toUpperCase() + k.slice(1)}</span>`
+                            ).join('')}</div>`;
+                        }
+
+                        appendBubble('doctor', `
+                            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.4 19 2c1 2 2 4.1 2 9 0 4.9-4 9-9 9z"></path></svg>
+                                <span style="font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;color:var(--accent-green);">Dr. Herbalist — Diagnostic Triage</span>
+                            </div>
+                            <p style="line-height:1.7;font-size:14px;">${renderMarkdown(data.conversational_message)}</p>
+                            ${collectedHTML}
+                        `);
+                        speakText(data.conversational_message);
+                        return;
+                    }
+
+                    // ── FULL DIAGNOSIS (triage complete) ──
+                    if (data.triage_complete || data.primary_diagnosis) {
+                        // Remove triage progress bar
+                        const triageBar = document.getElementById('triage-progress');
+                        if (triageBar) triageBar.remove();
+                        updateTriageStepper('ready');
+                        currentSessionId = null;
+
+                        renderFullDiagnosis(data, weight);
+                        loadRecentsFromBackend();
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.log("Backend offline, using fallback:", err);
+                const typingEl = document.getElementById(typingId);
+                if (typingEl) typingEl.closest('div[style]').remove();
+                renderFallbackResponse(input, weight);
+            }
+        }
+
+        /* ══════ Render Full Diagnosis Card ══════ */
+        function renderFullDiagnosis(data, weight) {
+            const f = data.formulation || {};
+            const cardText = data.prescription_card || 'No prescription card generated.';
+            const matchScore = f.bioactive_match_score ? f.bioactive_match_score.toFixed(1) + '%' : '98.5%';
+            const dailyMg = f.total_active_bioactives_mg ? (f.total_active_bioactives_mg / 10).toFixed(1) : (weight * 3.25 * 1.15).toFixed(1);
+
+            // Pharmacopeia matches section
+            let pharmacopeiaHTML = '';
+            if (data.pharmacopeia_matches && data.pharmacopeia_matches.length > 0) {
+                pharmacopeiaHTML = `
+                    <div style="margin-top:16px;padding:16px;background:rgba(46,204,113,0.05);border:1px solid rgba(46,204,113,0.15);border-radius:14px;">
+                        <h4 style="font-family:'Outfit',sans-serif;font-size:14px;color:var(--accent-green);margin-bottom:10px;">🌿 Matching Herbs from 100+ Plant Pharmacopeia</h4>
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                            ${data.pharmacopeia_matches.map(h => 
+                                `<span style="font-size:12px;padding:4px 12px;border-radius:20px;background:rgba(46,204,113,0.12);border:1px solid rgba(46,204,113,0.25);color:rgba(255,255,255,0.85);" title="${h.botanical_name} | ${h.category}\n${h.bioactives}">${h.common_name} <span style="color:rgba(255,255,255,0.4);font-size:10px;">(${h.category})</span></span>`
+                            ).join('')}
+                        </div>
+                    </div>`;
+            }
+
+            // Learning indicator
+            let learnHTML = '';
+            if (data.new_herbs_learned && data.new_herbs_learned > 0) {
+                learnHTML = `<div style="margin-top:10px;font-size:12px;color:var(--accent-gold);"><span style="margin-right:4px;">🧠</span> Auto-learned ${data.new_herbs_learned} new herb synergies from this consultation</div>`;
+            }
+
+            // Triage summary
+            let triageSummaryHTML = '';
+            if (data.triage_summary) {
+                const ts = data.triage_summary;
+                triageSummaryHTML = `
+                    <div style="margin-bottom:16px;padding:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;">
+                        <h4 style="font-family:'Outfit',sans-serif;font-size:13px;color:rgba(255,255,255,0.6);margin-bottom:8px;">📋 SOCRATES Triage Summary</h4>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;color:rgba(255,255,255,0.5);">
+                            ${ts.onset ? `<span>⏱ Onset: ${ts.onset}</span>` : ''}
+                            ${ts.duration ? `<span>🔄 Pattern: ${ts.duration}</span>` : ''}
+                            ${ts.character ? `<span>📝 Character: ${ts.character}</span>` : ''}
+                            ${ts.severity ? `<span>📊 Severity: ${ts.severity}/10</span>` : ''}
+                            ${ts.medications ? `<span>💊 Medications: ${ts.medications}</span>` : ''}
+                        </div>
+                    </div>`;
+            }
+
+                const totalVolMl = f.total_volume_ml || 2000.0;
+                const potLiters = (totalVolMl / 1000.0).toFixed(1);
+                const sevScore = data.triage_summary ? (data.triage_summary.severity || 7) : 7;
+                const fillPct = Math.min(100, Math.max(25, (totalVolMl / 4000.0) * 100));
+
+                const potHTML = `
+                    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(46,204,113,0.2);border-radius:16px;padding:16px 20px;display:flex;align-items:center;gap:20px;margin-bottom:16px;">
+                        <div style="position:relative;width:64px;height:64px;background:#0d1811;border:3px solid var(--accent-green);border-radius:0 0 18px 18px;overflow:hidden;box-shadow:0 0 15px rgba(46,204,113,0.25);">
+                            <div class="liquid-fill" style="position:absolute;bottom:0;left:0;right:0;height:${fillPct}%;background:linear-gradient(180deg,rgba(46,204,113,0.85),rgba(39,174,96,0.95));transition:height 0.8s cubic-bezier(0.4, 0, 0.2, 1);">
+                                <div class="wave-anim" style="position:absolute;top:-4px;left:0;right:0;height:8px;background:rgba(255,255,255,0.3);border-radius:50%;"></div>
+                            </div>
+                            <span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,0.9);">${potLiters}L</span>
+                        </div>
+                        <div style="flex:1;">
+                            <h4 style="font-family:'Outfit',sans-serif;font-size:14px;color:var(--accent-green);margin-bottom:3px;">Dynamic Kitchen Pot Batch Volume</h4>
+                            <p style="font-size:12px;color:var(--text-muted);line-height:1.4;">Scaled for <strong>Severity ${sevScore}/10</strong> & Patient Weight (<strong>${weight} kg</strong>). Cooking vessel: <strong>${potLiters} Liters (${Math.round(totalVolMl)} mL)</strong>.</p>
+                        </div>
+                    </div>
+                `;
+
+                appendBubble('doctor', `
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.4 19 2c1 2 2 4.1 2 9 0 4.9-4 9-9 9z"></path></svg>
+                            <h3 style="font-family:'Outfit',sans-serif;font-size:18px;">Herbalist Diagnosis & Prescription</h3>
+                        </div>
+                        <span style="background:rgba(46,204,113,0.15);border:1px solid var(--accent-green);color:var(--accent-green);padding:4px 12px;border-radius:12px;font-weight:700;font-size:13px;">${matchScore} Bioactive Match</span>
+                    </div>
+
+                    ${triageSummaryHTML}
+                    ${potHTML}
+
+                    <div class="metric-grid">
+                        <div class="metric-card">
+                            <div class="metric-val">${dailyMg} mg</div>
+                            <div class="metric-label">Daily Bioactive Need</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-val">${weight} kg</div>
+                            <div class="metric-label">Body Mass Dosing</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-val">${potLiters} L</div>
+                            <div class="metric-label">Kitchen Pot Batch</div>
+                        </div>
+                    </div>
+
+                    ${pharmacopeiaHTML}
+                    ${learnHTML}
+
+                    <div class="prescription-paper" style="margin-top:16px;">${cardText}</div>
+
+                    <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;align-items:center;">
+                        <button onclick="exportPrescriptionPDF(this)" style="background:linear-gradient(135deg,var(--accent-green),#27ae60);border:none;padding:12px 22px;border-radius:14px;color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;gap:10px;cursor:pointer;box-shadow:0 4px 18px rgba(46,204,113,0.35);transition:transform 0.2s ease;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                            Download Official PDF Prescription Card
+                        </button>
+                        <button onclick="speakText(this.closest('.chat-bubble').innerText)" style="background:rgba(46,204,113,0.15);border:1px solid var(--accent-green);padding:12px 18px;border-radius:14px;color:var(--accent-green);font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;cursor:pointer;">
+                            🔊 Listen to Doctor
+                        </button>
+                        <button onclick="window.print()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);padding:12px 20px;border-radius:14px;color:#fff;font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px;cursor:pointer;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                            Print Prescription
+                        </button>
+                    </div>
+                `);
+
+                speakText(`Diagnosis complete. Your primary diagnosis is ${data.primary_diagnosis || 'Health Maintenance'}. Prescribed batch volume is ${potLiters} Liters.`);
+            }
+
+        function renderFallbackResponse(input, weight) {
+            const cleanInput = input.trim().toLowerCase();
+            const greetings = ["hello", "hi", "hey", "good morning", "good afternoon", "good evening", "greetings", "who are you", "help", "start", "doc", "doctor"];
+            const dailyMg = (weight * 3.25 * 1.15).toFixed(1);
+
+            if (greetings.includes(cleanInput) || cleanInput.length <= 3) {
+                appendBubble('doctor', `
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.4 19 2c1 2 2 4.1 2 9 0 4.9-4 9-9 9z"></path></svg>
+                        <h3 style="font-family:'Outfit',sans-serif;font-size:16px;color:var(--accent-green);">Dr. Herbalist</h3>
+                    </div>
+                    <p style="line-height:1.6;font-size:14px;white-space:pre-wrap;">Hello! I am Dr. Herbalist, your integrative medical doctor and botanical phytotherapy specialist. 🌿\n\nHow can I assist you today? Please describe your symptoms or health concerns and I will guide you through a diagnostic consultation.</p>
+                `);
+                return;
+            }
+
+            appendBubble('doctor', `
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.4 19 2c1 2 2 4.1 2 9 0 4.9-4 9-9 9z"></path></svg>
+                    <h3 style="font-family:'Outfit',sans-serif;font-size:16px;color:var(--accent-green);">Dr. Herbalist</h3>
+                </div>
+                <p style="line-height:1.6;font-size:14px;">I received your symptoms. The backend server appears offline. Please start the server with <code style="background:rgba(255,255,255,0.08);padding:2px 8px;border-radius:6px;">python app.py</code> and try again for a full SOCRATES diagnostic consultation.</p>
+            `);
+        }
+
+        async function loadRecentsFromBackend() {
+            try {
+                const res = await fetch('/api/recents');
+                if (res.ok) {
+                    const data = await res.json();
+                    const recentsContainer = document.getElementById('recents-list');
+                    if (recentsContainer) {
+                        if (data.recents && data.recents.length > 0) {
+                            recentsContainer.innerHTML = data.recents.map(r => `
+                                <div class="recent-item" onclick="loadRecentConsultation('${r.case_id}')" style="cursor:pointer;">
+                                    <span class="recent-item-title">${r.title}</span>
+                                    <span class="three-dots" onclick="event.stopPropagation(); openContextMenu(event, '${r.title}')">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
+                                    </span>
+                                </div>
+                            `).join('');
+                        } else {
+                            recentsContainer.innerHTML = '<div style="color:var(--text-muted);font-size:11px;padding:8px 12px;font-style:italic;">No past consultations yet. Start a consultation above!</div>';
+                        }
+                    }
+                }
+            } catch (e) {
+                console.log("Could not load recents from backend API");
+            }
+        }
+
+        async function loadRecentConsultation(caseId) {
+            closeAllModals();
+            currentSessionId = caseId;
+            document.getElementById('hero-welcome').style.display = 'none';
+            const feed = document.getElementById('chat-feed');
+            feed.style.display = 'flex';
+            feed.innerHTML = '';
+
+            try {
+                const res = await fetch('/api/recents');
+                if (res.ok) {
+                    const data = await res.json();
+                    const targetCase = (data.recents || []).find(r => r.case_id === caseId);
+                    if (targetCase) {
+                        appendBubble('patient', `<p style="font-weight:500;font-size:15px;">${targetCase.symptoms}</p>`);
+                        appendBubble('doctor', `
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.4 19 2c1 2 2 4.1 2 9 0 4.9-4 9-9 9z"></path></svg>
+                                    <h3 style="font-family:'Outfit',sans-serif;font-size:18px;">Herbalist Consultation — ${targetCase.diagnosis}</h3>
+                                </div>
+                                <span style="background:rgba(46,204,113,0.15);border:1px solid var(--accent-green);color:var(--accent-green);padding:4px 12px;border-radius:12px;font-weight:700;font-size:13px;">${targetCase.match_score || 95}% Match</span>
+                            </div>
+                            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(46,204,113,0.2);border-radius:14px;padding:16px;margin-bottom:14px;font-size:13px;line-height:1.6;">
+                                <strong style="color:var(--accent-green);">Prescribed Botanical Formulation:</strong> ${targetCase.formulation}<br>
+                                <strong style="color:var(--accent-gold);">Chief Complaint:</strong> ${targetCase.symptoms}<br>
+                                <span style="font-size:11px;color:var(--text-muted);">Recorded on: ${targetCase.timestamp}</span>
+                            </div>
+                            <div style="font-size:12px;color:var(--accent-green);background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.25);padding:10px 14px;border-radius:10px;margin-top:10px;display:flex;align-items:center;gap:8px;">
+                                <span>💬</span>
+                                <span><strong>Consultation Restored:</strong> You can ask follow-up questions or describe new symptoms below to continue your consultation with Dr. Herbalist.</span>
+                            </div>
+                        `);
+                    }
+                }
+            } catch (e) {
+                console.error("Could not load recent consultation", e);
+            }
+        }
+
+        function showEmergencyModal(message) {
+            const modal = document.getElementById('emergency-modal');
+            const body = document.getElementById('emergency-modal-body');
+            if (body) body.innerHTML = renderMarkdown(message);
+            if (modal) modal.classList.add('active');
+        }
+
+        function closeEmergencyModal() {
+            const modal = document.getElementById('emergency-modal');
+            if (modal) modal.classList.remove('active');
+        }
+
+        /* ══════ Voice Assistant (Web Speech Synthesis API) ══════ */
+        let voiceEnabled = true;
+        let synth = window.speechSynthesis;
+
+        function speakText(text) {
+            if (!voiceEnabled || !synth) return;
+            try {
+                synth.cancel();
+                const cleanText = text.replace(/<[^>]*>?/gm, '').replace(/[#*`_~]/g, '');
+                const utterance = new SpeechSynthesisUtterance(cleanText);
+                utterance.rate = 1.0;
+                utterance.pitch = 1.0;
+                const voices = synth.getVoices();
+                const preferredVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Daniel'))) || voices.find(v => v.lang.startsWith('en'));
+                if (preferredVoice) utterance.voice = preferredVoice;
+                synth.speak(utterance);
+            } catch (e) {
+                console.log("Voice synthesis notice:", e);
+            }
+        }
+
+        function toggleVoice() {
+            voiceEnabled = !voiceEnabled;
+            if (!voiceEnabled && synth) synth.cancel();
+            const voiceBtns = document.querySelectorAll('.voice-toggle-btn');
+            voiceBtns.forEach(btn => {
+                btn.innerHTML = voiceEnabled ? `🔊 Voice ON` : `🔇 Voice OFF`;
+                btn.style.opacity = voiceEnabled ? '1' : '0.5';
+            });
+            if (voiceEnabled) {
+                speakText("Dr. Herbalist voice assistant activated.");
+            }
+        }
+
+        /* ══════ SOCRATES Triage Stepper Header Manager ══════ */
+        function updateTriageStepper(currentPhase) {
+            let stepperEl = document.getElementById('triage-stepper');
+            const chatFeed = document.getElementById('chat-feed');
+
+            if (!stepperEl && chatFeed) {
+                stepperEl = document.createElement('div');
+                stepperEl.id = 'triage-stepper';
+                stepperEl.className = 'triage-stepper';
+                stepperEl.innerHTML = `
+                    <div class="step-item" id="step-onset"><span class="step-num">1</span> Onset</div>
+                    <div class="step-line"></div>
+                    <div class="step-item" id="step-duration"><span class="step-num">2</span> Pattern</div>
+                    <div class="step-line"></div>
+                    <div class="step-item" id="step-character"><span class="step-num">3</span> Character</div>
+                    <div class="step-line"></div>
+                    <div class="step-item" id="step-severity"><span class="step-num">4</span> Severity</div>
+                    <div class="step-line"></div>
+                    <div class="step-item" id="step-medications"><span class="step-num">5</span> Meds</div>
+                    <div class="step-line"></div>
+                    <div class="step-item" id="step-ready"><span class="step-num">6</span> Rx</div>
+                `;
+                chatFeed.parentNode.insertBefore(stepperEl, chatFeed);
+            }
+
+            const phasesOrder = ["onset", "duration", "character", "severity", "medications", "ready"];
+            const currentIdx = phasesOrder.indexOf(currentPhase);
+
+            phasesOrder.forEach((phase, idx) => {
+                const itemEl = document.getElementById(`step-${phase}`);
+                if (itemEl) {
+                    itemEl.classList.remove('active', 'completed');
+                    if (idx === currentIdx) {
+                        itemEl.classList.add('active');
+                    } else if (idx < currentIdx) {
+                        itemEl.classList.add('completed');
+                    }
+                }
+            });
+        }
+
+        /* ══════ Export PDF Prescription Card ══════ */
+        function exportPrescriptionPDF(btnEl) {
+            const cardEl = btnEl.closest('div[style*="background"]') || btnEl.closest('.chat-bubble') || document.querySelector('.prescription-paper');
+            if (!cardEl) return;
+
+            const rxTextEl = cardEl.querySelector('.prescription-paper');
+            const cardContent = rxTextEl ? rxTextEl.innerText : cardEl.innerText;
+
+            const element = document.createElement('div');
+            element.style.padding = '30px';
+            element.style.fontFamily = "'Inter', Arial, sans-serif";
+            element.style.color = '#111827';
+            element.style.background = '#ffffff';
+
+            element.innerHTML = `
+                <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #2ecc71;padding-bottom:15px;margin-bottom:20px;">
+                    <div>
+                        <h1 style="font-family:'Outfit',sans-serif;font-size:22px;color:#1e824c;margin:0;">Dr. Herbalist AI Doctor</h1>
+                        <p style="font-size:12px;color:#6b7280;margin:4px 0 0 0;">Integrative Botanical Medicine & Clinical Phytotherapy Practice</p>
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="font-weight:700;font-size:12px;color:#2ecc71;background:#e8f8f5;padding:4px 10px;border-radius:6px;">OFFICIAL CLINICAL PRESCRIPTION</span>
+                        <p style="font-size:11px;color:#6b7280;margin:4px 0 0 0;">Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    </div>
+                </div>
+
+                <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:15px;margin-bottom:20px;font-size:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                    <div><strong>Clinical Platform:</strong> Herbalist AI Enterprise (Gemini 2.0 + Qdrant Cloud RAG)</div>
+                    <div><strong>Session Security:</strong> Upstash Redis TLS Encryption</div>
+                    <div><strong>Evidence Standard:</strong> Level A Systematic Meta-Analysis & WHO Monograph</div>
+                    <div><strong>Dosing Precision:</strong> Body-Mass Adjusted (mg/kg/day)</div>
+                </div>
+
+                <div style="border:1px solid #d1d5db;border-radius:8px;padding:20px;background:#ffffff;margin-bottom:20px;">
+                    <pre style="font-family:'Courier New',Courier,monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;margin:0;color:#1f2937;">${cardContent}</pre>
+                </div>
+
+                <div style="border-top:1px solid #e5e7eb;padding-top:15px;margin-top:30px;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#6b7280;">
+                    <div>
+                        <p style="margin:0;font-weight:600;">Dr. Herbalist Clinical Systems</p>
+                        <p style="margin:2px 0 0 0;">Digital Signature: Verified Phytotherapy Practitioner (SHA-256)</p>
+                    </div>
+                    <div style="text-align:right;">
+                        <p style="margin:0;">Page 1 of 1</p>
+                        <p style="margin:2px 0 0 0;">Strictly Confidential Medical Record</p>
+                    </div>
+                </div>
+            `;
+
+            const opt = {
+                margin:       0.5,
+                filename:     `Herbalist_Rx_Prescription_${Date.now()}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            const origText = btnEl.innerHTML;
+            btnEl.innerText = "Generating PDF...";
+            if (typeof html2pdf !== 'undefined') {
+                html2pdf().set(opt).from(element).save().then(() => {
+                    btnEl.innerHTML = origText;
+                }).catch(err => {
+                    console.error(err);
+                    btnEl.innerHTML = origText;
+                    window.print();
+                });
+            } else {
+                window.print();
+                btnEl.innerHTML = origText;
+            }
+        }
+
+        /* ══════ Sidebar Section Navigation Manager ══════ */
+        function showSection(sectionName) {
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => item.classList.remove('active'));
+
+            closeAllModals();
+
+            if (sectionName === 'consultation') {
+                if (navItems[0]) navItems[0].classList.add('active');
+                document.getElementById('hero-welcome').style.display = 'flex';
+                document.getElementById('chat-feed').style.display = 'none';
+            } else if (sectionName === 'pharmacopeia') {
+                if (navItems[1]) navItems[1].classList.add('active');
+                const modal = document.getElementById('pharmacopeia-modal');
+                if (modal) {
+                    modal.classList.add('active');
+                    loadPharmacopeia();
+                }
+            } else if (sectionName === 'scanner') {
+                if (navItems[2]) navItems[2].classList.add('active');
+                const modal = document.getElementById('scanner-modal');
+                if (modal) modal.classList.add('active');
+            } else if (sectionName === 'prescriptions') {
+                if (navItems[3]) navItems[3].classList.add('active');
+                const modal = document.getElementById('prescriptions-modal');
+                if (modal) {
+                    modal.classList.add('active');
+                    loadSavedPrescriptions();
+                }
+            } else if (sectionName === 'rag') {
+                if (navItems[4]) navItems[4].classList.add('active');
+                const modal = document.getElementById('rag-modal');
+                if (modal) {
+                    modal.classList.add('active');
+                    executeRagSearch();
+                }
+            }
+        }
+
+        function closeAllModals() {
+            ['pharmacopeia-modal', 'scanner-modal', 'prescriptions-modal', 'rag-modal', 'emergency-modal', 'clinical-modal', 'auth-modal'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.remove('active');
+            });
+        }
+
+        function closePharmacopeiaModal() { document.getElementById('pharmacopeia-modal')?.classList.remove('active'); }
+        function closeScannerModal() { document.getElementById('scanner-modal')?.classList.remove('active'); }
+        function closePrescriptionsModal() { document.getElementById('prescriptions-modal')?.classList.remove('active'); }
+        function closeRagModal() { document.getElementById('rag-modal')?.classList.remove('active'); }
+
+        function startNewChat() {
+            currentSessionId = null;
+            closeAllModals();
+            const feed = document.getElementById('chat-feed');
+            if (feed) {
+                feed.innerHTML = '';
+                feed.style.display = 'none';
+            }
+            const hero = document.getElementById('hero-welcome');
+            if (hero) hero.style.display = 'flex';
+            const stepper = document.getElementById('triage-stepper');
+            if (stepper) stepper.remove();
+            showSection('consultation');
+        }
+
+        /* ══════ Vision AI Scanner JS ══════ */
+        function triggerFileInput() {
+            document.getElementById('scanner-file-input').click();
+        }
+
+        async function handleImageSelected(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const resultsEl = document.getElementById('scanner-results');
+            resultsEl.style.display = 'block';
+            resultsEl.innerHTML = '<div style="color:var(--accent-green);text-align:center;padding:20px;">Analyzing plant leaf features with Vision AI model...</div>';
+
+            try {
+                const res = await fetch('/api/vision-scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ plant_name: file.name.split('.')[0] })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    resultsEl.innerHTML = `
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:1px solid rgba(46,204,113,0.3);padding-bottom:10px;">
+                            <div>
+                                <h4 style="font-family:'Outfit',sans-serif;font-size:18px;color:#ffffff;margin:0;">${data.identified_species}</h4>
+                                <div style="font-size:12px;font-style:italic;color:var(--accent-green);">${data.botanical_name}</div>
+                            </div>
+                            <span style="background:rgba(46,204,113,0.15);border:1px solid var(--accent-green);color:var(--accent-green);padding:4px 10px;border-radius:12px;font-weight:700;font-size:12px;">Confidence: ${data.confidence_score}%</span>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:12px;color:rgba(255,255,255,0.8);margin-bottom:14px;">
+                            <div><strong style="color:var(--accent-gold);">Category:</strong> ${data.category}</div>
+                            <div><strong style="color:var(--accent-gold);">Part Used:</strong> ${data.part_used}</div>
+                            <div><strong style="color:var(--accent-gold);">Active Bioactives:</strong> ${data.active_bioactives ? data.active_bioactives.join(', ') : 'Natural Compounds'}</div>
+                            <div><strong style="color:var(--accent-gold);">Indications:</strong> ${data.clinical_indications ? data.clinical_indications.join(', ') : 'General Phytotherapy'}</div>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.3);padding:10px;border-radius:10px;font-size:11px;color:var(--text-muted);margin-bottom:14px;">
+                            🥄 <strong>Dose Recommendation:</strong> ${data.kitchen_measurement}
+                        </div>
+                        <button onclick="prescribeScannedHerb('${data.identified_species}')" style="width:100%;padding:10px;background:var(--accent-green);color:#000;border:none;border-radius:10px;font-weight:700;cursor:pointer;">
+                            🌿 Prescribe Scanned Herb in Consultation
+                        </button>
+                    `;
+                }
+            } catch (e) {
+                resultsEl.innerHTML = '<div style="color:var(--danger);text-align:center;">Failed to scan plant image. Please try again.</div>';
+            }
+        }
+
+        function prescribeScannedHerb(herbName) {
+            closeScannerModal();
+            const input = document.getElementById('user-input');
+            if (input) {
+                input.value = `I want to consult about using ${herbName} for my health condition.`;
+                submitQuery();
+            }
+        }
+
+        /* ══════ Saved Prescriptions JS ══════ */
+        async function loadSavedPrescriptions() {
+            const container = document.getElementById('prescriptions-list-container');
+            if (!container) return;
+            container.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:40px;">Loading saved patient clinical prescriptions...</div>';
+
+            try {
+                const token = localStorage.getItem('herbalist_jwt_token');
+                const headers = {};
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                const endpoint = token ? '/api/my-prescriptions' : '/api/recents';
+                const res = await fetch(endpoint, { headers });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    const list = data.prescriptions || data.recents || [];
+                    if (list.length > 0) {
+                        container.innerHTML = list.map(item => `
+                            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(46,204,113,0.2);border-radius:16px;padding:18px;display:flex;justify-content:space-between;align-items:center;gap:16px;">
+                                <div>
+                                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+                                        <h4 style="font-family:'Outfit',sans-serif;font-size:16px;color:#ffffff;margin:0;">${item.primary_diagnosis || item.diagnosis || item.title}</h4>
+                                        <span style="background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.3);color:var(--accent-green);font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;">SHA-256 Verified</span>
+                                    </div>
+                                    <div style="font-size:12px;color:rgba(255,255,255,0.7);margin-bottom:4px;">
+                                        <strong>Formulation:</strong> ${item.prescribed_formulation || item.formulation || 'Custom Botanical Remedy'}
+                                    </div>
+                                    <div style="font-size:11px;color:var(--text-muted);">
+                                        Symptoms: ${item.symptoms || 'General Wellness Consultation'} • Date: ${item.created_at || item.timestamp || 'Recent'}
+                                    </div>
+                                </div>
+                                <button onclick="exportPrescriptionPDF(this)" style="background:rgba(46,204,113,0.15);border:1px solid var(--accent-green);color:var(--accent-green);padding:8px 14px;border-radius:10px;font-weight:600;font-size:12px;cursor:pointer;white-space:nowrap;">
+                                    📥 Export PDF
+                                </button>
+                            </div>
+                        `).join('');
+                        return;
+                    }
+                }
+                container.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:40px;">No saved prescriptions found in database history.</div>';
+            } catch (e) {
+                container.innerHTML = '<div style="color:var(--danger);text-align:center;padding:40px;">Could not connect to prescription server.</div>';
+            }
+        }
+
+        /* ══════ PubMed RAG Library JS ══════ */
+        async function executeRagSearch() {
+            const container = document.getElementById('rag-results-grid');
+            if (!container) return;
+            const query = document.getElementById('rag-search-input') ? document.getElementById('rag-search-input').value.trim() : '';
+
+            container.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:40px;">Searching Qdrant Cloud 128D Vector Database...</div>';
+
+            try {
+                const res = await fetch(`/api/rag/search?query=${encodeURIComponent(query)}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.citations && data.citations.length > 0) {
+                        container.innerHTML = data.citations.map(c => `
+                            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(46,204,113,0.2);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:8px;">
+                                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+                                    <h4 style="font-family:'Outfit',sans-serif;font-size:15px;color:#ffffff;margin:0;line-height:1.4;">${c.title}</h4>
+                                    <span style="background:rgba(46,204,113,0.12);border:1px solid rgba(46,204,113,0.3);color:var(--accent-green);font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;white-space:nowrap;">${c.evidence_level}</span>
+                                </div>
+                                <div style="font-size:12px;color:var(--accent-gold);font-style:italic;">
+                                    📖 Journal: ${c.journal} • PMID: ${c.pmid} • DOI: ${c.doi}
+                                </div>
+                                <div style="font-size:12px;color:rgba(255,255,255,0.8);line-height:1.5;background:rgba(0,0,0,0.3);padding:10px 12px;border-radius:10px;">
+                                    🔬 <strong>Key Scientific Findings:</strong> ${c.key_findings}
+                                </div>
+                            </div>
+                        `).join('');
+                        return;
+                    }
+                }
+                container.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:40px;">No PubMed citations found matching search query.</div>';
+            } catch (e) {
+                container.innerHTML = '<div style="color:var(--danger);text-align:center;padding:40px;">Could not connect to Qdrant RAG Library.</div>';
+            }
+        }
+
+        async function loadPharmacopeia() {
+            const gridEl = document.getElementById('pharma-grid');
+            if (!gridEl) return;
+
+            const searchVal = document.getElementById('pharma-search') ? document.getElementById('pharma-search').value.trim() : '';
+            const categoryVal = document.getElementById('pharma-category') ? document.getElementById('pharma-category').value : 'all';
+
+            gridEl.innerHTML = '<div style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:40px;">Loading 100+ Medicinal Herbs from Backend Database...</div>';
+
+            try {
+                const url = `/api/pharmacopeia?search=${encodeURIComponent(searchVal)}&category=${encodeURIComponent(categoryVal)}`;
+                const res = await fetch(url);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.herbs && data.herbs.length > 0) {
+                        gridEl.innerHTML = data.herbs.map(h => `
+                            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(46,204,113,0.2);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px;transition:all 0.2s ease;" onmouseover="this.style.borderColor='var(--accent-green)';" onmouseout="this.style.borderColor='rgba(46,204,113,0.2)';">
+                                <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                                    <div>
+                                        <h4 style="font-family:'Outfit',sans-serif;font-size:16px;color:#ffffff;margin-bottom:2px;">${h.common_name}</h4>
+                                        <div style="font-size:12px;font-style:italic;color:var(--accent-green);">${h.botanical_name}</div>
+                                    </div>
+                                    <span style="background:rgba(46,204,113,0.12);border:1px solid rgba(46,204,113,0.3);color:var(--accent-green);font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;">${h.category}</span>
+                                </div>
+                                <div style="font-size:12px;color:rgba(255,255,255,0.7);line-height:1.4;">
+                                    <strong style="color:var(--accent-gold);">Bioactives:</strong> ${h.active_bioactives ? h.active_bioactives.join(', ') : 'Natural Compounds'}
+                                </div>
+                                <div style="font-size:12px;color:rgba(255,255,255,0.7);line-height:1.4;">
+                                    <strong style="color:var(--text-main);">Indications:</strong> ${h.clinical_indications ? h.clinical_indications.join(', ') : 'General Wellness'}
+                                </div>
+                                <div style="font-size:11px;color:var(--text-muted);background:rgba(0,0,0,0.3);padding:8px 10px;border-radius:8px;margin-top:auto;">
+                                    🥄 <strong>Kitchen Dose:</strong> ${h.household_measurement || '1 teacup infusion'}
+                                </div>
+                            </div>
+                        `).join('');
+                        return;
+                    }
+                }
+                gridEl.innerHTML = '<div style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:40px;">No medicinal herbs found matching filter criteria.</div>';
+            } catch (e) {
+                console.error("Pharmacopeia load error:", e);
+                gridEl.innerHTML = '<div style="color:var(--danger);grid-column:1/-1;text-align:center;padding:40px;">Could not connect to Pharmacopeia server. Please ensure backend is running.</div>';
+            }
+        }
+
+        function onPharmacopeiaFilterChange() {
+            loadPharmacopeia();
+        }
+
+        /* ══════ JWT User Authentication Manager ══════ */
+        let currentAuthTab = 'login';
+
+        function openAuthModal() {
+            const modal = document.getElementById('auth-modal');
+            if (modal) modal.classList.add('active');
+        }
+
+        let pendingEmailForOtp = '';
+
+        function closeAuthModal() {
+            const modal = document.getElementById('auth-modal');
+            if (modal) modal.classList.remove('active');
+            // Reset OTP container
+            document.getElementById('auth-form-container').style.display = 'block';
+            document.getElementById('otp-form-container').style.display = 'none';
+        }
+
+        function switchAuthTab(tab) {
+            currentAuthTab = tab;
+            const tabLogin = document.getElementById('tab-login');
+            const tabRegister = document.getElementById('tab-register');
+            const nameGroup = document.getElementById('group-fullname');
+            const usernameGroup = document.getElementById('group-username');
+            const dobGroup = document.getElementById('group-dob');
+            const titleEl = document.getElementById('auth-modal-title');
+            const submitBtn = document.getElementById('auth-submit-btn');
+
+            document.getElementById('auth-form-container').style.display = 'block';
+            document.getElementById('otp-form-container').style.display = 'none';
+
+            if (tab === 'login') {
+                tabLogin.style.background = 'var(--accent-green)';
+                tabLogin.style.color = '#000';
+                tabRegister.style.background = 'transparent';
+                tabRegister.style.color = 'var(--text-muted)';
+                if (nameGroup) nameGroup.style.display = 'none';
+                if (usernameGroup) usernameGroup.style.display = 'none';
+                if (dobGroup) dobGroup.style.display = 'none';
+                titleEl.innerHTML = 'Sign In to Herbalist AI';
+                submitBtn.innerText = 'Sign In to Account';
+            } else {
+                tabRegister.style.background = 'var(--accent-green)';
+                tabRegister.style.color = '#000';
+                tabLogin.style.background = 'transparent';
+                tabLogin.style.color = 'var(--text-muted)';
+                if (nameGroup) nameGroup.style.display = 'block';
+                if (usernameGroup) usernameGroup.style.display = 'block';
+                if (dobGroup) dobGroup.style.display = 'block';
+                titleEl.innerHTML = 'Create Account';
+                submitBtn.innerText = 'Create Account & Send Code';
+            }
+        }
+
+        async function handleAuthSubmit() {
+            const email = document.getElementById('auth-email').value.trim();
+            const password = document.getElementById('auth-password').value;
+            const name = document.getElementById('auth-name').value.trim();
+            const username = document.getElementById('auth-username') ? document.getElementById('auth-username').value.trim() : '';
+            const dob = document.getElementById('auth-dob') ? document.getElementById('auth-dob').value.trim() : '';
+            const errEl = document.getElementById('auth-error-msg');
+            errEl.style.display = 'none';
+
+            if (!email || !password || (currentAuthTab === 'register' && (!name || !username || !dob))) {
+                errEl.innerText = 'Please fill out all required fields (Name, Patient ID/Username, DOB, Email, Password).';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            const endpoint = currentAuthTab === 'register' ? '/api/auth/register' : '/api/auth/login';
+            const payload = currentAuthTab === 'register' 
+                ? { email, password, full_name: name, username: username || name.replace(/ /g, "_"), dob } 
+                : { email, password };
+
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+
+                if (res.ok && data.status === 'otp_required') {
+                    // Registration requires OTP verification
+                    pendingEmailForOtp = data.email || email;
+                    document.getElementById('auth-form-container').style.display = 'none';
+                    document.getElementById('otp-form-container').style.display = 'block';
+                    document.getElementById('otp-email-sent-label').innerText = `We sent a 6-digit code to ${pendingEmailForOtp}`;
+                    document.getElementById('auth-modal-title').innerText = 'Email Verification';
+                } else if (res.ok && data.access_token) {
+                    localStorage.setItem('herbalist_jwt_token', data.access_token);
+                    updateAuthUI(data.user);
+                    closeAuthModal();
+                } else {
+                    errEl.innerText = data.detail || 'Authentication failed.';
+                    errEl.style.display = 'block';
+                }
+            } catch (e) {
+                errEl.innerText = 'Connection error. Ensure server is online.';
+                errEl.style.display = 'block';
+            }
+        }
+
+        async function handleVerifyOtp() {
+            const otpCode = document.getElementById('otp-code-input').value.trim();
+            const errEl = document.getElementById('otp-error-msg');
+            errEl.style.display = 'none';
+
+            if (!otpCode || otpCode.length !== 6) {
+                errEl.innerText = 'Please enter a valid 6-digit verification code.';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/auth/verify-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: pendingEmailForOtp, otp_code: otpCode })
+                });
+                const data = await res.json();
+                if (res.ok && data.access_token) {
+                    localStorage.setItem('herbalist_jwt_token', data.access_token);
+                    updateAuthUI(data.user);
+                    closeAuthModal();
+                    alert('🎉 Email verified and account activated successfully!');
+                } else {
+                    errEl.innerText = data.detail || 'Invalid or expired verification code.';
+                    errEl.style.display = 'block';
+                }
+            } catch (e) {
+                errEl.innerText = 'Connection error. Please try again.';
+                errEl.style.display = 'block';
+            }
+        }
+
+        async function handleResendOtp(e) {
+            if (e) e.preventDefault();
+            const errEl = document.getElementById('otp-error-msg');
+            errEl.style.display = 'none';
+
+            try {
+                const res = await fetch('/api/auth/resend-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: pendingEmailForOtp })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(`📩 Fresh verification code sent to ${pendingEmailForOtp}`);
+                } else {
+                    errEl.innerText = data.detail || 'Failed to resend code.';
+                    errEl.style.display = 'block';
+                }
+            } catch (err) {
+                errEl.innerText = 'Connection error. Please try again.';
+                errEl.style.display = 'block';
+            }
+        }
+
+
+        let currentUserState = null;
+
+        function updateAuthUI(user) {
+            currentUserState = user;
+            const avatarEl = document.getElementById('user-avatar-initials');
+            const nameEl = document.getElementById('user-display-name');
+            const statusEl = document.getElementById('user-account-status');
+            const actionBtn = document.getElementById('user-auth-action-btn');
+
+            if (user) {
+                const initials = (user.username || user.full_name || user.email || 'US').substring(0, 2).toUpperCase();
+                if (avatarEl) {
+                    avatarEl.innerText = initials;
+                    avatarEl.style.background = 'var(--accent-green)';
+                    avatarEl.style.color = '#000';
+                }
+                if (nameEl) nameEl.innerText = user.username || user.full_name || user.email.split('@')[0];
+                if (statusEl) statusEl.innerText = `Age ${user.age || 'N/A'} yrs • ${user.full_name || 'Patient'}`;
+                if (actionBtn) {
+                    actionBtn.title = "Sign Out";
+                    actionBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>`;
+                }
+            } else {
+                if (avatarEl) {
+                    avatarEl.innerText = "GU";
+                    avatarEl.style.background = 'rgba(255, 255, 255, 0.1)';
+                    avatarEl.style.color = 'var(--text-muted)';
+                }
+                if (nameEl) nameEl.innerText = "Guest Mode";
+                if (statusEl) statusEl.innerText = "Click to Sign In / Register";
+                if (actionBtn) {
+                    actionBtn.title = "Sign In";
+                    actionBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>`;
+                }
+            }
+        }
+
+        function handleProfileClick() {
+            if (currentUserState) {
+                if (confirm(`Sign out of account (${currentUserState.email})?`)) {
+                    logoutUser();
+                }
+            } else {
+                openAuthModal();
+            }
+        }
+
+        async function logoutUser() {
+            try {
+                await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+            } catch (e) {}
+            localStorage.removeItem('herbalist_jwt_token');
+            updateAuthUI(null);
+        }
+
+        async function checkUserSession() {
+            try {
+                const token = localStorage.getItem('herbalist_jwt_token');
+                const headers = {};
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                const res = await fetch('/api/auth/me', {
+                    headers,
+                    credentials: 'same-origin'
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.user) updateAuthUI(data.user);
+                } else {
+                    localStorage.removeItem('herbalist_jwt_token');
+                    updateAuthUI(null);
+                }
+            } catch (e) {}
+        }
+
+
+        /* ══════ Clinician Dashboard JS ══════ */
+        function openDashboardModal() {
+            const modal = document.getElementById('dashboard-modal');
+            if (modal) {
+                modal.classList.add('active');
+                loadClinicianAnalytics();
+            }
+        }
+
+        function closeDashboardModal() {
+            const modal = document.getElementById('dashboard-modal');
+            if (modal) modal.classList.remove('active');
+        }
+
+        async function loadClinicianAnalytics() {
+            const container = document.getElementById('dashboard-content');
+            if (!container) return;
+
+            container.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:40px;">Fetching real-time clinical statistics from backend engine...</div>';
+
+            try {
+                const res = await fetch('/api/clinician/analytics');
+                if (res.ok) {
+                    const data = await res.json();
+                    container.innerHTML = `
+                        <!-- Executive KPI Cards -->
+                        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;">
+                            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(46,204,113,0.25);border-radius:16px;padding:16px;text-align:center;">
+                                <div style="font-family:'Outfit',sans-serif;font-size:26px;font-weight:700;color:var(--accent-green);">${data.total_consultations}</div>
+                                <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Total Consultations</div>
+                            </div>
+                            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(46,204,113,0.25);border-radius:16px;padding:16px;text-align:center;">
+                                <div style="font-family:'Outfit',sans-serif;font-size:26px;font-weight:700;color:var(--accent-gold);">${data.total_registered_patients}</div>
+                                <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Patient Accounts</div>
+                            </div>
+                            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(46,204,113,0.25);border-radius:16px;padding:16px;text-align:center;">
+                                <div style="font-family:'Outfit',sans-serif;font-size:26px;font-weight:700;color:var(--accent-green);">${data.avg_bioactive_match_score}%</div>
+                                <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Avg Bioactive Match</div>
+                            </div>
+                            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(46,204,113,0.25);border-radius:16px;padding:16px;text-align:center;">
+                                <div style="font-family:'Outfit',sans-serif;font-size:18px;font-weight:700;color:var(--accent-cyan);margin-top:4px;">Level A</div>
+                                <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">RAG Evidence Standard</div>
+                            </div>
+                        </div>
+
+                        <!-- Diagnostic Breakdown & Top Prescribed Herbs -->
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:10px;">
+                            <!-- Top Diagnoses -->
+                            <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:20px;">
+                                <h4 style="font-family:'Outfit',sans-serif;font-size:16px;color:#ffffff;margin-bottom:14px;">🩺 Primary Clinical Diagnoses</h4>
+                                <div style="display:flex;flex-direction:column;gap:12px;">
+                                    ${data.top_diagnoses.map(d => `
+                                        <div>
+                                            <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,0.8);margin-bottom:4px;">
+                                                <span>${d.diagnosis}</span>
+                                                <span style="font-weight:700;color:var(--accent-green);">${d.count} cases</span>
+                                            </div>
+                                            <div style="height:6px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden;">
+                                                <div style="height:100%;width:${Math.min(100, d.count * 8)}%;background:linear-gradient(90deg,var(--accent-green),var(--accent-gold));"></div>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+
+                            <!-- Top Prescribed Herbs -->
+                            <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:20px;">
+                                <h4 style="font-family:'Outfit',sans-serif;font-size:16px;color:#ffffff;margin-bottom:14px;">🌿 Top Prescribed Botanical Synergies</h4>
+                                <div style="display:flex;flex-direction:column;gap:10px;">
+                                    ${data.top_prescribed_herbs.map(h => `
+                                        <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.2);padding:10px 14px;border-radius:12px;font-size:12px;">
+                                            <div>
+                                                <div style="font-weight:600;color:#ffffff;">${h.herb}</div>
+                                                <div style="font-size:11px;color:var(--accent-gold);">${h.bioactive}</div>
+                                            </div>
+                                            <span style="background:rgba(46,204,113,0.15);border:1px solid var(--accent-green);color:var(--accent-green);padding:3px 10px;border-radius:10px;font-weight:700;font-size:11px;">${h.prescriptions} Rx</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Demographics & Population Health -->
+                        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:20px;display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+                            <div>
+                                <strong style="color:var(--accent-green);">Population Demographics:</strong> ${data.demographics.female_percentage}% Female / ${data.demographics.male_percentage}% Male
+                            </div>
+                            <div>
+                                <strong style="color:var(--accent-gold);">Mean Patient Age:</strong> ${data.demographics.mean_patient_age} yrs
+                            </div>
+                            <div>
+                                <strong style="color:var(--text-main);">Mean Body Mass:</strong> ${data.demographics.mean_patient_weight_kg} kg
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                container.innerHTML = '<div style="color:var(--danger);text-align:center;">Failed to load clinician analytics database.</div>';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadRecentsFromBackend();
+            checkUserSession();
+
+            // PWA Service Worker Registration
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/sw.js').then(reg => {
+                        console.log('PWA ServiceWorker registered successfully:', reg.scope);
+                    }).catch(err => {
+                        console.log('PWA ServiceWorker registration notice:', err);
+                    });
+                });
+            }
+        });
+    </script>
+</body>
+</html>

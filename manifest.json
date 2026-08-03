@@ -1,0 +1,17 @@
+{
+  "name": "Herbalist AI Doctor",
+  "short_name": "Herbalist AI",
+  "description": "Integrative Botanical Phytotherapy & Clinical AI Doctor Consultation Platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b130f",
+  "theme_color": "#2ecc71",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232ecc71'><path d='M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.4 19 2c1 2 2 4.1 2 9 0 4.9-4 9-9 9z'/></svg>",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

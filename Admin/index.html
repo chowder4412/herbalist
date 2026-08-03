@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Herbalist AI — System Admin & PubMed RAG Control Center</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #070c09;
+            --sidebar-bg: #0d1510;
+            --card-bg: rgba(15, 25, 18, 0.85);
+            --card-border: rgba(46, 204, 113, 0.25);
+            --accent-green: #2ecc71;
+            --accent-gold: #f39c12;
+            --accent-cyan: #1abc9c;
+            --text-main: #f4f9f5;
+            --text-muted: #95a79b;
+            --danger: #e74c3c;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg-dark); color: var(--text-main); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* Top Admin Navbar */
+        .admin-header {
+            background: var(--sidebar-bg);
+            border-bottom: 1px solid var(--card-border);
+            padding: 14px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent-green);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-indicators {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .status-badge {
+            background: rgba(46, 204, 113, 0.12);
+            border: 1px solid var(--card-border);
+            color: var(--accent-green);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
+
+        /* Main Admin Layout */
+        .admin-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Sidebar Tabs */
+        .admin-sidebar {
+            width: 260px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--card-border);
+            padding: 20px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .admin-tab-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .admin-tab-btn:hover { background: rgba(255,255,255,0.04); color: #fff; }
+        .admin-tab-btn.active {
+            background: rgba(46, 204, 113, 0.15);
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        /* Content Area */
+        .admin-content {
+            flex: 1;
+            padding: 28px;
+            overflow-y: auto;
+        }
+
+        .panel-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .panel-header {
+            font-family: 'Outfit', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Form Inputs */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+        input, select, textarea {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(46, 204, 113, 0.3);
+            border-radius: 10px;
+            padding: 10px 14px;
+            color: #fff;
+            font-size: 13px;
+            outline: none;
+        }
+        input:focus, select:focus, textarea:focus { border-color: var(--accent-green); }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-green), #27ae60);
+            color: #000;
+            font-weight: 700;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: transform 0.2s ease;
+        }
+        .btn-primary:hover { transform: translateY(-2px); }
+
+        .btn-danger {
+            background: rgba(231, 76, 60, 0.15);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* Data Tables */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+        th { text-align: left; padding: 10px 14px; background: rgba(0,0,0,0.3); color: var(--text-muted); border-bottom: 1px solid var(--card-border); }
+        td { padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.05); color: rgba(255,255,255,0.85); }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+
+        /* Feature Toggles */
+        .toggle-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 18px;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px;
+            margin-bottom: 10px;
+        }
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .3s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--accent-green); }
+        input:checked + .slider:before { transform: translateX(20px); }
+    </style>
+</head>
+<body>
+
+    <!-- Top Admin Header -->
+    <header class="admin-header">
+        <div class="admin-title">
+            🛡️ Herbalist AI — System Admin & PubMed RAG Control Center
+        </div>
+        <div class="status-indicators">
+            <div class="status-badge"><span class="status-dot"></span> Qdrant Cloud 128D</div>
+            <div class="status-badge"><span class="status-dot"></span> Upstash Redis</div>
+            <div class="status-badge"><span class="status-dot"></span> Gemini 2.0 Flash</div>
+            <a href="/" target="_blank" style="color:var(--accent-green);text-decoration:none;font-size:12px;font-weight:700;margin-left:10px;">🌐 Patient App ➔</a>
+        </div>
+    </header>
+
+    <!-- Main Admin Workspace -->
+    <div class="admin-container">
+        <!-- Sidebar Navigation -->
+        <aside class="admin-sidebar">
+            <button class="admin-tab-btn active" onclick="switchAdminTab('rag')">
+                📚 PubMed RAG Ingestion
+            </button>
+            <button class="admin-tab-btn" onclick="switchAdminTab('flags')">
+                ⚙️ Feature Flags Control
+            </button>
+            <button class="admin-tab-btn" onclick="switchAdminTab('users')">
+                👥 Patient User Accounts
+            </button>
+            <button class="admin-tab-btn" onclick="switchAdminTab('telemetry')">
+                📊 System Telemetry & Logs
+            </button>
+        </aside>
+
+        <!-- Dynamic Content Panels -->
+        <main class="admin-content">
+            
+            <!-- PANEL 1: PUBMED RAG INGESTION -->
+            <div id="panel-rag">
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <span>📥 Ingest New Clinical Trial / WHO Monograph into Qdrant Vector Cloud</span>
+                        <span style="font-size:12px;color:var(--accent-gold);font-weight:600;">Vector Dimension: 128D Cosine</span>
+                    </div>
+                    <form onsubmit="handleRagIngest(event)">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Article Title / Monograph Heading</label>
+                                <input type="text" id="rag-title" placeholder="e.g. Clinical Efficacy of Vernonia amygdalina in Glycemic & Lipid Regulation" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Journal Name / Medical Publisher</label>
+                                <input type="text" id="rag-journal" placeholder="e.g. Journal of Ethnopharmacology" required>
+                            </div>
+                            <div class="form-group">
+                                <label>PMID (PubMed ID)</label>
+                                <input type="text" id="rag-pmid" placeholder="e.g. PMID-3829104" required>
+                            </div>
+                            <div class="form-group">
+                                <label>DOI (Digital Object Identifier)</label>
+                                <input type="text" id="rag-doi" placeholder="e.g. 10.1016/j.jep.2025.118920" required>
+                            </div>
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Clinical Evidence Level Standard</label>
+                                <select id="rag-evidence">
+                                    <option value="Level A (Systematic Review & Meta-Analysis)">Level A (Systematic Review & Meta-Analysis)</option>
+                                    <option value="Level B (Randomized Controlled Trial)">Level B (Randomized Controlled Trial)</option>
+                                    <option value="WHO Botanical Monograph Standard">WHO Botanical Monograph Standard</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Key Scientific Findings & Bioactive Mechanism</label>
+                                <textarea id="rag-findings" rows="3" placeholder="e.g. Vernodalin and luteolin flavones suppressed NF-kB inflammatory pathway by 42%..." required></textarea>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-primary">⚡ Ingest into Qdrant Cloud & Sync Frontend</button>
+                    </form>
+                </div>
+
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <span>📖 Ingested PubMed RAG Vector Database Citations</span>
+                        <input type="text" id="rag-filter" placeholder="Filter RAG citations..." oninput="renderRagTable()" style="width:240px;">
+                    </div>
+                    <table id="rag-table">
+                        <thead>
+                            <tr>
+                                <th>PMID</th>
+                                <th>Article Title</th>
+                                <th>Journal</th>
+                                <th>Evidence Level</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rag-table-body">
+                            <tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Loading RAG citations...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- PANEL 2: FEATURE FLAGS -->
+            <div id="panel-flags" style="display:none;">
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <span>⚙️ Global Application Feature Flags</span>
+                    </div>
+                    <div class="toggle-item">
+                        <div>
+                            <div style="font-weight:700;color:#fff;">🎙️ Audio Text-to-Speech Voice Assistant</div>
+                            <div style="font-size:11px;color:var(--text-muted);">Enable Dr. Herbalist Web Speech voice synthesis on patient frontend</div>
+                        </div>
+                        <label class="switch"><input type="checkbox" id="flag-voice" checked onchange="toggleFeatureFlag('voice', this.checked)"><span class="slider"></span></label>
+                    </div>
+                    <div class="toggle-item">
+                        <div>
+                            <div style="font-weight:700;color:#fff;">🚨 Emergency Red Flag Interceptor</div>
+                            <div style="font-size:11px;color:var(--text-muted);">Intercept severe cardiac/neurological symptoms and trigger emergency modal</div>
+                        </div>
+                        <label class="switch"><input type="checkbox" id="flag-emergency" checked onchange="toggleFeatureFlag('emergency', this.checked)"><span class="slider"></span></label>
+                    </div>
+                    <div class="toggle-item">
+                        <div>
+                            <div style="font-weight:700;color:#fff;">🌊 2D Animated Liquid Cooking Pot Visualizer</div>
+                            <div style="font-size:11px;color:var(--text-muted);">Display body mass liquid scaling animations (1.5L - 4.0L)</div>
+                        </div>
+                        <label class="switch"><input type="checkbox" id="flag-pot" checked onchange="toggleFeatureFlag('pot', this.checked)"><span class="slider"></span></label>
+                    </div>
+                    <div class="toggle-item">
+                        <div>
+                            <div style="font-weight:700;color:#fff;">🌿 Botanical Pharmacopeia Database Access</div>
+                            <div style="font-size:11px;color:var(--text-muted);">Allow patients to explore the 116-plant database Explorer</div>
+                        </div>
+                        <label class="switch"><input type="checkbox" id="flag-pharma" checked onchange="toggleFeatureFlag('pharma', this.checked)"><span class="slider"></span></label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANEL 3: USER ACCOUNTS -->
+            <div id="panel-users" style="display:none;">
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <span>👥 Registered Patient Accounts & User Records</span>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Patient ID (Username)</th>
+                                <th>Full Name</th>
+                                <th>Email Address</th>
+                                <th>Date of Birth (DOB)</th>
+                                <th>Age (Years)</th>
+                                <th>Registered Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                            <tr><td colspan="6" style="text-align:center;color:var(--text-muted);">Loading user records...</td></tr>
+                        </tbody>
+
+                    </table>
+                </div>
+            </div>
+
+            <!-- PANEL 4: SYSTEM TELEMETRY -->
+            <div id="panel-telemetry" style="display:none;">
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <span>📊 System Telemetry & Cluster Diagnostics</span>
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+                        <div style="background:rgba(0,0,0,0.3);padding:16px;border-radius:14px;border:1px solid rgba(46,204,113,0.2);">
+                            <div style="font-size:11px;color:var(--text-muted);">Qdrant Vector Cluster</div>
+                            <div style="font-size:18px;font-weight:700;color:var(--accent-green);margin-top:4px;">100% Online</div>
+                            <div style="font-size:11px;color:var(--text-main);margin-top:2px;">128D Cosine Indexing</div>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.3);padding:16px;border-radius:14px;border:1px solid rgba(46,204,113,0.2);">
+                            <div style="font-size:11px;color:var(--text-muted);">Upstash Redis TTL Cache</div>
+                            <div style="font-size:18px;font-weight:700;color:var(--accent-gold);margin-top:4px;">100% Online</div>
+                            <div style="font-size:11px;color:var(--text-main);margin-top:2px;">3600s Session Expiry</div>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.3);padding:16px;border-radius:14px;border:1px solid rgba(46,204,113,0.2);">
+                            <div style="font-size:11px;color:var(--text-muted);">Gemini 2.0 Flash Engine</div>
+                            <div style="font-size:18px;font-weight:700;color:var(--accent-cyan);margin-top:4px;">Active</div>
+                            <div style="font-size:11px;color:var(--text-main);margin-top:2px;">Multi-Model Fallback</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        let ragCitationsList = [];
+
+        function switchAdminTab(tabName) {
+            document.querySelectorAll('.admin-tab-btn').forEach(btn => btn.classList.remove('active'));
+            ['panel-rag', 'panel-flags', 'panel-users', 'panel-telemetry'].forEach(p => {
+                document.getElementById(p).style.display = 'none';
+            });
+
+            if (tabName === 'rag') {
+                document.querySelectorAll('.admin-tab-btn')[0].classList.add('active');
+                document.getElementById('panel-rag').style.display = 'block';
+                loadRagCitations();
+            } else if (tabName === 'flags') {
+                document.querySelectorAll('.admin-tab-btn')[1].classList.add('active');
+                document.getElementById('panel-flags').style.display = 'block';
+            } else if (tabName === 'users') {
+                document.querySelectorAll('.admin-tab-btn')[2].classList.add('active');
+                document.getElementById('panel-users').style.display = 'block';
+                loadUserAccounts();
+            } else if (tabName === 'telemetry') {
+                document.querySelectorAll('.admin-tab-btn')[3].classList.add('active');
+                document.getElementById('panel-telemetry').style.display = 'block';
+            }
+        }
+
+        async function loadRagCitations() {
+            try {
+                const res = await fetch('/api/admin/rag/all');
+                if (res.ok) {
+                    const data = await res.json();
+                    ragCitationsList = data.citations || [];
+                    renderRagTable();
+                }
+            } catch (e) {
+                console.error("Could not fetch RAG citations", e);
+            }
+        }
+
+        function renderRagTable() {
+            const tbody = document.getElementById('rag-table-body');
+            const filterVal = document.getElementById('rag-filter').value.toLowerCase().trim();
+
+            const filtered = ragCitationsList.filter(c => 
+                c.title.toLowerCase().includes(filterVal) ||
+                c.journal.toLowerCase().includes(filterVal) ||
+                c.pmid.toLowerCase().includes(filterVal)
+            );
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">No PubMed citations found matching search.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(c => `
+                <tr>
+                    <td><strong style="color:var(--accent-gold);">${c.pmid}</strong></td>
+                    <td style="font-weight:600;color:#fff;">${c.title}</td>
+                    <td style="font-style:italic;">${c.journal}</td>
+                    <td><span style="background:rgba(46,204,113,0.12);border:1px solid var(--accent-green);color:var(--accent-green);padding:2px 8px;border-radius:8px;font-size:10px;">${c.evidence_level}</span></td>
+                    <td>
+                        <button onclick="deleteRagCitation('${c.pmid}')" class="btn-danger">🗑️ Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function handleRagIngest(event) {
+            event.preventDefault();
+            const title = document.getElementById('rag-title').value;
+            const journal = document.getElementById('rag-journal').value;
+            const pmid = document.getElementById('rag-pmid').value;
+            const doi = document.getElementById('rag-doi').value;
+            const evidence_level = document.getElementById('rag-evidence').value;
+            const key_findings = document.getElementById('rag-findings').value;
+
+            try {
+                const res = await fetch('/api/admin/rag/ingest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, journal, pmid, doi, evidence_level, key_findings })
+                });
+
+                if (res.ok) {
+                    alert('✅ Citation successfully ingested into Qdrant Cloud 128D Vector DB and synced with Patient Frontend!');
+                    document.getElementById('rag-title').value = '';
+                    document.getElementById('rag-journal').value = '';
+                    document.getElementById('rag-pmid').value = '';
+                    document.getElementById('rag-doi').value = '';
+                    document.getElementById('rag-findings').value = '';
+                    loadRagCitations();
+                } else {
+                    alert('❌ Failed to ingest citation into backend.');
+                }
+            } catch (e) {
+                alert('Connection error while ingesting RAG paper.');
+            }
+        }
+
+        async function deleteRagCitation(pmid) {
+            if (!confirm(`Are you sure you want to delete PubMed citation ${pmid} from Qdrant Vector DB?`)) return;
+
+            try {
+                const res = await fetch(`/api/admin/rag/citation/${pmid}`, { method: 'DELETE' });
+                if (res.ok) {
+                    loadRagCitations();
+                }
+            } catch (e) {
+                alert('Failed to delete citation.');
+            }
+        }
+
+        async function loadUserAccounts() {
+            const tbody = document.getElementById('users-table-body');
+            try {
+                const res = await fetch('/api/admin/users');
+                if (res.ok) {
+                    const data = await res.json();
+                    const users = data.users || [];
+                    if (users.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No registered patient user accounts found.</td></tr>';
+                        return;
+                    }
+
+                    tbody.innerHTML = users.map(u => `
+                        <tr>
+                            <td><strong style="color:var(--accent-green);">${u.username || u.full_name}</strong></td>
+                            <td style="font-weight:600;color:#fff;">${u.full_name}</td>
+                            <td style="color:var(--accent-gold);">${u.email}</td>
+                            <td>${u.dob || 'Not specified'}</td>
+                            <td><span style="background:rgba(46,204,113,0.15);border:1px solid var(--accent-green);color:var(--accent-green);padding:2px 8px;border-radius:8px;font-weight:700;">${u.age ? u.age + ' yrs' : 'N/A'}</span></td>
+                            <td style="color:var(--text-muted);">${u.created_at || 'Recent'}</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--danger);">Could not connect to user database.</td></tr>';
+            }
+        }
+
+
+        function toggleFeatureFlag(flagName, isEnabled) {
+            fetch('/api/admin/feature-flags', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ flag_name: flagName, enabled: isEnabled })
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadRagCitations();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  herbalist-app:
+    build: .
+    container_name: herbalist_ai_app
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - ENVIRONMENT=production
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-*}
+    volumes:
+      - ./clinical_memory.db:/app/clinical_memory.db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

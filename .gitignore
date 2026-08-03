@@ -1,0 +1,17 @@
+# Environment & Secret files
+.env
+
+# Python cache & build
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Databases & local state
+clinical_memory.db
+*.sqlite3
+
+# Node / JS
+node_modules/
+npm-debug.log*
