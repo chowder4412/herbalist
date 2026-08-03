@@ -114,11 +114,16 @@ class ClinicalTriageIntelligence:
             "keywords": ["joint", "knee", "back pain", "arthritis", "gout", "rheumatism", "muscle pain", "stiffness", "swelling in joint", "spine", "neck"],
             "question": "Which joints or muscles are affected? Is there visible swelling, warmth, or morning stiffness lasting over 30 minutes?"
         },
+        "oncology_cancer": {
+            "keywords": ["cancer", "tumor", "tumour", "carcinoma", "chemotherapy", "chemo", "radiation", "leukemia", "lymphoma", "oncology", "sarcoma", "melanoma", "metastasis", "neoplasm", "cytotoxic", "anti-tumor"],
+            "question": "Which specific type or stage of cancer has been diagnosed? Are you currently undergoing chemotherapy, radiotherapy, or immunotherapy, or seeking integrative botanical adjunct support to enhance immune function, inhibit tumor angiogenesis, and manage therapy side effects?"
+        },
         "neurological_mind": {
             "keywords": ["anxiety", "insomnia", "sleep", "headache", "migraine", "stress", "panic", "memory", "brain fog", "dizziness", "numbness", "neuropathy"],
             "question": "How is your sleep quality and stress level? If experiencing headaches or brain fog — is the pain throbbing, one-sided, or associated with numbness?"
         }
     }
+
 
     @classmethod
     def detect_domain(cls, text: str) -> Optional[str]:
