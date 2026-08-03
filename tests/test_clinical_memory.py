@@ -6,13 +6,20 @@ class TestClinicalMemory(unittest.TestCase):
     
     def setUp(self):
         self.test_db = "test_clinical_memory.db"
-        if os.path.exists(self.test_db):
-            os.remove(self.test_db)
+        try:
+            if os.path.exists(self.test_db):
+                os.remove(self.test_db)
+        except Exception:
+            pass
         self.store = ClinicalMemoryStore(db_path=self.test_db)
 
     def tearDown(self):
-        if os.path.exists(self.test_db):
-            os.remove(self.test_db)
+        try:
+            if os.path.exists(self.test_db):
+                os.remove(self.test_db)
+        except Exception:
+            pass
+
 
     def test_seed_pharmacopeia(self):
         """Verify that pharmacopeia seeds 100+ plants on initialization"""
