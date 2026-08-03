@@ -1110,7 +1110,7 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
                 break
 
         # Create a clarification session so the agent can route to the right path
-        clarify_session_id = session_manager.create_session(complaint, body.age, body.gender, body.weight_kg)
+        clarify_session_id = session_manager.create_session(complaint, body.age, body.gender, body.weight_kg, user_id=patient_user_id, patient_id=patient_username)
         # Mark this session as a clarification session
         sess = session_manager.get_session(clarify_session_id)
         if sess:
@@ -1135,8 +1135,9 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
         }
 
     # 5. NEW CONSULTATION: Start SOCRATES Triage (personal symptom complaints)
-    session_id = session_manager.create_session(complaint, body.age, body.gender, body.weight_kg)
+    session_id = session_manager.create_session(complaint, body.age, body.gender, body.weight_kg, user_id=patient_user_id, patient_id=patient_username)
     first_question = "When did you first notice this symptom? How long have you been experiencing it?"
+
 
     return {
         "status": "success",
