@@ -1206,6 +1206,27 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
             )
         }
 
+    # 3.5 OUT-OF-DOMAIN GUARDRAIL FILTER (Non-medical pop culture, entertainment & trivia queries)
+    out_of_domain_keywords = [
+        "eminem", "jay z", "jay-z", "drake", "taylor swift", "kanye", "beyonce", "rihanna",
+        "who is the president", "capital of", "who won", "football", "soccer", "basketball",
+        "bitcoin", "crypto", "stock market", "python code", "javascript", "car repair", "weather in",
+        "movie", "sing a song", "tell a joke"
+    ]
+    is_out_of_domain = any(kw in complaint_clean for kw in out_of_domain_keywords)
+    
+    if is_out_of_domain:
+        return {
+            "status": "success",
+            "is_greeting": True,
+            "conversational_message": (
+                f"I am **Dr. Herbalist**, an AI Senior Medical Doctor and Botanical Phytotherapy Specialist. 🌿\n\n"
+                f"My expertise is strictly focused on clinical health consultations, medical diagnosis, herbal pharmacopeia, bioactive matching, and natural disease treatment.\n\n"
+                f"I cannot answer non-medical pop culture or general trivia queries such as *\"{complaint}\"*.\n\n"
+                f"Please ask me about a health concern, symptom, or medicinal plant!"
+            )
+        }
+
     # 4. SMART INTENT CLASSIFICATION: Knowledge Question vs Personal Symptom
     # Detect if the user is asking a factual/informational question about conditions or herbs
     # vs reporting a personal symptom they are experiencing right now
