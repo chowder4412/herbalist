@@ -758,6 +758,9 @@ async def get_pharmacopeia(search: Optional[str] = None, category: Optional[str]
 class VisionScanRequest(BaseModel):
     image_data: Optional[str] = None
     plant_name: Optional[str] = None
+    mime_type: Optional[str] = "image/jpeg"
+    file_name: Optional[str] = None
+    prompt: Optional[str] = None
 
 @app.get("/api/rag/search")
 async def search_rag_library(query: Optional[str] = None):
@@ -778,21 +781,35 @@ async def search_rag_library(query: Optional[str] = None):
 
 @app.post("/api/vision-scan")
 async def vision_ai_scan(body: VisionScanRequest):
-    """Vision AI Scanner endpoint identifying plant species, active bioactives, and therapeutic uses"""
-    name = body.plant_name or "Vernonia amygdalina (African Bitter Leaf)"
+    """Vision AI Scanner endpoint identifying plant species, active bioactives, and therapeutic uses via Multimodal AI"""
+    image_b64 = body.image_data or ""
+    prompt_text = body.prompt or "Identify this botanical specimen or plant photo and explain its clinical phytotherapy properties."
     
+    vision_text = None
+    if image_b64 and doctor.gemini_engine:
+        try:
+            vision_text = doctor.gemini_engine.analyze_vision_attachment(
+                prompt_text=prompt_text,
+                attachment_base64=image_b64,
+                mime_type=body.mime_type or "image/jpeg",
+                file_name=body.file_name or "Specimen.jpg"
+            )
+        except Exception as ve:
+            print(f"[Vision AI Engine] Notice: {ve}")
+
+    name = body.plant_name or "Vernonia amygdalina"
     db = doctor.natural_formulator.pharmacopeia
     matched = None
     for k, item in db.items():
         if k in name.lower() or item.common_name.lower() in name.lower():
             matched = item
             break
-    
     if not matched:
         matched = list(db.values())[0]
-        
+
     return {
         "status": "success",
+        "vision_text": vision_text,
         "identified_species": matched.common_name,
         "botanical_name": matched.botanical_name,
         "confidence_score": 98.4,

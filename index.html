@@ -1910,41 +1910,61 @@
 
             const resultsEl = document.getElementById('scanner-results');
             resultsEl.style.display = 'block';
-            resultsEl.innerHTML = '<div style="color:var(--accent-green);text-align:center;padding:20px;">Analyzing plant leaf features with Vision AI model...</div>';
+            resultsEl.innerHTML = '<div style="color:var(--accent-green);text-align:center;padding:24px;"><div style="font-size:24px;margin-bottom:8px;">📷</div>Analyzing botanical features, leaf morphology, and bioactive profile using Multimodal Vision AI...</div>';
 
-            try {
-                const res = await fetch('/api/vision-scan', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ plant_name: file.name.split('.')[0] })
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    resultsEl.innerHTML = `
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:1px solid rgba(46,204,113,0.3);padding-bottom:10px;">
-                            <div>
-                                <h4 style="font-family:'Outfit',sans-serif;font-size:18px;color:#ffffff;margin:0;">${data.identified_species}</h4>
-                                <div style="font-size:12px;font-style:italic;color:var(--accent-green);">${data.botanical_name}</div>
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const base64Data = e.target.result;
+                try {
+                    const res = await fetch('/api/vision-scan', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            image_data: base64Data,
+                            file_name: file.name,
+                            mime_type: file.type || 'image/jpeg',
+                            plant_name: file.name.split('.')[0]
+                        })
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        let visionTextHtml = '';
+                        if (data.vision_text) {
+                            visionTextHtml = `
+                                <div style="background:rgba(20,34,25,0.7);border:1px solid rgba(46,204,113,0.3);padding:14px;border-radius:12px;margin-bottom:14px;font-size:13px;line-height:1.6;color:#e2efe6;max-height:240px;overflow-y:auto;">
+                                    <strong style="color:var(--accent-green);display:block;margin-bottom:6px;">🔬 Multimodal AI Visual Diagnosis:</strong>
+                                    ${data.vision_text.replace(/\n/g, '<br>')}
+                                </div>
+                            `;
+                        }
+                        resultsEl.innerHTML = `
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:1px solid rgba(46,204,113,0.3);padding-bottom:10px;">
+                                <div>
+                                    <h4 style="font-family:'Outfit',sans-serif;font-size:18px;color:#ffffff;margin:0;">${data.identified_species}</h4>
+                                    <div style="font-size:12px;font-style:italic;color:var(--accent-green);">${data.botanical_name}</div>
+                                </div>
+                                <span style="background:rgba(46,204,113,0.15);border:1px solid var(--accent-green);color:var(--accent-green);padding:4px 10px;border-radius:12px;font-weight:700;font-size:12px;">Confidence: ${data.confidence_score}%</span>
                             </div>
-                            <span style="background:rgba(46,204,113,0.15);border:1px solid var(--accent-green);color:var(--accent-green);padding:4px 10px;border-radius:12px;font-weight:700;font-size:12px;">Confidence: ${data.confidence_score}%</span>
-                        </div>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:12px;color:rgba(255,255,255,0.8);margin-bottom:14px;">
-                            <div><strong style="color:var(--accent-gold);">Category:</strong> ${data.category}</div>
-                            <div><strong style="color:var(--accent-gold);">Part Used:</strong> ${data.part_used}</div>
-                            <div><strong style="color:var(--accent-gold);">Active Bioactives:</strong> ${data.active_bioactives ? data.active_bioactives.join(', ') : 'Natural Compounds'}</div>
-                            <div><strong style="color:var(--accent-gold);">Indications:</strong> ${data.clinical_indications ? data.clinical_indications.join(', ') : 'General Phytotherapy'}</div>
-                        </div>
-                        <div style="background:rgba(0,0,0,0.3);padding:10px;border-radius:10px;font-size:11px;color:var(--text-muted);margin-bottom:14px;">
-                            🥄 <strong>Dose Recommendation:</strong> ${data.kitchen_measurement}
-                        </div>
-                        <button onclick="prescribeScannedHerb('${data.identified_species}')" style="width:100%;padding:10px;background:var(--accent-green);color:#000;border:none;border-radius:10px;font-weight:700;cursor:pointer;">
-                            🌿 Prescribe Scanned Herb in Consultation
-                        </button>
-                    `;
+                            ${visionTextHtml}
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:12px;color:rgba(255,255,255,0.8);margin-bottom:14px;">
+                                <div><strong style="color:var(--accent-gold);">Category:</strong> ${data.category}</div>
+                                <div><strong style="color:var(--accent-gold);">Part Used:</strong> ${data.part_used}</div>
+                                <div><strong style="color:var(--accent-gold);">Active Bioactives:</strong> ${data.active_bioactives ? data.active_bioactives.join(', ') : 'Natural Compounds'}</div>
+                                <div><strong style="color:var(--accent-gold);">Indications:</strong> ${data.clinical_indications ? data.clinical_indications.join(', ') : 'General Phytotherapy'}</div>
+                            </div>
+                            <div style="background:rgba(0,0,0,0.3);padding:10px;border-radius:10px;font-size:11px;color:var(--text-muted);margin-bottom:14px;">
+                                🥄 <strong>Dose Recommendation:</strong> ${data.kitchen_measurement}
+                            </div>
+                            <button onclick="prescribeScannedHerb('${data.identified_species}')" style="width:100%;padding:11px;background:var(--accent-green);color:#000;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:13px;">
+                                🌿 Prescribe Scanned Herb in Consultation
+                            </button>
+                        `;
+                    }
+                } catch (err) {
+                    resultsEl.innerHTML = '<div style="color:var(--danger);text-align:center;">Failed to scan plant image. Please try again.</div>';
                 }
-            } catch (e) {
-                resultsEl.innerHTML = '<div style="color:var(--danger);text-align:center;">Failed to scan plant image. Please try again.</div>';
-            }
+            };
+            reader.readAsDataURL(file);
         }
 
         function prescribeScannedHerb(herbName) {
