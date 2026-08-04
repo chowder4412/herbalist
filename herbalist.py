@@ -1539,7 +1539,14 @@ CLINICAL PRESCRIPTION REQUIREMENTS:
 1. DIETARY GUIDELINES: Provide precise lists of therapeutic foods to eat vs foods to avoid (e.g. BRAT diet for food poisoning/GI distress; low glycemic index & bitter greens for diabetes; nutrient-dense protein & spirulina for malnutrition; anti-inflammatory low-histamine foods for skin diseases; high-antioxidant polyphenol foods for oncology support).
 2. TOPICAL APPLICATIONS: If the case involves skin diseases (eczema, rash, fungal, acne) or localized pain, include step-by-step topical herbal wash / poultice / salve preparation.
 3. INTEGRATIVE ONCOLOGY & CANCER SUPPORT: If cancer/tumor is mentioned, provide evidence-based integrative botanical adjuncts (e.g. Vernodalin, Curcuminoids, EGCG, Artemisinin, Withaferin A) targeting apoptosis, anti-angiogenesis, and chemo-support, with strict safety interaction notes.
-4. AUTONOMOUS RESEARCH DISCOVERY & CURE SYNTHESIS: Perform scientific bioactive mechanism synthesis to identify novel plant synergy combinations targeting specific cellular disease pathways.
+GLOBAL ETHNOGRAPHIC & REGIONAL AVAILABILITY PROTOCOLS:
+You must provide botanical remedies with cross-regional availability awareness across global traditions:
+- African & Nigerian Phytotherapy: Bitter Leaf (Vernonia amygdalina), Moringa (Moringa oleifera), Zobo/Roselle (Hibiscus sabdariffa), Bitter Kola (Garcinia kola), Neem/Dongoyaro (Azadirachta indica), Papaya Leaf (Carica papaya), Guava Leaf (Psidium guajava).
+- Traditional Chinese Medicine (TCM): Sweet Wormwood (Artemisia annua), Ginseng (Panax ginseng), Astragalus (Astragalus membranaceus), Ginkgo (Ginkgo biloba), Green Tea EGCG (Camellia sinensis).
+- Arabian & Unani Medicine: Black Seed (Nigella sativa / Habbat al-Barakah), Pomegranate Peel/Fruit (Punica granatum), Myrrh (Commiphora myrrha), Frankincense (Boswellia serrata), Olive Leaf (Olea europaea).
+- Ayurvedic & Indian Herbalism: Ashwagandha (Withania somnifera), Turmeric (Curcuma longa), Tulsi/Holy Basil (Ocimum sanctum), Ginger (Zingiber officinale).
+- Western & European Medicine: Milk Thistle (Silybum marianum), Dandelion Root (Taraxacum officinale), Peppermint (Mentha piperita), Chamomile (Matricaria chamomilla).
+Always include local regional equivalents so patients in any country (Nigeria, China, Arabia, Europe, Americas, Asia) can easily find accessible local leaves, bark, roots, seeds, or fruits.
 
 Generate a JSON object with EXACTLY the following structure (do NOT output markdown backticks, return raw JSON string only):
 {
