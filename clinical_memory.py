@@ -155,19 +155,20 @@ class ClinicalMemoryStore:
         conn.close()
         return case_id
 
-    def record_episodic_case(self, symptoms: str, diagnosis_result: str, prescribed_formulation: str, bioactive_match_score: float = 95.0, gemini_response: str = "") -> str:
-        """Record episodic case directly from API endpoints with anonymized patient ID"""
+    def record_episodic_case(self, symptoms: str, diagnosis_result: str, prescribed_formulation: str, bioactive_match_score: float = 95.0, gemini_response: str = "", patient_id: str = "") -> str:
+        """Record episodic case directly from API endpoints with specified or anonymized patient ID"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
         case_id = f"CASE_{int(time.time())}_{random.randint(100, 999)}"
-        anon_patient_id = f"ANON_{hashlib.sha256(str(time.time()).encode()).hexdigest()[:8]}"
+        if not patient_id:
+            patient_id = f"ANON_{hashlib.sha256(str(time.time()).encode()).hexdigest()[:8]}"
         
         cursor.execute('''
             INSERT INTO episodic_cases 
             (case_id, patient_id, age, gender, symptoms, primary_diagnosis, prescribed_formulation, bioactive_match_score, llm_reasoning_chain)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (case_id, anon_patient_id, 0, "Unspecified", symptoms, diagnosis_result, prescribed_formulation, bioactive_match_score, gemini_response))
+        ''', (case_id, patient_id, 0, "Unspecified", symptoms, diagnosis_result, prescribed_formulation, bioactive_match_score, gemini_response))
         
         conn.commit()
         conn.close()

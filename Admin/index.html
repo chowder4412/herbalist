@@ -470,7 +470,7 @@
             const tbody = document.getElementById('clinician-consults-tbody');
             if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">Loading live clinician metrics...</td></tr>';
             try {
-                const res = await fetch('/api/recents');
+                const res = await fetch('/api/admin/all-consultations');
                 if (res.ok) {
                     const data = await res.json();
                     const recents = data.recents || [];

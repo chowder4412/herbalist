@@ -641,32 +641,61 @@ async def get_clinician_analytics():
 
 @app.get("/api/recents")
 @app.get("/api/memory-stats")
-async def get_recents():
-    """Fetch recent consultations & pharmacopeia statistics"""
+async def get_recents(request: Request):
+    """Fetch user-scoped recent consultations for clean slate per patient"""
     stats = memory_store.get_memory_stats()
-    conn = sqlite3.connect(memory_store.db_path)
-    cursor = conn.cursor()
-    cursor.execute('SELECT case_id, symptoms, primary_diagnosis, prescribed_formulation, bioactive_match_score, timestamp FROM episodic_cases ORDER BY timestamp DESC LIMIT 10')
-    rows = cursor.fetchall()
-    conn.close()
+    token = get_auth_token_from_request(request)
+    user_auth = verify_jwt_token(token) if token else None
 
     recents = []
-    for r in rows:
-        recents.append({
-            "case_id": r[0],
-            "title": r[2] if r[2] != "Health Maintenance Examination" else r[1].split(',')[0].title(),
-            "symptoms": r[1],
-            "diagnosis": r[2],
-            "formulation": r[3],
-            "match_score": r[4],
-            "timestamp": r[5]
-        })
+    if user_auth and "user_id" in user_auth:
+        conn = sqlite3.connect(memory_store.db_path)
+        cursor = conn.cursor()
+        cursor.execute(
+            'SELECT case_id, symptoms, primary_diagnosis, prescribed_formulation, bioactive_match_score, timestamp FROM episodic_cases WHERE patient_id = ? ORDER BY timestamp DESC LIMIT 15',
+            (user_auth["user_id"],)
+        )
+        rows = cursor.fetchall()
+        conn.close()
+
+        for r in rows:
+            recents.append({
+                "case_id": r[0],
+                "title": r[2] if r[2] != "Health Maintenance Examination" else r[1].split(',')[0].title(),
+                "symptoms": r[1],
+                "diagnosis": r[2],
+                "formulation": r[3],
+                "match_score": r[4],
+                "timestamp": r[5]
+            })
 
     return {
         "status": "success",
         "stats": stats,
         "recents": recents
     }
+
+@app.get("/api/admin/all-consultations")
+async def get_all_admin_consultations():
+    """Fetch global population consultation analytics for Admin Control Center"""
+    conn = sqlite3.connect(memory_store.db_path)
+    cursor = conn.cursor()
+    cursor.execute('SELECT case_id, patient_id, symptoms, primary_diagnosis, prescribed_formulation, bioactive_match_score, timestamp FROM episodic_cases ORDER BY timestamp DESC LIMIT 50')
+    rows = cursor.fetchall()
+    conn.close()
+
+    consultations = []
+    for r in rows:
+        consultations.append({
+            "case_id": r[0],
+            "user_id": r[1],
+            "symptoms": r[2],
+            "diagnosis": r[3],
+            "formulation": r[4],
+            "match_score": r[5],
+            "timestamp": r[6]
+        })
+    return {"status": "success", "recents": consultations}
 
 @app.get("/api/pharmacopeia")
 async def get_pharmacopeia(search: Optional[str] = None, category: Optional[str] = None):
@@ -1027,21 +1056,23 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
                     formulation_name = diagnosis.natural_formulation.formulation_name if diagnosis.natural_formulation else ""
                     match_score = diagnosis.natural_formulation.bioactive_match_score if diagnosis.natural_formulation else 95.0
 
+                    token = get_auth_token_from_request(request)
+                    user_auth = verify_jwt_token(token) if token else None
+                    current_user_id = user_auth["user_id"] if user_auth else ""
+
                     try:
                         memory_store.record_episodic_case(
                             symptoms=collected["complaint"],
                             diagnosis_result=diagnosis.primary_diagnosis,
                             prescribed_formulation=formulation_name,
                             bioactive_match_score=match_score,
-                            gemini_response=diagnosis.gemini_raw if hasattr(diagnosis, 'gemini_raw') else ""
+                            gemini_response=diagnosis.gemini_raw if hasattr(diagnosis, 'gemini_raw') else "",
+                            patient_id=current_user_id
                         )
                     except Exception as me:
                         print(f"[Herbalist AI] Memory recording notice: {me}")
 
                     # Link prescription to authenticated user account
-                    auth_header = request.headers.get("Authorization", "")
-                    token = auth_header.replace("Bearer ", "").strip() if "Bearer " in auth_header else ""
-                    user_auth = verify_jwt_token(token)
                     if user_auth:
                         try:
                             memory_store.save_patient_prescription(
