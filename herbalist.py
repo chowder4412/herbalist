@@ -1405,7 +1405,7 @@ class NaturalFormulationEngine:
         
         return formulation
 
-    def generate_prescription_card(self, patient: MedicalProfile, diagnosis_title: str, formulation: NaturalFormulation, interaction_warnings: List[str] = None, citations: List[PubMedCitation] = None) -> str:
+    def generate_prescription_card(self, patient: MedicalProfile, diagnosis_title: str, formulation: NaturalFormulation, interaction_warnings: List[str] = None, citations: List[PubMedCitation] = None, alternative_substitutes: List[Dict] = None) -> str:
         """Format an official Innovation Challenge Botanical Doctor Medicine Prescription Card with Layperson Home Kitchen Guide, Body Weight Dosing & PubMed Citations"""
         
         single_dose_bioactive = round(formulation.dosage_volume_ml * formulation.concentration_mg_per_ml, 1)
@@ -1434,7 +1434,20 @@ class NaturalFormulationEngine:
                                   f"      • DOI: {c.doi} | PMID: {c.pmid}\n"
                                   f"      • Key Finding: {c.key_findings}")
         cite_block = "\n\n".join(cite_lines) if cite_lines else "  • PubMed & WHO Pharmacopeia Monograph Reference Data Attached."
-            
+
+        # Build alternative substitutes section
+        alt_block = ""
+        if alternative_substitutes:
+            alt_lines = []
+            for item in alternative_substitutes:
+                herb_name = item.get("primary_herb", "Prescribed Herb")
+                subs = item.get("substitutes", [])
+                if subs:
+                    subs_str = ", ".join(subs)
+                    alt_lines.append(f"  • If {herb_name} is unavailable --> Use: {subs_str}")
+            if alt_lines:
+                alt_block = "\n--------------------------------------------------------------------------------\n🔄 REGIONAL ALTERNATIVE SUBSTITUTES (If Primary Herb Is Unavailable):\n" + "\n".join(alt_lines) + "\n"
+
         card = f"""
 ================================================================================
 📜 OFFICIAL BOTANICAL DOCTOR NATURAL MEDICINE PRESCRIPTION CARD
@@ -1497,7 +1510,7 @@ FORMULATION INGREDIENTS & QUANTITY RATIOS:
 --------------------------------------------------------------------------------
 🛡️ HERB-DRUG SAFETY CLEARANCE & PRECAUTIONS:
 {warn_block}
-
+{alt_block}
 STORAGE & HANDLING INSTRUCTIONS:
 {storage_block}
 ================================================================================
@@ -1546,9 +1559,10 @@ You must provide botanical remedies with cross-regional availability awareness a
 - Arabian & Unani Medicine: Black Seed (Nigella sativa / Habbat al-Barakah), Pomegranate Peel/Fruit (Punica granatum), Myrrh (Commiphora myrrha), Frankincense (Boswellia serrata), Olive Leaf (Olea europaea).
 - Ayurvedic & Indian Herbalism: Ashwagandha (Withania somnifera), Turmeric (Curcuma longa), Tulsi/Holy Basil (Ocimum sanctum), Ginger (Zingiber officinale).
 - Western & European Medicine: Milk Thistle (Silybum marianum), Dandelion Root (Taraxacum officinale), Peppermint (Mentha piperita), Chamomile (Matricaria chamomilla).
-PREMIER ACCESSIBLE BOTANICAL REINFORCEMENT RULE:
-You MUST actively recommend and prescribe Black Seed (Nigella sativa / Habbat al-Barakah), Olive Leaf (Olea europaea), and Green Tea EGCG (Camellia sinensis) in Nigeria, Islamic nations, and globally whenever indicated (especially for immune, respiratory, metabolic, antimicrobial, cardiovascular, or inflammatory conditions, or where they represent a primary/sole effective botanical remedy), because they are widely stocked, culturally revered, and readily accessible across Nigerian and international herb markets.
-Always include local regional equivalents so patients in any country (Nigeria, China, Arabia, Europe, Americas, Asia) can easily find accessible local leaves, bark, roots, seeds, or fruits.
+PREMIER BOTANICAL PRESCRIPTION RULE:
+You may prescribe Black Seed (Nigella sativa / Habbat al-Barakah), Olive Leaf (Olea europaea), and Green Tea EGCG (Camellia sinensis) ONLY when they are genuinely the best clinical remedy for the patient's condition based on their bioactive profile (e.g. Thymoquinone for immune/respiratory, Oleuropein for hypertension/antimicrobial, EGCG for antioxidant/metabolic support). Do NOT force them into prescriptions where other botanicals are more effective.
+ALTERNATIVE SUBSTITUTE RULE:
+For EVERY herb you prescribe, you MUST also provide 1-2 alternative substitute plants with similar bioactive action, so patients who cannot find the primary herb in their region can use a locally available equivalent instead. For example: If prescribing Black Seed, suggest Moringa or Bitter Kola as alternatives. If prescribing Olive Leaf, suggest Guava Leaf or Neem Leaf. If prescribing Green Tea EGCG, suggest Hibiscus/Zobo or Moringa. This ensures patients in any country worldwide always have accessible options.
 
 Generate a JSON object with EXACTLY the following structure (do NOT output markdown backticks, return raw JSON string only):
 {
@@ -1585,6 +1599,12 @@ Generate a JSON object with EXACTLY the following structure (do NOT output markd
       "journal": "string",
       "doi": "10.1016/...",
       "pmid": "34166712"
+    }
+  ],
+  "alternative_substitutes": [
+    {
+      "primary_herb": "Name of prescribed herb",
+      "substitutes": ["Alternative Herb 1 (similar bioactive)", "Alternative Herb 2 (locally available equivalent)"]
     }
   ]
 }
@@ -1964,7 +1984,10 @@ Let's begin with your comprehensive evaluation. What brings you to see me today?
                     ) for c in citations_raw
                 ]
 
-            prescription_card = self.natural_formulator.generate_prescription_card(patient, primary_diagnosis, natural_formulation, safety_warns, pubmed_citations)
+            # Extract alternative regional substitutes from Gemini response
+            alt_substitutes = gemini_data.get("alternative_substitutes", [])
+
+            prescription_card = self.natural_formulator.generate_prescription_card(patient, primary_diagnosis, natural_formulation, safety_warns, pubmed_citations, alt_substitutes)
 
         else:
             # High-Intelligence Local Phytotherapy Formulation Engine (when Gemini API is offline/rate-limited)
