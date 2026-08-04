@@ -768,6 +768,58 @@ class ClinicalMemoryStore:
                 unique.append(r)
         return unique
 
+    def export_fine_tuning_dataset(self, output_filepath: str = "fine_tuning_dataset_herbalist.jsonl") -> Dict[str, Any]:
+        """
+        Export all recorded patient consultations and learned bioactive synergies into a 
+        standard JSONL Fine-Tuning dataset for training custom open-source models (e.g. Llama-3-70B, 
+        Unsloth, Mistral, or Herbalist-7B).
+        """
+        import json
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT case_id, symptoms, primary_diagnosis, prescribed_formulation, bioactive_match_score, llm_reasoning_chain, timestamp FROM episodic_cases ORDER BY timestamp ASC')
+        rows = cursor.fetchall()
+        conn.close()
+
+        system_prompt = (
+            "You are Herbalist AI, an autonomous Senior Doctor and Clinical Phytotherapy Scientist "
+            "backed by WHO Traditional Medicine Monographs, Commission E literature, and PubMed RAG clinical trials. "
+            "Provide evidence-based botanical diagnoses, body-mass scaled 2-liter pot kitchen recipes, dietary guidelines, and bioactive matching."
+        )
+
+        samples = []
+        for r in rows:
+            case_id, symptoms, diagnosis, formulation, match_score, reasoning_chain, timestamp = r
+            if not symptoms or not diagnosis:
+                continue
+                
+            assistant_content = reasoning_chain if reasoning_chain else f"Primary Diagnosis: {diagnosis}\nPrescribed Phytotherapy Formulation: {formulation}\nBioactive Match Score: {match_score}%"
+            
+            sample = {
+                "id": case_id,
+                "timestamp": timestamp,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": f"Clinical Presentation / Symptoms: {symptoms}"},
+                    {"role": "assistant", "content": assistant_content}
+                ]
+            }
+            samples.append(sample)
+
+        # Write formatted samples to JSONL file
+        with open(output_filepath, "w", encoding="utf-8") as f:
+            for s in samples:
+                f.write(json.dumps(s, ensure_ascii=False) + "\n")
+
+        return {
+            "status": "success",
+            "filepath": output_filepath,
+            "total_samples": len(samples),
+            "format": "OpenAI / ShareGPT / Llama-3 JSONL",
+            "message": f"Exported {len(samples)} clinical training samples to {output_filepath} for fine-tuning Herbalist-7B"
+        }
+
 
 if __name__ == "__main__":
     memory = ClinicalMemoryStore()

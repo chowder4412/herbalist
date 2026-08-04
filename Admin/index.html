@@ -259,7 +259,10 @@
                 <div class="panel-card">
                     <div class="panel-header">
                         <span>🩺 Patient Clinical Risk Stratification & Prescriptions Console</span>
-                        <button onclick="loadClinicianAnalytics()" style="background:rgba(46,204,113,0.15);border:1px solid var(--accent-green);color:var(--accent-green);padding:4px 12px;border-radius:8px;font-weight:700;font-size:11px;cursor:pointer;">🔄 Refresh Data</button>
+                        <div style="display:flex;gap:8px;">
+                            <button onclick="exportFineTuningDataset()" style="background:rgba(243,156,18,0.15);border:1px solid var(--accent-gold);color:var(--accent-gold);padding:4px 12px;border-radius:8px;font-weight:700;font-size:11px;cursor:pointer;">📦 Export Fine-Tuning Dataset (JSONL)</button>
+                            <button onclick="loadClinicianAnalytics()" style="background:rgba(46,204,113,0.15);border:1px solid var(--accent-green);color:var(--accent-green);padding:4px 12px;border-radius:8px;font-weight:700;font-size:11px;cursor:pointer;">🔄 Refresh Data</button>
+                        </div>
                     </div>
                     <table>
                         <thead>
@@ -491,6 +494,20 @@
                 if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No active patient consultations logged yet.</td></tr>';
             } catch(e) {
                 if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--danger);">Error connecting to analytics endpoint.</td></tr>';
+            }
+        }
+
+        async function exportFineTuningDataset() {
+            try {
+                const res = await fetch('/api/admin/export-dataset', { method: 'POST' });
+                if (res.ok) {
+                    const data = await res.json();
+                    alert(`📦 ${data.message}\n\nDataset File: ${data.filepath}\nTotal Samples: ${data.total_samples}\nFormat: ${data.format}`);
+                } else {
+                    alert('❌ Failed to export fine-tuning dataset.');
+                }
+            } catch (e) {
+                alert('Error connecting to dataset export endpoint.');
             }
         }
 

@@ -697,6 +697,13 @@ async def get_all_admin_consultations():
         })
     return {"status": "success", "recents": consultations}
 
+@app.get("/api/admin/export-dataset")
+@app.post("/api/admin/export-dataset")
+async def export_fine_tuning_dataset_endpoint():
+    """Export all accumulated patient consultations into a JSONL fine-tuning dataset for training custom LLMs (e.g. Herbalist-7B / Llama 3)"""
+    result = memory_store.export_fine_tuning_dataset()
+    return result
+
 @app.get("/api/pharmacopeia")
 async def get_pharmacopeia(search: Optional[str] = None, category: Optional[str] = None):
     """Fetch all 100+ medicinal plants from Pharmacopeia engine and continuous memory database"""
