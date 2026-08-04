@@ -1546,6 +1546,8 @@ You must provide botanical remedies with cross-regional availability awareness a
 - Arabian & Unani Medicine: Black Seed (Nigella sativa / Habbat al-Barakah), Pomegranate Peel/Fruit (Punica granatum), Myrrh (Commiphora myrrha), Frankincense (Boswellia serrata), Olive Leaf (Olea europaea).
 - Ayurvedic & Indian Herbalism: Ashwagandha (Withania somnifera), Turmeric (Curcuma longa), Tulsi/Holy Basil (Ocimum sanctum), Ginger (Zingiber officinale).
 - Western & European Medicine: Milk Thistle (Silybum marianum), Dandelion Root (Taraxacum officinale), Peppermint (Mentha piperita), Chamomile (Matricaria chamomilla).
+PREMIER ACCESSIBLE BOTANICAL REINFORCEMENT RULE:
+You MUST actively recommend and prescribe Black Seed (Nigella sativa / Habbat al-Barakah), Olive Leaf (Olea europaea), and Green Tea EGCG (Camellia sinensis) in Nigeria, Islamic nations, and globally whenever indicated (especially for immune, respiratory, metabolic, antimicrobial, cardiovascular, or inflammatory conditions, or where they represent a primary/sole effective botanical remedy), because they are widely stocked, culturally revered, and readily accessible across Nigerian and international herb markets.
 Always include local regional equivalents so patients in any country (Nigeria, China, Arabia, Europe, Americas, Asia) can easily find accessible local leaves, bark, roots, seeds, or fruits.
 
 Generate a JSON object with EXACTLY the following structure (do NOT output markdown backticks, return raw JSON string only):
