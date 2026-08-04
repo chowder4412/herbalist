@@ -431,87 +431,96 @@ class ClinicalMemoryStore:
         """
         Dispatch real email OTP verification code via Resend API or SMTP server.
         Falls back gracefully to development console logging if email credentials are not configured.
+        NOTE: All print statements use ASCII-safe characters to prevent UnicodeEncodeError on Windows cp1252 consoles.
         """
-        resend_key = os.getenv("RESEND_API_KEY", "")
-        smtp_server = os.getenv("SMTP_SERVER", "")
-        smtp_port = int(os.getenv("SMTP_PORT", 587))
-        smtp_user = os.getenv("SMTP_USER", "")
-        smtp_pass = os.getenv("SMTP_PASSWORD", "")
-        sender_email = os.getenv("SMTP_FROM_EMAIL", smtp_user or "noreply@herbalist.ai")
+        import logging
+        logger = logging.getLogger("herbalist.otp")
 
-        subject = f"🌿 Herbalist AI Verification Code: {otp_code}"
-        html_body = f"""
-        <div style="font-family: Arial, sans-serif; max-width: 500px; padding: 20px; border: 1px solid #2ecc71; border-radius: 12px; background: #0b130f; color: #ffffff;">
-            <h2 style="color: #2ecc71;">🌿 Herbalist AI — Email Verification</h2>
-            <p>Welcome to Herbalist AI! Please use the 6-digit verification code below to activate your patient account:</p>
-            <div style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #f39c12; background: #142219; padding: 12px 24px; border-radius: 8px; text-align: center; margin: 20px 0;">
-                {otp_code}
+        try:
+            resend_key = os.getenv("RESEND_API_KEY", "")
+            smtp_server = os.getenv("SMTP_SERVER", "")
+            smtp_port = int(os.getenv("SMTP_PORT", 587))
+            smtp_user = os.getenv("SMTP_USER", "")
+            smtp_pass = os.getenv("SMTP_PASSWORD", "")
+            sender_email = os.getenv("SMTP_FROM_EMAIL", smtp_user or "noreply@herbalist.ai")
+
+            subject = "Herbalist AI Verification Code: " + otp_code
+            html_body = f"""
+            <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 520px; padding: 30px; border: 1px solid #2ecc71; border-radius: 16px; background: linear-gradient(135deg, #0b130f 0%, #142219 100%); color: #ffffff;">
+                <div style="text-align:center;margin-bottom:20px;">
+                    <div style="display:inline-block;width:48px;height:48px;border-radius:50%;background:rgba(46,204,113,0.15);border:2px solid #2ecc71;line-height:48px;font-size:24px;">&#127807;</div>
+                </div>
+                <h2 style="color: #2ecc71; text-align:center; margin:0 0 8px 0; font-size:20px;">Herbalist AI</h2>
+                <p style="color:#95a79b; text-align:center; margin:0 0 24px 0; font-size:13px;">Email Verification Required</p>
+                <p style="margin:0 0 20px 0; line-height:1.6;">Welcome! Please use the 6-digit verification code below to activate your patient account:</p>
+                <div style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #f39c12; background: rgba(20,34,25,0.8); padding: 16px 24px; border-radius: 12px; text-align: center; margin: 24px 0; border: 1px solid rgba(243,156,18,0.3);">
+                    {otp_code}
+                </div>
+                <p style="font-size: 12px; color: #95a79b; text-align:center; margin-top:20px;">This verification code will expire in <strong style="color:#f39c12;">10 minutes</strong>. If you did not request this account, please ignore this message.</p>
+                <hr style="border:none;border-top:1px solid rgba(46,204,113,0.2);margin:24px 0;">
+                <p style="font-size:10px;color:#5a6e62;text-align:center;margin:0;">Herbalist AI - Intelligent Botanical Medicine Platform</p>
             </div>
-            <p style="font-size: 12px; color: #95a79b;">This verification code will expire in 10 minutes. If you did not request this account, please ignore this message.</p>
-        </div>
-        """
+            """
 
-        # 1. Dispatch via Resend API (if configured)
-        if resend_key:
-            try:
-                import urllib.request
-                import json
-                resend_sender = "onboarding@resend.dev" if "resend.dev" in sender_email or "herbalist.ai" in sender_email else sender_email
-                req_data = json.dumps({
-                    "from": f"Herbalist AI <{resend_sender}>",
-                    "to": [email],
-                    "subject": subject,
-                    "html": html_body
-                }).encode('utf-8')
-                req = urllib.request.Request(
-                    "https://api.resend.com/emails",
-                    data=req_data,
-                    headers={
-                        "Authorization": f"Bearer {resend_key.strip()}",
-                        "Content-Type": "application/json"
-                    }
-                )
-                with urllib.request.urlopen(req) as resp:
-                    if resp.status in (200, 201):
-                        print(f"🌿 [OTP Service] Successfully dispatched real OTP email to {email} via Resend API!")
-                        return True
-            except Exception as re_err:
-                print(f"⚠️ [OTP Service] Resend API notice: {re_err}")
+            # 1. Dispatch via Resend API (if configured)
+            if resend_key:
+                try:
+                    import urllib.request
+                    import json
+                    resend_sender = "onboarding@resend.dev" if "resend.dev" in sender_email or "herbalist.ai" in sender_email else sender_email
+                    req_data = json.dumps({
+                        "from": f"Herbalist AI <{resend_sender}>",
+                        "to": [email],
+                        "subject": subject,
+                        "html": html_body
+                    }).encode('utf-8')
+                    req = urllib.request.Request(
+                        "https://api.resend.com/emails",
+                        data=req_data,
+                        headers={
+                            "Authorization": f"Bearer {resend_key.strip()}",
+                            "Content-Type": "application/json"
+                        }
+                    )
+                    with urllib.request.urlopen(req) as resp:
+                        if resp.status in (200, 201):
+                            logger.info(f"[OTP Service] Dispatched OTP to {email} via Resend API")
+                            return True
+                except Exception as re_err:
+                    logger.warning(f"[OTP Service] Resend API failed: {re_err}")
 
+            # 2. Dispatch via Standard SMTP Server (if configured)
+            if smtp_server and smtp_user and smtp_pass:
+                try:
+                    import smtplib
+                    from email.mime.text import MIMEText
+                    from email.mime.multipart import MIMEMultipart
+                    from email.utils import formataddr
 
-        # 2. Dispatch via Standard SMTP Server (if configured)
-        if smtp_server and smtp_user and smtp_pass:
-            try:
-                import smtplib
-                from email.mime.text import MIMEText
-                from email.mime.multipart import MIMEMultipart
-                from email.utils import formataddr
+                    msg = MIMEMultipart("alternative")
+                    msg["Subject"] = subject
+                    msg["From"] = formataddr(("Herbalist AI", sender_email))
+                    msg["To"] = email
+                    msg.attach(MIMEText(html_body, "html"))
 
-                msg = MIMEMultipart("alternative")
-                msg["Subject"] = subject
-                msg["From"] = formataddr(("Herbalist AI", sender_email))
-                msg["To"] = email
-                msg.attach(MIMEText(html_body, "html"))
+                    with smtplib.SMTP(smtp_server, smtp_port, timeout=15) as server:
+                        server.starttls()
+                        server.login(smtp_user, smtp_pass)
+                        server.sendmail(sender_email, [email], msg.as_string())
+                    logger.info(f"[OTP Service] Successfully dispatched OTP email to {email} via SMTP ({smtp_server})")
+                    return True
+                except Exception as smtp_err:
+                    logger.error(f"[OTP Service] SMTP dispatch failed: {smtp_err}", exc_info=True)
 
+            # 3. Development Fallback Console Logger
+            logger.warning(f"[OTP Service] No email provider available. OTP for {email}: {otp_code}")
+            return True
 
-                with smtplib.SMTP(smtp_server, smtp_port, timeout=10) as server:
-                    server.starttls()
-                    server.login(smtp_user, smtp_pass)
-                    server.sendmail(sender_email, [email], msg.as_string())
-                print(f"[OTP Service] Successfully dispatched OTP email to {email} via SMTP ({smtp_server}).")
-                return True
-            except Exception as smtp_err:
-                print(f"[OTP Service] SMTP dispatch notice: {smtp_err}")
-
-        # 3. Development Fallback Console Logger
-        print(f"\n" + "="*60)
-        print(f" 📩 [OTP Email Delivery Simulation]")
-        print(f" To: {email}")
-        print(f" Subject: {subject}")
-        print(f" 6-Digit OTP Code: {otp_code} (Expires in 10 minutes)")
-        print(f" Note: Configure RESEND_API_KEY or SMTP_* in .env for real email inbox delivery.")
-        print(f"="*60 + "\n")
-        return True
+        except Exception as outer_err:
+            # Catch-all to prevent background task from dying silently
+            import logging
+            logging.getLogger("herbalist.otp").error(f"[OTP Service] CRITICAL dispatch failure: {outer_err}", exc_info=True)
+            return False
 
 
     def authenticate_user(self, email: str, password: str) -> Optional[Dict[str, Any]]:

@@ -800,7 +800,7 @@ async def register_user(body: RegisterRequest, background_tasks: BackgroundTasks
         ttl_seconds=600
     )
     background_tasks.add_task(memory_store.send_otp_email_dispatch, body.email, otp_code)
-    print(f"🌿 [Herbalist AI] Dispatched 6-digit OTP code [{otp_code}] for user {body.email} in background task.")
+    import logging; logging.getLogger('herbalist.otp').info(f'[Herbalist AI] Dispatched 6-digit OTP code [{otp_code}] for user {body.email} in background task.')
 
     return {
         "status": "otp_required",
@@ -857,7 +857,7 @@ async def resend_otp(body: ResendOtpRequest, background_tasks: BackgroundTasks):
     conn.close()
 
     background_tasks.add_task(memory_store.send_otp_email_dispatch, body.email, otp_code)
-    print(f"🌿 [Herbalist AI] Dispatched fresh 6-digit OTP code [{otp_code}] for user {body.email} in background task.")
+    import logging; logging.getLogger('herbalist.otp').info(f'[Herbalist AI] Dispatched fresh 6-digit OTP code [{otp_code}] for user {body.email} in background task.')
     return {"status": "success", "message": f"Fresh 6-digit verification code dispatched to {body.email}"}
 
 
