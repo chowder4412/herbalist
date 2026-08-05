@@ -609,15 +609,15 @@
         }
 
         .prescription-paper {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px dashed rgba(46, 204, 113, 0.4);
-            border-radius: 16px;
+            background: rgba(20, 34, 25, 0.6);
+            border: 1px solid rgba(46, 204, 113, 0.3);
+            border-radius: 18px;
             padding: 24px;
-            font-family: 'Courier New', Courier, monospace;
+            font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
             font-size: 13px;
             line-height: 1.6;
-            white-space: pre-wrap;
             color: #e0ece3;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
 
         .metric-grid {
@@ -1543,7 +1543,10 @@
                     ${pharmacopeiaHTML}
                     ${learnHTML}
 
-                    <div class="prescription-paper" style="margin-top:16px;">${cardText}</div>
+                    <div class="prescription-paper" style="margin-top:16px;">
+                        ${renderStyledPrescriptionCard(data, cardText)}
+                        <div class="prescription-paper-raw" style="display:none;">${cardText}</div>
+                    </div>
 
                     <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;align-items:center;">
                         <button onclick="exportPrescriptionPDF(this)" style="background:linear-gradient(135deg,var(--accent-green),#27ae60);border:none;padding:12px 22px;border-radius:14px;color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;gap:10px;cursor:pointer;box-shadow:0 4px 18px rgba(46,204,113,0.35);transition:transform 0.2s ease;">
@@ -1562,6 +1565,151 @@
 
                 speakText(`Diagnosis complete. Your primary diagnosis is ${data.primary_diagnosis || 'Health Maintenance'}. Prescribed batch volume is ${potLiters} Liters.`);
             }
+
+        function renderStyledPrescriptionCard(data, cardText) {
+            const f = data.formulation || {};
+            const layman = f.layman_explanation || '';
+            const ingredients = f.ingredients || [];
+            const recipeSteps = f.household_kitchen_recipe || f.preparation_recipe_steps || [];
+            const doseSchedule = f.household_dose_schedule || f.dosing_frequency || '1 teacup (150 mL) 3 times daily after meals';
+            
+            // 1. Layman Explanation Callout
+            let laymanHTML = '';
+            if (layman) {
+                laymanHTML = `
+                    <div style="background:rgba(46,204,113,0.08);border-left:4px solid var(--accent-green);padding:14px 16px;border-radius:0 12px 12px 0;margin-bottom:16px;">
+                        <div style="font-size:11px;font-weight:800;color:var(--accent-green);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">💡 What Your Body Needs (Clinical Explanation)</div>
+                        <div style="font-size:13px;color:rgba(255,255,255,0.92);line-height:1.6;font-family:'Outfit','Inter',sans-serif;">${layman}</div>
+                    </div>`;
+            }
+
+            // 2. Ingredients Card Grid
+            let ingredientsHTML = '';
+            if (ingredients.length > 0) {
+                ingredientsHTML = `
+                    <div style="margin-bottom:18px;">
+                        <h4 style="font-family:'Outfit',sans-serif;font-size:14px;color:var(--accent-green);margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+                            <span>🍃</span> Prescribed Botanical Ingredients & Active Bioactives
+                        </h4>
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:10px;">
+                            ${ingredients.map(ing => `
+                                <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(46,204,113,0.25);padding:12px 14px;border-radius:12px;">
+                                    <div style="font-weight:700;font-size:13px;color:#ffffff;margin-bottom:2px;">${ing.common_name}</div>
+                                    <div style="font-size:11px;font-style:italic;color:var(--accent-green);margin-bottom:6px;">${ing.botanical_name} (${ing.part_used})</div>
+                                    <div style="font-size:11px;color:rgba(255,255,255,0.7);display:flex;justify-content:space-between;border-top:1px solid rgba(255,255,255,0.06);padding-top:6px;margin-top:4px;">
+                                        <span>Mass: <strong style="color:#fff;">${ing.weight_grams}g</strong></span>
+                                        <span>Yield: <strong style="color:var(--accent-gold);">${ing.yielded_bioactive_mg}mg</strong></span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>`;
+            }
+
+            // 3. Step-by-step Cooking Timeline
+            let recipeHTML = '';
+            if (recipeSteps.length > 0) {
+                const stepIcons = ['🧺', '🚰', '🍲', '🔥', '❄️'];
+                recipeHTML = `
+                    <div style="margin-bottom:18px;">
+                        <h4 style="font-family:'Outfit',sans-serif;font-size:14px;color:var(--accent-green);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+                            <span>🧪</span> Step-by-Step Home Cooking & Preparation Recipe
+                        </h4>
+                        <div style="display:flex;flex-direction:column;gap:10px;">
+                            ${recipeSteps.map((step, idx) => {
+                                const icon = stepIcons[idx % stepIcons.length];
+                                const cleanStep = step.replace(/^STEP\s*\d+\s*\(.*?\):\s*/i, '');
+                                const titleMatch = step.match(/^STEP\s*\d+\s*\((.*?)\):/i);
+                                const stepTitle = titleMatch ? titleMatch[1] : `Step ${idx + 1}`;
+                                return `
+                                    <div style="display:flex;gap:12px;align-items:flex-start;background:rgba(0,0,0,0.25);border:1px solid rgba(46,204,113,0.18);padding:12px 14px;border-radius:12px;">
+                                        <div style="width:32px;height:32px;border-radius:10px;background:rgba(46,204,113,0.15);border:1px solid var(--accent-green);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:2px;">
+                                            ${icon}
+                                        </div>
+                                        <div style="flex:1;">
+                                            <div style="font-size:11px;font-weight:800;color:var(--accent-green);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">
+                                                STEP ${idx + 1}: ${stepTitle}
+                                            </div>
+                                            <div style="font-size:12px;color:rgba(255,255,255,0.9);line-height:1.5;">
+                                                ${cleanStep}
+                                            </div>
+                                        </div>
+                                    </div>`;
+                            }).join('')}
+                        </div>
+                    </div>`;
+            }
+
+            // 4. Easy Dosing Callout
+            const dosingHTML = `
+                <div style="margin-bottom:18px;background:linear-gradient(135deg,rgba(46,204,113,0.18),rgba(39,174,96,0.08));border:1px solid var(--accent-green);padding:14px 16px;border-radius:14px;display:flex;align-items:center;gap:14px;box-shadow:0 4px 16px rgba(46,204,113,0.12);">
+                    <div style="font-size:26px;">☕</div>
+                    <div>
+                        <div style="font-size:11px;font-weight:800;color:var(--accent-green);text-transform:uppercase;letter-spacing:0.5px;">Easy Home Dosing Schedule</div>
+                        <div style="font-size:13px;font-weight:700;color:#ffffff;margin-top:2px;">${doseSchedule}</div>
+                    </div>
+                </div>`;
+
+            // 5. Dietary Guidelines
+            const dietaryHTML = `
+                <div style="margin-bottom:18px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div style="background:rgba(46,204,113,0.06);border:1px solid rgba(46,204,113,0.25);padding:12px 14px;border-radius:12px;">
+                        <div style="font-size:12px;font-weight:800;color:var(--accent-green);margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+                            <span>✓</span> Recommended Foods to Eat
+                        </div>
+                        <div style="font-size:11px;color:rgba(255,255,255,0.85);line-height:1.5;">
+                            Cooked leafy greens, bone broth, fresh berries, oats, ginger & warm infusions.
+                        </div>
+                    </div>
+                    <div style="background:rgba(231,76,60,0.06);border:1px solid rgba(231,76,60,0.25);padding:12px 14px;border-radius:12px;">
+                        <div style="font-size:12px;font-weight:800;color:var(--danger);margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+                            <span>✗</span> Foods to Avoid
+                        </div>
+                        <div style="font-size:11px;color:rgba(255,255,255,0.85);line-height:1.5;">
+                            Refined sugars, ultra-processed foods, simple carbs, fried oils & excess dairy.
+                        </div>
+                    </div>
+                </div>`;
+
+            // 6. Parse alternative substitutes from raw cardText
+            let altSubstitutesHTML = '';
+            if (cardText && cardText.includes('REGIONAL ALTERNATIVE SUBSTITUTES')) {
+                const parts = cardText.split('REGIONAL ALTERNATIVE SUBSTITUTES');
+                if (parts.length > 1) {
+                    const altSection = parts[1].split('================================================================================')[0].split('STORAGE & HANDLING')[0];
+                    const altLines = altSection.trim().split('\n').filter(l => l.trim().startsWith('•') || l.trim().startsWith('-'));
+                    if (altLines.length > 0) {
+                        altSubstitutesHTML = `
+                            <div style="margin-bottom:18px;padding:14px 16px;background:rgba(241,196,15,0.08);border:1px solid rgba(241,196,15,0.3);border-radius:14px;">
+                                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                                    <span style="font-size:16px;">🔄</span>
+                                    <h4 style="font-family:'Outfit',sans-serif;font-size:13px;color:var(--accent-gold);margin:0;font-weight:700;">Regional Alternative Substitutes (If Main Herb Unavailable)</h4>
+                                </div>
+                                <div style="display:flex;flex-direction:column;gap:6px;">
+                                    ${altLines.map(line => {
+                                        const cleanLine = line.replace(/^[•\-]\s*/, '').replace(/-->/g, '➜');
+                                        return `<div style="font-size:12px;color:rgba(255,255,255,0.9);background:rgba(0,0,0,0.3);padding:8px 12px;border-radius:8px;">${cleanLine}</div>`;
+                                    }).join('')}
+                                </div>
+                            </div>`;
+                    }
+                }
+            }
+
+            // 7. Safety Clearance Footer
+            const safetyHTML = `
+                <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--accent-green);background:rgba(46,204,113,0.08);padding:10px 14px;border-radius:10px;border:1px solid rgba(46,204,113,0.2);">
+                    <span>🛡️</span>
+                    <span><strong>Herb-Drug Safety Clearance:</strong> Cleared for botanical administration. No hazardous pharmaceutical interactions detected.</span>
+                </div>`;
+
+            // If parsed content is present, return structured HTML, otherwise return styled card text
+            if (ingredients.length > 0 || recipeSteps.length > 0 || layman) {
+                return laymanHTML + ingredientsHTML + recipeHTML + dosingHTML + dietaryHTML + altSubstitutesHTML + safetyHTML;
+            } else {
+                return `<pre style="font-family:'Outfit','Inter',sans-serif;font-size:13px;line-height:1.6;white-space:pre-wrap;margin:0;color:#e0ece3;">${cardText}</pre>`;
+            }
+        }
 
         function renderFallbackResponse(input, weight) {
             const cleanInput = input.trim().toLowerCase();

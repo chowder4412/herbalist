@@ -939,11 +939,11 @@ async def logout_user(response: Response):
 
 @app.get("/api/auth/me")
 async def get_current_user_profile(request: Request):
-    """Fetch profile of currently authenticated user via HttpOnly cookie or Bearer token"""
+    """Fetch profile of currently authenticated user via HttpOnly cookie or Bearer token (Returns guest status cleanly if unauthenticated)"""
     token = get_auth_token_from_request(request)
     user = verify_jwt_token(token)
     if not user:
-        raise HTTPException(status_code=401, detail="Unauthorized or invalid token")
+        return {"status": "guest", "user": None}
     return {"status": "success", "user": user}
 
 @app.get("/api/my-prescriptions")
@@ -1317,8 +1317,8 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
 # ══════════════════════════════════════════════════════════════
 # Serve Static Frontend Safely
 # ══════════════════════════════════════════════════════════════
-@app.get("/")
-@app.get("/index.html")
+@app.api_route("/", methods=["GET", "HEAD"])
+@app.api_route("/index.html", methods=["GET", "HEAD"])
 async def serve_index():
     index_path = os.path.join(os.path.dirname(__file__), "index.html")
     if os.path.exists(index_path):

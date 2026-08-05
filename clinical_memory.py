@@ -490,28 +490,50 @@ class ClinicalMemoryStore:
                 except Exception as re_err:
                     logger.warning(f"[OTP Service] Resend API failed: {re_err}")
 
-            # 2. Dispatch via Standard SMTP Server (if configured)
+            # 2. Dispatch via SMTP Server (Supports SSL Port 465 & STARTTLS Port 587 with cloud fallback)
             if smtp_server and smtp_user and smtp_pass:
+                import smtplib
+                from email.mime.text import MIMEText
+                from email.mime.multipart import MIMEMultipart
+                from email.utils import formataddr
+
+                msg = MIMEMultipart("alternative")
+                msg["Subject"] = subject
+                msg["From"] = formataddr(("Herbalist AI", sender_email))
+                msg["To"] = email
+                msg.attach(MIMEText(html_body, "html"))
+
+                # Attempt A: Direct SSL on Port 465 (Preferred for Cloud Hosting like Render/AWS)
+                if smtp_port == 465 or "gmail" in smtp_server.lower():
+                    try:
+                        with smtplib.SMTP_SSL(smtp_server, 465, timeout=12) as server:
+                            server.login(smtp_user, smtp_pass)
+                            server.sendmail(sender_email, [email], msg.as_string())
+                        logger.info(f"[OTP Service] Successfully dispatched OTP email to {email} via SMTP_SSL (Port 465)")
+                        return True
+                    except Exception as ssl_err:
+                        logger.warning(f"[OTP Service] SMTP_SSL Port 465 attempt failed: {ssl_err}, trying STARTTLS...")
+
+                # Attempt B: STARTTLS on Port 587
                 try:
-                    import smtplib
-                    from email.mime.text import MIMEText
-                    from email.mime.multipart import MIMEMultipart
-                    from email.utils import formataddr
-
-                    msg = MIMEMultipart("alternative")
-                    msg["Subject"] = subject
-                    msg["From"] = formataddr(("Herbalist AI", sender_email))
-                    msg["To"] = email
-                    msg.attach(MIMEText(html_body, "html"))
-
-                    with smtplib.SMTP(smtp_server, smtp_port, timeout=15) as server:
+                    with smtplib.SMTP(smtp_server, smtp_port, timeout=12) as server:
                         server.starttls()
                         server.login(smtp_user, smtp_pass)
                         server.sendmail(sender_email, [email], msg.as_string())
-                    logger.info(f"[OTP Service] Successfully dispatched OTP email to {email} via SMTP ({smtp_server})")
+                    logger.info(f"[OTP Service] Successfully dispatched OTP email to {email} via SMTP STARTTLS (Port {smtp_port})")
                     return True
-                except Exception as smtp_err:
-                    logger.error(f"[OTP Service] SMTP dispatch failed: {smtp_err}", exc_info=True)
+                except Exception as tls_err:
+                    logger.error(f"[OTP Service] SMTP STARTTLS Port {smtp_port} attempt failed: {tls_err}")
+
+                    # Attempt C: Final SSL Port 465 Fallback
+                    try:
+                        with smtplib.SMTP_SSL(smtp_server, 465, timeout=12) as server:
+                            server.login(smtp_user, smtp_pass)
+                            server.sendmail(sender_email, [email], msg.as_string())
+                        logger.info(f"[OTP Service] Successfully dispatched OTP email to {email} via fallback SMTP_SSL (Port 465)")
+                        return True
+                    except Exception as final_err:
+                        logger.error(f"[OTP Service] All SMTP attempts failed: {final_err}", exc_info=True)
 
             # 3. Development Fallback Console Logger
             logger.warning(f"[OTP Service] No email provider available. OTP for {email}: {otp_code}")
