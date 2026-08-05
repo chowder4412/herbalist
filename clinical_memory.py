@@ -28,7 +28,9 @@ class ClinicalMemoryStore:
                     import libsql_experimental as libsql
                 except ImportError:
                     import libsql
-                return libsql.connect(database=turso_url, auth_token=turso_token)
+                conn = libsql.connect(database=turso_url, auth_token=turso_token)
+                print(f"[Turso Cloud] Connected successfully to live database ({turso_url[:30]}...)")
+                return conn
             except ImportError:
                 # Expected fallback when native libsql binary is omitted for zero-compilation cloud builds
                 pass
