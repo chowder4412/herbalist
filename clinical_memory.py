@@ -29,8 +29,12 @@ class ClinicalMemoryStore:
                 except ImportError:
                     import libsql
                 return libsql.connect(database=turso_url, auth_token=turso_token)
+            except ImportError:
+                # Expected fallback when native libsql binary is omitted for zero-compilation cloud builds
+                pass
             except Exception as e:
-                print(f"[Turso Cloud Notice] Fallback to local SQLite: {e}")
+                import logging
+                logging.getLogger("herbalist.db").debug(f"Turso Cloud connection notice: {e}")
         return sqlite3.connect(self.db_path)
 
 
