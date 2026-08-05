@@ -25,10 +25,14 @@ class ClinicalMemoryStore:
         if turso_url and turso_token:
             try:
                 try:
-                    import libsql_experimental as libsql
+                    import libsql_client
+                    return libsql_client.create_client_sync(url=turso_url, auth_token=turso_token)
                 except ImportError:
-                    import libsql
-                return libsql.connect(database=turso_url, auth_token=turso_token)
+                    try:
+                        import libsql_experimental as libsql
+                    except ImportError:
+                        import libsql
+                    return libsql.connect(database=turso_url, auth_token=turso_token)
             except Exception as e:
                 print(f"[Turso Cloud Notice] Fallback to local SQLite: {e}")
         return sqlite3.connect(self.db_path)
