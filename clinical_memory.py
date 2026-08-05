@@ -92,6 +92,20 @@ class ClinicalMemoryStore:
             )
         ''')
 
+        # Table 5: Pending Email OTP Verifications
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS pending_otps (
+                email TEXT PRIMARY KEY,
+                otp_code TEXT,
+                full_name TEXT,
+                password_hash TEXT,
+                expires_at INTEGER,
+                username TEXT,
+                dob TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+
         # Safe schema migrations for existing SQLite databases
         for col, col_type in [("username", "TEXT"), ("dob", "TEXT"), ("age", "INTEGER")]:
             try:
@@ -104,34 +118,6 @@ class ClinicalMemoryStore:
                 cursor.execute(f"ALTER TABLE pending_otps ADD COLUMN {col} {col_type};")
             except Exception:
                 pass
-
-
-        # Table 4: Saved Patient Prescriptions
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS patient_prescriptions (
-                rx_id TEXT PRIMARY KEY,
-                user_id TEXT,
-                patient_name TEXT,
-                symptoms TEXT,
-                primary_diagnosis TEXT,
-                prescribed_formulation TEXT,
-                prescription_card TEXT,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users(user_id)
-            )
-        ''')
-
-        # Table 5: Pending Email OTP Verifications
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS pending_otps (
-                email TEXT PRIMARY KEY,
-                otp_code TEXT,
-                full_name TEXT,
-                password_hash TEXT,
-                expires_at INTEGER,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
 
         conn.commit()
         conn.close()

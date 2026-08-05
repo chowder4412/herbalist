@@ -469,6 +469,13 @@
             color: #ffffff;
             font-family: 'Inter', sans-serif;
             font-size: 15px;
+            resize: none;
+            height: 24px;
+            max-height: 120px;
+            line-height: 1.4;
+            padding: 2px 0;
+            overflow-y: auto;
+            box-sizing: border-box;
         }
 
         .chat-input::placeholder {
@@ -1255,7 +1262,7 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                 </button>
                 <input type="file" id="chat-file-upload" accept="image/*,.pdf,.doc,.docx" style="display: none;" onchange="handleChatFileSelected(event)">
-                <input type="text" class="chat-input" id="user-input" placeholder="Ask Herbalist AI Doctor..." onkeypress="handleKeyPress(event)">
+                <textarea class="chat-input" id="user-input" rows="1" placeholder="Ask Herbalist AI Doctor..." onkeydown="handleKeyPress(event)" oninput="autoExpandTextarea(this)"></textarea>
                 <div class="pill-actions">
                     <!-- MODERN STUDIO MICROPHONE SVG ICON -->
                     <button class="mic-btn" title="Voice Input">
@@ -1361,8 +1368,14 @@
             if (triageBar) triageBar.remove();
         }
 
+        function autoExpandTextarea(el) {
+            el.style.height = 'auto';
+            el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+        }
+
         function handleKeyPress(e) {
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
                 submitQuery();
             }
         }
