@@ -388,11 +388,11 @@
         .view-scroll-area {
             flex: 1;
             overflow-y: auto;
-            padding: 16px 20px;
+            padding: 16px 20px 95px 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: space-between;
+            justify-content: center;
             min-height: 0;
             height: 100%;
         }
@@ -429,11 +429,13 @@
 
         /* FLOATING INPUT PILL BAR (CLEAN MODERN ICONS & NO DROPDOWN) */
         .input-pill-wrapper {
-            width: 100%;
+            position: fixed;
+            bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 24px);
             max-width: 740px;
-            margin: 0 auto 12px auto;
-            position: relative;
-            flex-shrink: 0;
+            z-index: 200;
             box-sizing: border-box;
         }
 
@@ -1221,9 +1223,9 @@
     <!-- MAIN WORKSPACE CONTENT -->
     <main class="main-content">
         <!-- TOP LEGAL MEDICAL DISCLAIMER BANNER WITH DISMISS X BUTTON -->
-        <div id="disclaimer-banner" style="background: rgba(243, 156, 18, 0.12); border-bottom: 1px solid rgba(243, 156, 18, 0.3); padding: 8px 38px 8px 16px; font-size: 11px; color: #f39c12; text-align: center; font-weight: 500; position: relative; display: flex; align-items: center; justify-content: center; width: 100%; box-sizing: border-border;">
-            <span>⚠️ <strong>Medical Disclaimer:</strong> Herbalist AI provides botanical phytotherapy insights for educational purposes only. Not a substitute for professional medical diagnosis or emergency care.</span>
-            <button onclick="dismissDisclaimer()" title="Dismiss disclaimer" style="position: absolute; right: 10px; background: transparent; border: none; color: #f39c12; font-size: 14px; font-weight: bold; cursor: pointer; padding: 2px 6px; border-radius: 4px; display: flex; align-items: center; justify-content: center; line-height: 1;">✕</button>
+        <div id="disclaimer-banner" style="background: rgba(243, 156, 18, 0.14); border-bottom: 1px solid rgba(243, 156, 18, 0.4); padding: 8px 44px 8px 14px; font-size: 11px; color: #f39c12; text-align: center; font-weight: 500; position: relative; display: flex; align-items: center; justify-content: center; width: 100%; box-sizing: border-box;">
+            <span>⚠️ <strong>Medical Disclaimer:</strong> Herbalist AI provides botanical phytotherapy insights for educational purposes only. Not a substitute for medical diagnosis.</span>
+            <button onclick="dismissDisclaimer()" title="Dismiss disclaimer" style="position: absolute; right: 10px; background: rgba(243, 156, 18, 0.25); border: 1px solid #f39c12; color: #f39c12; font-size: 13px; font-weight: 800; cursor: pointer; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; line-height: 1; z-index: 10; flex-shrink: 0;">✕</button>
         </div>
         <div class="mobile-overlay" id="mobile-overlay" onclick="closeMobileSidebar()"></div>
         <div class="top-navbar">
@@ -1289,8 +1291,8 @@
                 <input type="file" id="chat-file-upload" accept="image/*,.pdf,.doc,.docx" style="display: none;" onchange="handleChatFileSelected(event)">
                 <textarea class="chat-input" id="user-input" rows="1" placeholder="Ask Herbalist AI Doctor..." onkeydown="handleKeyPress(event)" oninput="autoExpandTextarea(this)"></textarea>
                 <div class="pill-actions">
-                    <!-- MODERN STUDIO MICROPHONE SVG ICON -->
-                    <button class="mic-btn" title="Voice Input">
+                    <!-- MODERN STUDIO MICROPHONE SVG ICON WITH WEB SPEECH API -->
+                    <button class="mic-btn" id="mic-btn-el" onclick="toggleSpeechRecognition()" title="Voice Input — Speak to Dr. Herbalist">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
                             <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
@@ -2053,24 +2055,123 @@
             if (modal) modal.classList.remove('active');
         }
 
-        /* ══════ Voice Assistant (Web Speech Synthesis API) ══════ */
+        /* ══════ Voice Assistant (Web Speech Synthesis & Speech Recognition API) ══════ */
         let voiceEnabled = true;
         let synth = window.speechSynthesis;
+        let availableVoices = [];
+
+        function loadSpeechVoices() {
+            if (synth) availableVoices = synth.getVoices();
+        }
+        if (synth) {
+            loadSpeechVoices();
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = loadSpeechVoices;
+            }
+        }
+
+        // Unlock mobile browser speech audio on first touch/click
+        document.addEventListener('click', function unlockAudio() {
+            if (synth && synth.speak) {
+                const silent = new SpeechSynthesisUtterance('');
+                silent.volume = 0;
+                synth.speak(silent);
+            }
+        }, { once: true });
 
         function speakText(text) {
             if (!voiceEnabled || !synth) return;
             try {
                 synth.cancel();
                 const cleanText = text.replace(/<[^>]*>?/gm, '').replace(/[#*`_~]/g, '');
+                if (!cleanText.trim()) return;
+
                 const utterance = new SpeechSynthesisUtterance(cleanText);
                 utterance.rate = 1.0;
                 utterance.pitch = 1.0;
-                const voices = synth.getVoices();
-                const preferredVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Daniel'))) || voices.find(v => v.lang.startsWith('en'));
+                utterance.volume = 1.0;
+
+                if (availableVoices.length === 0) availableVoices = synth.getVoices();
+                const preferredVoice = availableVoices.find(v => v.lang && v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Daniel') || v.name.includes('Alex'))) || availableVoices.find(v => v.lang && v.lang.startsWith('en'));
                 if (preferredVoice) utterance.voice = preferredVoice;
-                synth.speak(utterance);
+                
+                setTimeout(() => { synth.speak(utterance); }, 60);
             } catch (e) {
                 console.log("Voice synthesis notice:", e);
+            }
+        }
+
+        /* 🎙️ WEB SPEECH RECOGNITION (VOICE NOTE INPUT) */
+        let recognition = null;
+        let isRecordingVoice = false;
+
+        function toggleSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                showToast('⚠️ Speech Recognition API is not supported on this browser. Please type your query.', 'error');
+                return;
+            }
+
+            const micBtn = document.getElementById('mic-btn-el');
+            const userInput = document.getElementById('user-input');
+
+            if (isRecordingVoice && recognition) {
+                recognition.stop();
+                return;
+            }
+
+            try {
+                recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = true;
+                recognition.lang = 'en-US';
+
+                recognition.onstart = function() {
+                    isRecordingVoice = true;
+                    if (micBtn) {
+                        micBtn.style.color = '#e74c3c';
+                        micBtn.style.background = 'rgba(231, 76, 60, 0.2)';
+                        micBtn.style.boxShadow = '0 0 14px rgba(231, 76, 60, 0.6)';
+                    }
+                    showToast('🎙️ Listening... Speak your clinical symptoms or question.', 'info');
+                };
+
+                recognition.onresult = function(event) {
+                    let transcript = '';
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        transcript += event.results[i][0].transcript;
+                    }
+                    if (userInput) {
+                        userInput.value = transcript;
+                        autoExpandTextarea(userInput);
+                    }
+                };
+
+                recognition.onerror = function(event) {
+                    isRecordingVoice = false;
+                    resetMicBtnStyle();
+                    showToast(`⚠️ Voice recognition notice: ${event.error}`, 'error');
+                };
+
+                recognition.onend = function() {
+                    isRecordingVoice = false;
+                    resetMicBtnStyle();
+                };
+
+                recognition.start();
+            } catch (e) {
+                isRecordingVoice = false;
+                resetMicBtnStyle();
+                showToast('⚠️ Failed to access microphone. Please check browser permissions.', 'error');
+            }
+        }
+
+        function resetMicBtnStyle() {
+            const micBtn = document.getElementById('mic-btn-el');
+            if (micBtn) {
+                micBtn.style.color = 'var(--text-muted)';
+                micBtn.style.background = 'transparent';
+                micBtn.style.boxShadow = 'none';
             }
         }
 
@@ -2233,6 +2334,12 @@
                 document.getElementById('hero-welcome').style.display = 'flex';
                 document.getElementById('chat-feed').style.display = 'none';
             } else if (sectionName === 'pharmacopeia') {
+                if (!currentUserState) {
+                    showToast('🔒 Please sign in or create an account to access the Botanical Pharmacopeia Explorer.', 'error');
+                    openAuthModal();
+                    switchAuthTab('register');
+                    return;
+                }
                 if (navItems[1]) navItems[1].classList.add('active');
                 const modal = document.getElementById('pharmacopeia-modal');
                 if (modal) {
