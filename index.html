@@ -2716,12 +2716,19 @@
                     data = { detail: `Server response error (${res.status} ${res.statusText}).` };
                 }
 
-                if (res.ok && (data.status === 'success' || data.access_token)) {
+                if (res.ok && data.status === 'otp_required') {
+                    // Registration requires OTP verification — switch to 6-digit code form
+                    pendingEmailForOtp = data.email || email;
+                    document.getElementById('auth-form-container').style.display = 'none';
+                    document.getElementById('otp-form-container').style.display = 'block';
+                    document.getElementById('otp-email-sent-label').innerText = `We sent a 6-digit code to ${pendingEmailForOtp}`;
+                    document.getElementById('auth-modal-title').innerText = 'Email Verification';
+                    showToast('✉️ 6-digit code dispatched to your email! Enter code below.', 'info');
+                } else if (res.ok && (data.status === 'success' || data.access_token)) {
                     localStorage.setItem('herbalist_jwt_token', data.access_token);
                     updateAuthUI(data.user);
                     closeAuthModal();
                     showToast(`🎉 Welcome ${data.user ? (data.user.full_name || 'Patient') : ''}! Your account is active.`, 'success');
-                } else if (res.ok && data.status === 'otp_required') {
                 } else if (data.detail === 'verification_pending') {
                     pendingEmailForOtp = email;
                     document.getElementById('auth-form-container').style.display = 'none';
