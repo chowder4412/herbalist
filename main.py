@@ -556,6 +556,13 @@ async def update_feature_flags(body: FeatureFlagRequest):
     GLOBAL_FEATURE_FLAGS[body.flag_name] = body.enabled
     return {"status": "success", "flags": GLOBAL_FEATURE_FLAGS}
 
+@app.post("/api/admin/import-pharmacopeia")
+async def trigger_pharmacopeia_import():
+    """Trigger automated import & seeding of WHO, USDA Dr. Duke's, IMPPAT & African Phytotherapy datasets"""
+    import import_pharmacopeia
+    count = import_pharmacopeia.seed_database()
+    return {"status": "success", "message": f"Successfully imported {count} botanical plant monographs into database!"}
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint for production monitoring"""
