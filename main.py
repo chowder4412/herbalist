@@ -917,19 +917,44 @@ async def resend_otp(body: ResendOtpRequest, background_tasks: BackgroundTasks):
 
 @app.post("/api/auth/login")
 async def login_user(body: LoginRequest, response: Response):
-    """Authenticate user credentials and set HttpOnly Secure Cookie"""
-    user = memory_store.authenticate_user(body.email, body.password)
-    if not user:
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-    token = create_jwt_token(user)
-    response.set_cookie(
-        key="herbalist_jwt",
-        value=token,
-        httponly=True,
-        max_age=86400 * 7,
-        samesite="lax"
-    )
-    return {"status": "success", "user": user, "access_token": token}
+    """Authenticate user credentials and set HttpOnly Secure Cookie with detailed diagnostic messages"""
+    email_clean = body.email.lower().strip()
+    
+    # 1. Attempt active authentication
+    user = memory_store.authenticate_user(email_clean, body.password)
+    if user:
+        token = create_jwt_token(user)
+        response.set_cookie(
+            key="herbalist_jwt",
+            value=token,
+            httponly=True,
+            max_age=86400 * 7,
+            samesite="lax"
+        )
+        return {"status": "success", "user": user, "access_token": token}
+
+    # 2. Diagnose why authentication failed for clear user guidance
+    conn = memory_store.get_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT user_id FROM users WHERE email = ?', (email_clean,))
+    user_exists = cursor.fetchone()
+    
+    cursor.execute('SELECT email FROM pending_otps WHERE email = ?', (email_clean,))
+    pending_otp = cursor.fetchone()
+    conn.close()
+
+    if pending_otp:
+        raise HTTPException(
+            status_code=400,
+            detail="verification_pending"
+        )
+    elif not user_exists:
+        raise HTTPException(
+            status_code=404,
+            detail="account_not_found"
+        )
+
+    raise HTTPException(status_code=401, detail="Incorrect password. Please double-check your password and try again.")
 
 @app.post("/api/auth/logout")
 async def logout_user(response: Response):

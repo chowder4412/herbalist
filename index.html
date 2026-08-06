@@ -2728,6 +2728,18 @@
                     updateAuthUI(data.user);
                     closeAuthModal();
                     showToast('🔑 Successfully signed in to your account!', 'success');
+                } else if (data.detail === 'verification_pending') {
+                    pendingEmailForOtp = email;
+                    document.getElementById('auth-form-container').style.display = 'none';
+                    document.getElementById('otp-form-container').style.display = 'block';
+                    document.getElementById('otp-email-sent-label').innerText = `Your registration is pending! Enter the 6-digit code sent to ${pendingEmailForOtp}`;
+                    document.getElementById('auth-modal-title').innerText = 'Email Verification';
+                    showToast('✉️ Account pending verification! Enter your 6-digit email code below.', 'info');
+                } else if (data.detail === 'account_not_found') {
+                    errEl.innerText = '⚠️ No account found with this email. Switched to Create Account tab for you!';
+                    errEl.style.display = 'block';
+                    switchAuthTab('register');
+                    document.getElementById('auth-email').value = email;
                 } else {
                     errEl.innerText = data.detail || 'Authentication failed. Please check your credentials.';
                     errEl.style.display = 'block';
