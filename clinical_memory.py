@@ -125,7 +125,7 @@ class ClinicalMemoryStore:
 
     def record_episodic_experience(self, patient: Any, primary_diagnosis: str, formulation: Any, llm_reasoning: str = "") -> str:
         """Record consultation experience into persistent episodic memory"""
-        conn = sqlite3.connect(self.db_path)
+        conn = self.get_connection()
         cursor = conn.cursor()
         
         case_id = f"CASE_{int(time.time())}_{random.randint(100, 999)}"
@@ -152,7 +152,7 @@ class ClinicalMemoryStore:
 
     def record_episodic_case(self, symptoms: str, diagnosis_result: str, prescribed_formulation: str, bioactive_match_score: float = 95.0, gemini_response: str = "", patient_id: str = "") -> str:
         """Record episodic case directly from API endpoints with specified or anonymized patient ID"""
-        conn = sqlite3.connect(self.db_path)
+        conn = self.get_connection()
         cursor = conn.cursor()
         
         case_id = f"CASE_{int(time.time())}_{random.randint(100, 999)}"
@@ -171,7 +171,7 @@ class ClinicalMemoryStore:
 
     def query_similar_cases(self, current_symptoms: List[str], limit: int = 3) -> List[Dict[str, Any]]:
         """Query episodic memory for past similar patient consultations and learning outcomes"""
-        conn = sqlite3.connect(self.db_path)
+        conn = self.get_connection()
         cursor = conn.cursor()
         
         cursor.execute('SELECT case_id, patient_id, age, symptoms, primary_diagnosis, prescribed_formulation, bioactive_match_score, timestamp FROM episodic_cases ORDER BY timestamp DESC LIMIT ?', (limit * 3,))
@@ -203,7 +203,7 @@ class ClinicalMemoryStore:
 
     def auto_expand_semantic_pharmacopeia(self, herb_key: str, common_name: str, botanical_name: str, category: str, active_bioactives: List[str], therapeutic_props: List[str], layman_name: str, llm_source: str = "Gemini LLM Synthesis") -> bool:
         """Persist newly discovered plant/herb facts into the semantic memory database"""
-        conn = sqlite3.connect(self.db_path)
+        conn = self.get_connection()
         cursor = conn.cursor()
         
         bio_str = ", ".join(active_bioactives)
@@ -221,7 +221,7 @@ class ClinicalMemoryStore:
 
     def get_memory_stats(self) -> Dict[str, Any]:
         """Get summary statistics of continuous learning memory engine"""
-        conn = sqlite3.connect(self.db_path)
+        conn = self.get_connection()
         cursor = conn.cursor()
         
         cursor.execute('SELECT COUNT(*) FROM episodic_cases')
@@ -240,7 +240,7 @@ class ClinicalMemoryStore:
 
     def get_all_semantic_herbs(self) -> List[Dict[str, Any]]:
         """Retrieve all learned herbs from SQLite semantic_pharmacopeia memory store"""
-        conn = sqlite3.connect(self.db_path)
+        conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute('SELECT herb_key, common_name, botanical_name, category, active_bioactives, therapeutic_properties, layman_nutrient_name FROM semantic_pharmacopeia')
         rows = cursor.fetchall()
@@ -281,7 +281,7 @@ class ClinicalMemoryStore:
 
     def create_user(self, email: str, password: str, full_name: str, username: str = "", dob: str = "") -> Optional[Dict[str, Any]]:
         """Register a new user account in SQLite database with Patient ID (username), DOB, and calculated Age"""
-        conn = sqlite3.connect(self.db_path)
+        conn = self.get_connection()
         cursor = conn.cursor()
         user_id = f"USER_{int(time.time())}_{random.randint(100, 999)}"
         pwd_hash = self.hash_password(password)
@@ -311,7 +311,7 @@ class ClinicalMemoryStore:
 
     def store_pending_otp(self, email: str, password: str, full_name: str, otp_code: str, username: str = "", dob: str = "", ttl_seconds: int = 600) -> bool:
         """Store pending user registration details, Patient ID (username), DOB, and 6-digit OTP"""
-        conn = sqlite3.connect(self.db_path)
+        conn = self.get_connection()
         cursor = conn.cursor()
         email_clean = email.lower().strip()
         pwd_hash = self.hash_password(password)
@@ -329,7 +329,7 @@ class ClinicalMemoryStore:
 
     def verify_and_activate_otp(self, email: str, otp_code: str) -> Optional[Dict[str, Any]]:
         """Verify 6-digit OTP code, validate expiration, and activate user account in users table"""
-        conn = sqlite3.connect(self.db_path)
+        conn = self.get_connection()
         cursor = conn.cursor()
         email_clean = email.lower().strip()
         now = int(time.time())
@@ -383,7 +383,7 @@ class ClinicalMemoryStore:
 
     def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
         """Fetch active user record by email"""
-        conn = sqlite3.connect(self.db_path)
+        conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute('SELECT user_id, email, full_name, username, dob, age, role, created_at FROM users WHERE email = ?', (email.lower().strip(),))
         row = cursor.fetchone()
@@ -403,7 +403,7 @@ class ClinicalMemoryStore:
 
     def get_all_users(self) -> List[Dict[str, Any]]:
         """Fetch all registered user accounts for Admin Control Center"""
-        conn = sqlite3.connect(self.db_path)
+        conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute('SELECT user_id, email, full_name, username, dob, age, role, created_at FROM users ORDER BY created_at DESC')
         rows = cursor.fetchall()
@@ -543,7 +543,7 @@ class ClinicalMemoryStore:
 
     def authenticate_user(self, email: str, password: str) -> Optional[Dict[str, Any]]:
         """Authenticate user credentials against SQLite users database"""
-        conn = sqlite3.connect(self.db_path)
+        conn = self.get_connection()
         cursor = conn.cursor()
         pwd_hash = self.hash_password(password)
 
@@ -560,7 +560,7 @@ class ClinicalMemoryStore:
 
     def save_patient_prescription(self, user_id: str, patient_name: str, symptoms: str, primary_diagnosis: str, prescribed_formulation: str, prescription_card: str) -> str:
         """Save a consultation prescription to patient account history"""
-        conn = sqlite3.connect(self.db_path)
+        conn = self.get_connection()
         cursor = conn.cursor()
         rx_id = f"RX_{int(time.time())}_{random.randint(100, 999)}"
 
@@ -574,7 +574,7 @@ class ClinicalMemoryStore:
 
     def get_user_prescriptions(self, user_id: str) -> List[Dict[str, Any]]:
         """Retrieve saved prescriptions for a specific user ID"""
-        conn = sqlite3.connect(self.db_path)
+        conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute('''
             SELECT rx_id, patient_name, symptoms, primary_diagnosis, prescribed_formulation, prescription_card, created_at
@@ -733,7 +733,7 @@ class ClinicalMemoryStore:
             ("cinnamon", "Ceylon Cinnamon", "Cinnamomum verum", "Western Herbalism", "Cinnamaldehyde, Eugenol, Linalool, Coumarin (trace)", "Hypoglycemic, Antimicrobial, Anti-inflammatory, Circulatory", "Blood Sugar Balancing Spice"),
         ]
 
-        conn = sqlite3.connect(self.db_path)
+        conn = self.get_connection()
         cursor = conn.cursor()
         inserted = 0
 
@@ -755,7 +755,7 @@ class ClinicalMemoryStore:
 
     def lookup_herbs_for_condition(self, condition_keywords: List[str]) -> List[Dict[str, str]]:
         """Query the semantic pharmacopeia for herbs matching condition keywords"""
-        conn = sqlite3.connect(self.db_path)
+        conn = self.get_connection()
         cursor = conn.cursor()
         
         results = []

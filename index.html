@@ -2708,7 +2708,13 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                const data = await res.json();
+
+                let data;
+                try {
+                    data = await res.json();
+                } catch (jsonErr) {
+                    data = { detail: `Server response error (${res.status} ${res.statusText}).` };
+                }
 
                 if (res.ok && data.status === 'otp_required') {
                     // Registration requires OTP verification
@@ -2721,12 +2727,13 @@
                     localStorage.setItem('herbalist_jwt_token', data.access_token);
                     updateAuthUI(data.user);
                     closeAuthModal();
+                    showToast('🔑 Successfully signed in to your account!', 'success');
                 } else {
-                    errEl.innerText = data.detail || 'Authentication failed.';
+                    errEl.innerText = data.detail || 'Authentication failed. Please check your credentials.';
                     errEl.style.display = 'block';
                 }
             } catch (e) {
-                errEl.innerText = 'Connection error. Ensure server is online.';
+                errEl.innerText = 'Network error. Please check your internet connection and try again.';
                 errEl.style.display = 'block';
             }
         }

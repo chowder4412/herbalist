@@ -531,7 +531,7 @@ async def get_rag_citations(query: Optional[str] = None):
 @app.get("/api/admin/users")
 async def get_admin_users():
     """Fetch registered patient accounts for Admin Portal"""
-    conn = sqlite3.connect(memory_store.db_path)
+    conn = memory_store.get_connection()
     cursor = conn.cursor()
     cursor.execute('SELECT user_id, email, full_name, role, created_at FROM users ORDER BY created_at DESC')
     rows = cursor.fetchall()
@@ -583,7 +583,7 @@ async def get_favicon():
 @app.get("/api/clinician/analytics")
 async def get_clinician_analytics():
     """Fetch clinical analytics for doctor & healthcare management console"""
-    conn = sqlite3.connect(memory_store.db_path)
+    conn = memory_store.get_connection()
     cursor = conn.cursor()
     
     cursor.execute('SELECT COUNT(*) FROM episodic_cases')
@@ -649,7 +649,7 @@ async def get_recents(request: Request):
 
     recents = []
     if user_auth and "user_id" in user_auth:
-        conn = sqlite3.connect(memory_store.db_path)
+        conn = memory_store.get_connection()
         cursor = conn.cursor()
         cursor.execute(
             'SELECT case_id, symptoms, primary_diagnosis, prescribed_formulation, bioactive_match_score, timestamp FROM episodic_cases WHERE patient_id = ? ORDER BY timestamp DESC LIMIT 15',
@@ -678,7 +678,7 @@ async def get_recents(request: Request):
 @app.get("/api/admin/all-consultations")
 async def get_all_admin_consultations():
     """Fetch global population consultation analytics for Admin Control Center"""
-    conn = sqlite3.connect(memory_store.db_path)
+    conn = memory_store.get_connection()
     cursor = conn.cursor()
     cursor.execute('SELECT case_id, patient_id, symptoms, primary_diagnosis, prescribed_formulation, bioactive_match_score, timestamp FROM episodic_cases ORDER BY timestamp DESC LIMIT 50')
     rows = cursor.fetchall()
@@ -830,7 +830,7 @@ async def register_user(body: RegisterRequest, background_tasks: BackgroundTasks
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters long")
     
     # Check if user email already exists in users database
-    conn = sqlite3.connect(memory_store.db_path)
+    conn = memory_store.get_connection()
     cursor = conn.cursor()
     cursor.execute('SELECT user_id FROM users WHERE email = ?', (body.email.lower().strip(),))
     existing = cursor.fetchone()
@@ -891,7 +891,7 @@ async def verify_otp(body: VerifyOtpRequest, response: Response):
 @app.post("/api/auth/resend-otp")
 async def resend_otp(body: ResendOtpRequest, background_tasks: BackgroundTasks):
     """Resend a fresh 6-digit OTP verification code in background"""
-    conn = sqlite3.connect(memory_store.db_path)
+    conn = memory_store.get_connection()
     cursor = conn.cursor()
     cursor.execute('SELECT full_name FROM pending_otps WHERE email = ?', (body.email.lower().strip(),))
     row = cursor.fetchone()
@@ -902,7 +902,7 @@ async def resend_otp(body: ResendOtpRequest, background_tasks: BackgroundTasks):
 
     import random
     otp_code = f"{random.randint(100000, 999999)}"
-    conn = sqlite3.connect(memory_store.db_path)
+    conn = memory_store.get_connection()
     cursor = conn.cursor()
     expires_at = int(time.time()) + 600
     cursor.execute('UPDATE pending_otps SET otp_code = ?, expires_at = ? WHERE email = ?', (otp_code, expires_at, body.email.lower().strip()))
