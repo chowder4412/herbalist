@@ -1565,7 +1565,7 @@ ALTERNATIVE SUBSTITUTE RULE:
 For EVERY herb you prescribe, you MUST also provide 1-2 alternative substitute plants with similar bioactive action, so patients who cannot find the primary herb in their region can use a locally available equivalent instead. For example: If prescribing Black Seed, suggest Moringa or Bitter Kola as alternatives. If prescribing Olive Leaf, suggest Guava Leaf or Neem Leaf. If prescribing Green Tea EGCG, suggest Hibiscus/Zobo or Moringa. This ensures patients in any country worldwide always have accessible options.
 
 Generate a JSON object with EXACTLY the following structure (do NOT output markdown backticks, return raw JSON string only):
-{
+{{
   "primary_diagnosis": "string",
   "confidence_score": 98.5,
   "key_bioactives": ["string", "string"],
@@ -1580,34 +1580,34 @@ Generate a JSON object with EXACTLY the following structure (do NOT output markd
   ],
   "dosing_schedule": "1 teacup (approx. 150 mL) warm 3 times daily after meals",
   "layman_explanation": "Detailed clinical explanation of what the patient's body requires",
-  "dietary_guidelines": {
+  "dietary_guidelines": {{
     "foods_to_eat": ["Therapeutic Food 1", "Therapeutic Food 2"],
     "foods_to_avoid": ["Prohibited Food 1", "Prohibited Food 2"],
     "hydration_protocol": "Detailed hydration or liquid rehydration protocol"
-  },
+  }},
   "topical_remedy": "Step-by-step topical herbal wash, poultice, or salve recipe (or 'Not applicable for internal condition')",
-  "research_discovery": {
+  "research_discovery": {{
     "discovery_title": "Novel Bioactive Pathway Synergy Discovery",
     "target_pathway": "NF-kB / STAT3 / GLUT4 Cellular Signaling Pathway Modulation",
     "discovered_herb_synergy": ["Herb 1 (Bioactive A)", "Herb 2 (Bioactive B)"],
     "bioactive_mechanism_summary": "Mechanistic scientific explanation of how the discovered plant synergy modulates cellular disease pathways",
     "clinical_breakthrough_rating": 99.2
-  },
+  }},
   "pubmed_citations": [
-    {
+    {{
       "title": "string",
       "journal": "string",
       "doi": "10.1016/...",
       "pmid": "34166712"
-    }
+    }}
   ],
   "alternative_substitutes": [
-    {
+    {{
       "primary_herb": "Name of prescribed herb",
       "substitutes": ["Alternative Herb 1 (similar bioactive)", "Alternative Herb 2 (locally available equivalent)"]
-    }
+    }}
   ]
-}
+}}
 
 """
 
