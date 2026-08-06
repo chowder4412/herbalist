@@ -61,10 +61,13 @@ EXTENDED_BOTANICAL_DATASET = [
 def seed_database():
     """Import built-in curated dataset into SQLite/Turso database"""
     memory = ClinicalMemoryStore()
+    
+    # 1. Seed WHO / Commission E baseline plants from ClinicalMemoryStore
+    base_count = memory.seed_pharmacopeia_100()
+    
+    # 2. Seed extended WHO, USDA Dr. Duke's, IMPPAT, PFAF & African Phytotherapy dataset
     conn = memory.get_connection()
     cursor = conn.cursor()
-
-    inserted = 0
 
     for p in EXTENDED_BOTANICAL_DATASET:
         herb_key, common_name, botanical_name, category, active_bioactives, therapeutic_properties, layman_nutrient_name = p
@@ -73,14 +76,15 @@ def seed_database():
             (herb_key, common_name, botanical_name, category, active_bioactives, therapeutic_properties, layman_nutrient_name, discovered_from_llm)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ''', (herb_key, common_name, botanical_name, category, active_bioactives, therapeutic_properties, layman_nutrient_name, "WHO / USDA Dr. Duke's / IMPPAT Dataset"))
-        
-        if cursor.rowcount > 0:
-            inserted += 1
 
     conn.commit()
+
+    cursor.execute('SELECT COUNT(*) FROM semantic_pharmacopeia')
+    total_count = cursor.fetchone()[0]
     conn.close()
-    logger.info(f" Successfully seeded/imported {inserted} botanical plant monographs into persistent database!")
-    return inserted
+
+    logger.info(f" Successfully seeded/imported {total_count} total botanical plant monographs into persistent database!")
+    return total_count
 
 def import_csv_file(file_path: str):
     """Import plant monographs from custom CSV file"""

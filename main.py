@@ -5,8 +5,7 @@ import sqlite3
 from typing import Optional, List, Dict, Any
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Request, Response, BackgroundTasks
-
+from fastapi import FastAPI, HTTPException, Request, Response, BackgroundTasks, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -562,6 +561,36 @@ async def trigger_pharmacopeia_import():
     import import_pharmacopeia
     count = import_pharmacopeia.seed_database()
     return {"status": "success", "message": f"Successfully imported {count} botanical plant monographs into database!"}
+
+@app.post("/api/admin/upload-dataset")
+async def upload_custom_dataset(file: UploadFile = File(...)):
+    """Upload custom CSV or JSON dataset from Admin UI and parse into semantic pharmacopeia database"""
+    import import_pharmacopeia
+    import tempfile
+    import time
+    
+    filename = file.filename or "dataset.csv"
+    ext = os.path.splitext(filename)[1].lower()
+    
+    contents = await file.read()
+    temp_path = os.path.join(tempfile.gettempdir(), f"upload_{int(time.time())}{ext}")
+    
+    with open(temp_path, "wb") as f:
+        f.write(contents)
+        
+    try:
+        if ext == ".json":
+            count = import_pharmacopeia.import_json_file(temp_path)
+        else:
+            count = import_pharmacopeia.import_csv_file(temp_path)
+            
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        return {"status": "success", "message": f"Successfully imported {count} botanical plant monographs from '{filename}' into Pharmacopeia!"}
+    except Exception as e:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        raise HTTPException(status_code=400, detail=f"Failed to parse dataset file: {str(e)}")
 
 @app.get("/health")
 async def health_check():
