@@ -93,13 +93,33 @@ class TestFastAPIEndpoints(unittest.TestCase):
             "full_name": "Test OTP Patient"
         }
 
-        # Step 1: Submit registration request (instantly registers & logs in)
+        # Step 1: Submit registration request (requires 6-digit OTP code)
         res1 = self.client.post("/api/auth/register", json=reg_payload)
         self.assertEqual(res1.status_code, 200)
         data1 = res1.json()
-        self.assertEqual(data1["status"], "success")
-        self.assertIn("access_token", data1)
-        self.assertEqual(data1["user"]["email"], email)
+        self.assertEqual(data1["status"], "otp_required")
+
+        # Fetch stored OTP from pending_otps table
+        conn = memory_store.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT otp_code FROM pending_otps WHERE email = ?", (email,))
+        row = cursor.fetchone()
+        conn.close()
+        self.assertIsNotNone(row)
+        otp_code = row[0]
+        self.assertEqual(len(otp_code), 6)
+
+        # Step 2: Try verifying with wrong OTP code (should fail with 400)
+        res_invalid = self.client.post("/api/auth/verify-otp", json={"email": email, "otp_code": "000000"})
+        self.assertEqual(res_invalid.status_code, 400)
+
+        # Step 3: Verify with correct OTP code (should activate user and return JWT token)
+        res2 = self.client.post("/api/auth/verify-otp", json={"email": email, "otp_code": otp_code})
+        self.assertEqual(res2.status_code, 200)
+        data2 = res2.json()
+        self.assertEqual(data2["status"], "success")
+        self.assertIn("access_token", data2)
+        self.assertEqual(data2["user"]["email"], email)
 
 if __name__ == "__main__":
     unittest.main()

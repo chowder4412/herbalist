@@ -824,8 +824,8 @@ async def vision_ai_scan(body: VisionScanRequest):
 
 
 @app.post("/api/auth/register")
-async def register_user(body: RegisterRequest, response: Response, background_tasks: BackgroundTasks):
-    """Register new user account, activate instantly, log in, and dispatch welcome email in background"""
+async def register_user(body: RegisterRequest, background_tasks: BackgroundTasks):
+    """Initiate user registration, generate 6-digit OTP verification code, and dispatch email in background"""
     if len(body.password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters long")
     
@@ -842,38 +842,27 @@ async def register_user(body: RegisterRequest, response: Response, background_ta
     if existing:
         raise HTTPException(status_code=400, detail="An account with this email already exists. Please Sign In instead.")
 
-    # Create active user account instantly
-    user = memory_store.create_user(
+    # Generate 6-digit random verification code & store in pending_otps
+    import random
+    otp_code = f"{random.randint(100000, 999999)}"
+    memory_store.store_pending_otp(
         email=email_clean,
         password=body.password,
         full_name=body.full_name,
+        otp_code=otp_code,
         username=patient_username,
-        dob=patient_dob
+        dob=patient_dob,
+        ttl_seconds=600
     )
 
-    if not user:
-        raise HTTPException(status_code=500, detail="Failed to create user account. Please try again.")
-
-    # Generate JWT authentication token and set HttpOnly cookie
-    token = create_jwt_token(user)
-    response.set_cookie(
-        key="herbalist_jwt",
-        value=token,
-        httponly=True,
-        max_age=86400 * 7,
-        samesite="lax"
-    )
-
-    # Dispatch welcome OTP email in background
-    import random
-    otp_code = f"{random.randint(100000, 999999)}"
+    # Dispatch 6-digit OTP code email in background
     background_tasks.add_task(memory_store.send_otp_email_dispatch, email_clean, otp_code)
+    import logging; logging.getLogger('herbalist.otp').info(f'[Herbalist AI] Dispatched 6-digit OTP code [{otp_code}] for user {email_clean} in background task.')
 
     return {
-        "status": "success",
-        "message": "Account created and activated successfully!",
-        "user": user,
-        "access_token": token
+        "status": "otp_required",
+        "message": f"A 6-digit verification code has been dispatched to {email_clean}",
+        "email": email_clean
     }
 
 def get_auth_token_from_request(request: Request) -> str:

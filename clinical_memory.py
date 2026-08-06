@@ -351,35 +351,35 @@ class ClinicalMemoryStore:
         email_clean = email.lower().strip()
         now = int(time.time())
 
-        cursor.execute('''
-            SELECT otp_code, full_name, password_hash, expires_at, username, dob FROM pending_otps WHERE email = ?
-        ''', (email_clean,))
-        row = cursor.fetchone()
-
-        if not row:
-            conn.close()
-            return None
-
-        stored_otp, full_name, pwd_hash, expires_at, username, dob = row
-        username_clean = (username or "").strip() or full_name.strip().replace(" ", "_")
-        dob_clean = (dob or "").strip()
-        age = self.calculate_age_from_dob(dob_clean)
-
-        if now > expires_at:
-            cursor.execute('DELETE FROM pending_otps WHERE email = ?', (email_clean,))
-            conn.commit()
-            conn.close()
-            return None
-
-        if stored_otp.strip() != otp_code.strip():
-            conn.close()
-            return None
-
-        # OTP is valid — activate account in users table
-        user_id = f"USER_{int(time.time())}_{random.randint(100, 999)}"
         try:
             cursor.execute('''
-                INSERT INTO users (user_id, email, password_hash, full_name, username, dob, age)
+                SELECT otp_code, full_name, password_hash, expires_at, username, dob FROM pending_otps WHERE email = ?
+            ''', (email_clean,))
+            row = cursor.fetchone()
+
+            if not row:
+                conn.close()
+                return None
+
+            stored_otp, full_name, pwd_hash, expires_at, username, dob = row
+            username_clean = (username or "").strip() or full_name.strip().replace(" ", "_")
+            dob_clean = (dob or "").strip()
+            age = self.calculate_age_from_dob(dob_clean)
+
+            if now > expires_at:
+                cursor.execute('DELETE FROM pending_otps WHERE email = ?', (email_clean,))
+                conn.commit()
+                conn.close()
+                return None
+
+            if stored_otp.strip() != otp_code.strip():
+                conn.close()
+                return None
+
+            # OTP is valid — activate account in users table
+            user_id = f"USER_{int(time.time())}_{random.randint(100, 999)}"
+            cursor.execute('''
+                INSERT OR REPLACE INTO users (user_id, email, password_hash, full_name, username, dob, age)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             ''', (user_id, email_clean, pwd_hash, full_name, username_clean, dob_clean, age))
             cursor.execute('DELETE FROM pending_otps WHERE email = ?', (email_clean,))
@@ -394,8 +394,13 @@ class ClinicalMemoryStore:
                 "age": age,
                 "role": "patient"
             }
-        except sqlite3.IntegrityError:
-            conn.close()
+        except Exception as err:
+            import logging
+            logging.getLogger('herbalist.auth').error(f"[Auth Error] verify_and_activate_otp failed: {err}", exc_info=True)
+            try:
+                conn.close()
+            except Exception:
+                pass
             return None
 
     def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
