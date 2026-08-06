@@ -119,6 +119,23 @@ class ClinicalMemoryStore:
             except Exception:
                 pass
 
+        # Auto-migrate any pending registration OTP accounts directly into active users table
+        try:
+            cursor.execute('SELECT email, full_name, password_hash, username, dob FROM pending_otps')
+            pending_rows = cursor.fetchall()
+            for p in pending_rows:
+                p_email, p_name, p_hash, p_user, p_dob = p
+                user_id = f"USER_{int(time.time())}_{random.randint(100, 999)}"
+                p_username = (p_user or "").strip() or p_name.strip().replace(" ", "_")
+                p_dob_clean = (p_dob or "").strip()
+                p_age = self.calculate_age_from_dob(p_dob_clean)
+                cursor.execute('''
+                    INSERT OR IGNORE INTO users (user_id, email, password_hash, full_name, username, dob, age)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ''', (user_id, p_email, p_hash, p_name, p_username, p_dob_clean, p_age))
+        except Exception:
+            pass
+
         conn.commit()
         conn.close()
 

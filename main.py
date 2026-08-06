@@ -824,41 +824,56 @@ async def vision_ai_scan(body: VisionScanRequest):
 
 
 @app.post("/api/auth/register")
-async def register_user(body: RegisterRequest, background_tasks: BackgroundTasks):
-    """Initiate user registration, generate 6-digit OTP verification code, and dispatch email in background"""
+async def register_user(body: RegisterRequest, response: Response, background_tasks: BackgroundTasks):
+    """Register new user account, activate instantly, log in, and dispatch welcome email in background"""
     if len(body.password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters long")
     
+    email_clean = body.email.lower().strip()
+    patient_username = (body.username or body.full_name).strip().replace(" ", "_")
+    patient_dob = (body.dob or "").strip()
+
     # Check if user email already exists in users database
     conn = memory_store.get_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT user_id FROM users WHERE email = ?', (body.email.lower().strip(),))
+    cursor.execute('SELECT user_id FROM users WHERE email = ?', (email_clean,))
     existing = cursor.fetchone()
     conn.close()
     if existing:
-        raise HTTPException(status_code=400, detail="User account with this email already exists")
+        raise HTTPException(status_code=400, detail="An account with this email already exists. Please Sign In instead.")
 
-    # Generate 6-digit random verification code
-    import random
-    otp_code = f"{random.randint(100000, 999999)}"
-    patient_username = (body.username or body.full_name).strip().replace(" ", "_")
-    patient_dob = (body.dob or "").strip()
-    memory_store.store_pending_otp(
-        email=body.email,
+    # Create active user account instantly
+    user = memory_store.create_user(
+        email=email_clean,
         password=body.password,
         full_name=body.full_name,
-        otp_code=otp_code,
         username=patient_username,
-        dob=patient_dob,
-        ttl_seconds=600
+        dob=patient_dob
     )
-    background_tasks.add_task(memory_store.send_otp_email_dispatch, body.email, otp_code)
-    import logging; logging.getLogger('herbalist.otp').info(f'[Herbalist AI] Dispatched 6-digit OTP code [{otp_code}] for user {body.email} in background task.')
+
+    if not user:
+        raise HTTPException(status_code=500, detail="Failed to create user account. Please try again.")
+
+    # Generate JWT authentication token and set HttpOnly cookie
+    token = create_jwt_token(user)
+    response.set_cookie(
+        key="herbalist_jwt",
+        value=token,
+        httponly=True,
+        max_age=86400 * 7,
+        samesite="lax"
+    )
+
+    # Dispatch welcome OTP email in background
+    import random
+    otp_code = f"{random.randint(100000, 999999)}"
+    background_tasks.add_task(memory_store.send_otp_email_dispatch, email_clean, otp_code)
 
     return {
-        "status": "otp_required",
-        "message": f"A 6-digit verification code has been dispatched to {body.email}",
-        "email": body.email.lower().strip()
+        "status": "success",
+        "message": "Account created and activated successfully!",
+        "user": user,
+        "access_token": token
     }
 
 def get_auth_token_from_request(request: Request) -> str:
