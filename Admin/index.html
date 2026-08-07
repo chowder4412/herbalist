@@ -218,6 +218,9 @@
             <button class="admin-tab-btn active" onclick="switchAdminTab('clinician')">
                 📊 Clinician Analytics Console
             </button>
+            <button class="admin-tab-btn" onclick="switchAdminTab('pharmacopeia')">
+                🌿 Pharmacopeia Dataset Manager & Importer
+            </button>
             <button class="admin-tab-btn" onclick="switchAdminTab('rag')">
                 📚 PubMed RAG Ingestion
             </button>
@@ -279,6 +282,44 @@
                             <tr><td colspan="6" style="text-align:center;color:var(--text-muted);">Loading live patient consultation records...</td></tr>
                         </tbody>
                     </table>
+                </div>
+            <!-- PANEL 1: PHARMACOPEIA DATASET MANAGER & IMPORTER -->
+            <div id="panel-pharmacopeia" style="display:none;">
+                <div class="panel-card" style="margin-bottom:24px;">
+                    <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+                        <div>
+                            <span style="font-size:16px;font-weight:700;color:#fff;">🌿 Botanical Pharmacopeia Dataset Manager & Importer</span>
+                            <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Sync WHO Monographs, USDA Dr. Duke's, IMPPAT & upload custom CSV/JSON plant datasets</div>
+                        </div>
+                        <div style="display:flex;gap:10px;align-items:center;">
+                            <button onclick="triggerAdminDatasetSync()" style="background:var(--accent-green);color:#000;border:none;padding:8px 16px;font-weight:700;border-radius:8px;cursor:pointer;">
+                                🔄 Sync WHO/USDA/IMPPAT Monographs
+                            </button>
+                            <label style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:8px 16px;font-weight:700;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+                                📁 Upload Custom CSV / JSON
+                                <input type="file" id="admin-dataset-file" accept=".csv,.json" onchange="uploadAdminCustomDataset(event)" style="display:none;">
+                            </label>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:16px;max-height:480px;overflow-y:auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Herb Key</th>
+                                    <th>Common Name</th>
+                                    <th>Botanical Name</th>
+                                    <th>Category</th>
+                                    <th>Active Bioactives</th>
+                                    <th>Therapeutic Properties</th>
+                                    <th>Dataset Source</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-pharma-tbody">
+                                <tr><td colspan="7" style="text-align:center;color:var(--text-muted);">Loading Pharmacopeia plant database...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -443,30 +484,109 @@
 
         function switchAdminTab(tabName) {
             document.querySelectorAll('.admin-tab-btn').forEach(btn => btn.classList.remove('active'));
-            ['panel-clinician', 'panel-rag', 'panel-flags', 'panel-users', 'panel-telemetry'].forEach(p => {
+            ['panel-clinician', 'panel-pharmacopeia', 'panel-rag', 'panel-flags', 'panel-users', 'panel-telemetry'].forEach(p => {
                 const el = document.getElementById(p);
                 if (el) el.style.display = 'none';
             });
 
+            const btns = document.querySelectorAll('.admin-tab-btn');
+
             if (tabName === 'clinician') {
-                document.querySelectorAll('.admin-tab-btn')[0].classList.add('active');
+                if (btns[0]) btns[0].classList.add('active');
                 document.getElementById('panel-clinician').style.display = 'block';
                 loadClinicianAnalytics();
+            } else if (tabName === 'pharmacopeia') {
+                if (btns[1]) btns[1].classList.add('active');
+                document.getElementById('panel-pharmacopeia').style.display = 'block';
+                loadAdminPharmacopeiaTable();
             } else if (tabName === 'rag') {
-                document.querySelectorAll('.admin-tab-btn')[1].classList.add('active');
+                if (btns[2]) btns[2].classList.add('active');
                 document.getElementById('panel-rag').style.display = 'block';
                 loadRagCitations();
             } else if (tabName === 'flags') {
-                document.querySelectorAll('.admin-tab-btn')[2].classList.add('active');
+                if (btns[3]) btns[3].classList.add('active');
                 document.getElementById('panel-flags').style.display = 'block';
             } else if (tabName === 'users') {
-                document.querySelectorAll('.admin-tab-btn')[3].classList.add('active');
+                if (btns[4]) btns[4].classList.add('active');
                 document.getElementById('panel-users').style.display = 'block';
                 loadUserAccounts();
             } else if (tabName === 'telemetry') {
-                document.querySelectorAll('.admin-tab-btn')[4].classList.add('active');
+                if (btns[5]) btns[5].classList.add('active');
                 document.getElementById('panel-telemetry').style.display = 'block';
             }
+        }
+
+        async function loadAdminPharmacopeiaTable() {
+            const tbody = document.getElementById('admin-pharma-tbody');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">Loading Pharmacopeia plant database...</td></tr>';
+            try {
+                const res = await fetch('/api/pharmacopeia');
+                if (res.ok) {
+                    const data = await res.json();
+                    const herbs = data.herbs || [];
+                    const statEl = document.getElementById('stat-pharmacopeia-count');
+                    if (statEl) statEl.innerText = `${herbs.length}+`;
+                    if (herbs.length > 0 && tbody) {
+                        tbody.innerHTML = herbs.map(h => `
+                            <tr>
+                                <td><strong style="color:var(--accent-green);">${h.key || h.herb_key || 'herb'}</strong></td>
+                                <td style="font-weight:700;color:#fff;">${h.common_name || ''}</td>
+                                <td style="font-style:italic;color:var(--accent-cyan);">${h.botanical_name || ''}</td>
+                                <td><span style="background:rgba(46,204,113,0.15);border:1px solid var(--accent-green);color:var(--accent-green);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;">${h.category || 'Herb'}</span></td>
+                                <td style="color:rgba(255,255,255,0.85);max-width:200px;font-size:11px;">${Array.isArray(h.active_bioactives) ? h.active_bioactives.join(', ') : (h.active_bioactives || '')}</td>
+                                <td style="color:var(--accent-gold);max-width:200px;font-size:11px;">${Array.isArray(h.therapeutic_properties) ? h.therapeutic_properties.join(', ') : (h.therapeutic_properties || '')}</td>
+                                <td style="color:var(--text-muted);font-size:10px;">${h.discovered_from_llm || h.source || 'WHO/USDA Monograph'}</td>
+                            </tr>
+                        `).join('');
+                        return;
+                    }
+                }
+                if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No botanical plant monographs found. Click Sync to seed dataset.</td></tr>';
+            } catch(e) {
+                if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--danger);">Error loading Pharmacopeia database.</td></tr>';
+            }
+        }
+
+        async function triggerAdminDatasetSync() {
+            alert('⏳ Syncing WHO, USDA Dr. Duke\'s, IMPPAT & African Phytotherapy datasets into database...');
+            try {
+                const res = await fetch('/api/admin/import-pharmacopeia', { method: 'POST' });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(`✅ ${data.message}`);
+                    loadAdminPharmacopeiaTable();
+                } else {
+                    alert(`❌ Sync failed: ${data.detail || 'Error'}`);
+                }
+            } catch(e) {
+                alert('❌ Network error triggering dataset sync.');
+            }
+        }
+
+        async function uploadAdminCustomDataset(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            alert(`⏳ Uploading and parsing custom dataset '${file.name}' into database...`);
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const res = await fetch('/api/admin/upload-dataset', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(`✅ ${data.message}`);
+                    loadAdminPharmacopeiaTable();
+                } else {
+                    alert(`❌ Upload error: ${data.detail || 'Error'}`);
+                }
+            } catch(err) {
+                alert('❌ Network error uploading dataset file.');
+            }
+            e.target.value = '';
         }
 
         async function loadClinicianAnalytics() {

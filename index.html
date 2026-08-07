@@ -1057,7 +1057,7 @@
             </div>
             
             <!-- Search & Category Filters -->
-            <div style="display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;">
+            <div style="display: flex; gap: 12px; margin-bottom: 18px; flex-wrap: wrap;">
                 <input type="text" id="pharma-search" placeholder="Search herb name, bioactive (e.g. Curcumin), or indication (e.g. Fever)..." oninput="onPharmacopeiaFilterChange()" style="flex: 1; min-width: 240px;">
                 <select id="pharma-category" onchange="onPharmacopeiaFilterChange()" style="width: 220px;">
                     <option value="all">All Categories</option>
@@ -1065,18 +1065,6 @@
                     <option value="Medicinal Fruit">Medicinal Fruits</option>
                     <option value="Spices">Spices & Roots</option>
                 </select>
-            </div>
-
-            <!-- Admin Dataset Importer Toolbar -->
-            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 18px; flex-wrap: wrap; background: rgba(0,0,0,0.3); padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(46, 204, 113, 0.25);">
-                <span style="font-size: 12px; font-weight: 600; color: var(--accent-green); display: flex; align-items: center; gap: 6px;">⚡ Pharmacopeia Importer:</span>
-                <button onclick="triggerDatasetSync()" class="secondary-btn" style="padding: 6px 14px; font-size: 12px; border-radius: 8px; font-weight: 500;">
-                    🔄 Sync WHO / USDA / IMPPAT Monographs
-                </button>
-                <label class="secondary-btn" style="padding: 6px 14px; font-size: 12px; border-radius: 8px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-                    📁 Upload Custom CSV / JSON
-                    <input type="file" id="pharma-dataset-file" accept=".csv,.json" onchange="uploadCustomDataset(event)" style="display: none;">
-                </label>
             </div>
 
             <!-- Herb Cards Grid -->
