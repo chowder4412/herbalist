@@ -58,17 +58,24 @@ EXTENDED_BOTANICAL_DATASET = [
     ("withania_somnifera", "Ashwagandha", "Withania somnifera", "Ayurveda", "Withanolide A, Withaferin A, Somniferine", "Adaptogenic, Cortisol lowering, Nootropic, Anxiolytic", "Stress-Relieving Indian Ginseng")
 ]
 
-def seed_database():
-    """Import built-in curated dataset into SQLite/Turso database"""
+def seed_database(force=False):
+    """Import built-in curated dataset into SQLite/Turso database (skips redundant seeding if database already populated)"""
     memory = ClinicalMemoryStore()
+    conn = memory.get_connection()
+    cursor = conn.cursor()
     
+    cursor.execute('SELECT COUNT(*) FROM semantic_pharmacopeia')
+    existing_count = cursor.fetchone()[0]
+    
+    if existing_count >= 100 and not force:
+        conn.close()
+        logger.info(f" Pharmacopeia database already populated with {existing_count} plant monographs. Skipping redundant seed.")
+        return existing_count
+
     # 1. Seed WHO / Commission E baseline plants from ClinicalMemoryStore
     base_count = memory.seed_pharmacopeia_100()
     
     # 2. Seed extended WHO, USDA Dr. Duke's, IMPPAT, PFAF & African Phytotherapy dataset
-    conn = memory.get_connection()
-    cursor = conn.cursor()
-
     for p in EXTENDED_BOTANICAL_DATASET:
         herb_key, common_name, botanical_name, category, active_bioactives, therapeutic_properties, layman_nutrient_name = p
         cursor.execute('''
