@@ -1236,8 +1236,40 @@ class NaturalFormulationEngine:
             )
         }
 
+    def sync_semantic_pharmacopeia(self, memory_store=None):
+        """Dynamically load all WHO, USDA Dr. Duke's, IMPPAT & African Phytotherapy database plant monographs into active pharmacopeia engine"""
+        if memory_store is None:
+            try:
+                from clinical_memory import ClinicalMemoryStore
+                memory_store = ClinicalMemoryStore()
+            except Exception:
+                return
+
+        try:
+            semantic_herbs = memory_store.get_all_semantic_herbs()
+            for herb in semantic_herbs:
+                key = herb.get("key") or herb.get("herb_key")
+                if key and key not in self.pharmacopeia:
+                    self.pharmacopeia[key] = NaturalIngredient(
+                        common_name=herb.get("common_name", key.title()),
+                        botanical_name=herb.get("botanical_name", "Medicinal Specie"),
+                        category=herb.get("category", "Medicinal Herb/Plant"),
+                        part_used="Whole Plant / Root / Extract",
+                        active_bioactives=herb.get("active_bioactives", []),
+                        therapeutic_properties=herb.get("therapeutic_properties", []),
+                        potency_rating_per_gram=28.0,
+                        clinical_indications=herb.get("clinical_indications", herb.get("therapeutic_properties", [])),
+                        safety_cautions=herb.get("safety_cautions", ["Consult healthcare specialist for dosage"]),
+                        layman_nutrient_name=herb.get("layman_nutrient_name", f"{herb.get('common_name', 'Botanical')} Active Bioactives"),
+                        common_food_sources=[herb.get("common_name", "Herbal Extract")],
+                        household_measurement="1 teacup infusion"
+                    )
+        except Exception:
+            pass
+
     def dynamic_bioactive_match(self, patient: MedicalProfile, primary_diagnosis: str) -> Tuple[List[str], str, float, float, int]:
         """Dynamically score pharmacopeia ingredients against ANY un-hardcoded illness profile and calculate body-requirement dosage math"""
+        self.sync_semantic_pharmacopeia()
         
         all_patient_text = f"{primary_diagnosis} {' '.join(patient.current_symptoms)} {' '.join(patient.medical_history)} {' '.join(patient.risk_factors)}".lower()
         words = [w for w in all_patient_text.replace(',', ' ').replace('-', ' ').split() if len(w) > 2]

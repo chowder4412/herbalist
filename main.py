@@ -28,10 +28,13 @@ memory_store = ClinicalMemoryStore()
 # ══════════════════════════════════════════════════════════════
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Seed pharmacopeia database on startup
-    seeded = memory_store.seed_pharmacopeia_100()
-    if seeded > 0:
-        print(f"[Herbalist AI] Seeded {seeded} new medicinal plants into pharmacopeia database!")
+    # Seed WHO, USDA Dr. Duke's, IMPPAT & African Phytotherapy pharmacopeia database on startup
+    try:
+        import import_pharmacopeia
+        total_plants = import_pharmacopeia.seed_database()
+        print(f"[Herbalist AI] Successfully loaded {total_plants} verified botanical plant monographs (WHO, USDA Dr. Duke's, IMPPAT) into active memory!")
+    except Exception as e:
+        print(f"[Herbalist AI] Pharmacopeia seeder notice: {e}")
     
     api_key_set = bool(os.getenv("GEMINI_API_KEY"))
     if api_key_set:
