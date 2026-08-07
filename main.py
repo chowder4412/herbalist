@@ -1043,6 +1043,7 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
 
 
     # 0. MULTIMODAL VISION AI SCAN (If image/file attachment is uploaded with (+) button)
+    vision_analysis_summary = ""
     if body.attachment_base64:
         engine = doctor.gemini_engine
         vision_analysis = engine.analyze_vision_attachment(
@@ -1052,11 +1053,14 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
             file_name=body.attachment_name or "Specimen"
         )
         if vision_analysis:
-            return {
-                "status": "success",
-                "is_greeting": True,
-                "conversational_message": vision_analysis
-            }
+            vision_analysis_summary = vision_analysis
+            if not session_id and (not complaint or complaint.startswith("Analyze this attached file")):
+                return {
+                    "status": "success",
+                    "is_greeting": True,
+                    "conversational_message": vision_analysis
+                }
+            complaint = f"{complaint}\n\n[Uploaded Medical Lab Test Report Scan]:\n{vision_analysis}"
 
     # 1. NON-BLOCKING INLINE EMERGENCY SAFETY ALERT
     is_emergency, emergency_msg = AIDoctor.check_emergency_red_flags(complaint)
