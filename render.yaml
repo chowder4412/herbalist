@@ -1,39 +1,25 @@
 services:
   - type: web
-    name: herbalist-ai
+    name: herbalist-ai-doctor
     env: python
+    region: oregon
+    plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: python -m uvicorn main:app --host 0.0.0.0 --port $PORT
-
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.9
-      - key: ENVIRONMENT
-        value: production
-      - key: PORT
-        value: 10000
-
+        value: 3.11.8
       - key: GEMINI_API_KEY
         sync: false
-      - key: UPSTASH_REDIS_REST_URL
-        sync: false
-      - key: UPSTASH_REDIS_REST_TOKEN
+      - key: GROQ_API_KEY
         sync: false
       - key: QDRANT_URL
         sync: false
       - key: QDRANT_API_KEY
         sync: false
-      - key: TURSO_DATABASE_URL
+      - key: UPSTASH_REDIS_REST_URL
         sync: false
-      - key: TURSO_AUTH_TOKEN
+      - key: UPSTASH_REDIS_REST_TOKEN
         sync: false
-      - key: SMTP_SERVER
-        value: smtp.gmail.com
-      - key: SMTP_PORT
-        value: 587
-      - key: SMTP_USER
-        sync: false
-      - key: SMTP_PASSWORD
-        sync: false
-      - key: SMTP_FROM_EMAIL
-        sync: false
+      - key: JWT_SECRET_KEY
+        generateValue: true

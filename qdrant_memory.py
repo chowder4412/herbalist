@@ -100,6 +100,37 @@ class QdrantVectorStore:
             print(f"[Qdrant Cloud] Upsert notice for {common_name}: {e}")
             return False
 
+    def upsert_batch_herbs(self, points_data: List[Dict[str, Any]]) -> int:
+        """Upsert a list of medicinal herb points in a single batch to Qdrant Cloud"""
+        if not self.is_connected or not self.client or not points_data:
+            return 0
+
+        try:
+            points_structs = []
+            for item in points_data:
+                full_text = f"{item['common_name']} {item['botanical_name']} {' '.join(item['bioactives'])} {' '.join(item['indications'])}"
+                vector = self._encode_text_to_vector(full_text)
+                points_structs.append(PointStruct(
+                    id=item['point_id'],
+                    vector=vector,
+                    payload={
+                        "herb_key": item['herb_key'],
+                        "common_name": item['common_name'],
+                        "botanical_name": item['botanical_name'],
+                        "active_bioactives": item['bioactives'],
+                        "clinical_indications": item['indications']
+                    }
+                ))
+
+            self.client.upsert(
+                collection_name=self.collection_name,
+                points=points_structs
+            )
+            return len(points_structs)
+        except Exception as e:
+            print(f"[Qdrant Cloud] Batch upsert notice: {e}")
+            return 0
+
     def search_similar_herbs(self, query_text: str, limit: int = 5) -> List[Dict[str, Any]]:
         """Perform high-dimensional cosine vector similarity search in Qdrant Cloud"""
         if not self.is_connected or not self.client:

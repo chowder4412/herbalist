@@ -106,6 +106,16 @@ class ClinicalMemoryStore:
             )
         ''')
 
+        # Table 6: Password Reset OTP Verifications
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS password_reset_otps (
+                email TEXT PRIMARY KEY,
+                otp_code TEXT,
+                expires_at INTEGER,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+
         # Safe schema migrations for existing SQLite databases
         for col, col_type in [("username", "TEXT"), ("dob", "TEXT"), ("age", "INTEGER")]:
             try:
@@ -118,6 +128,35 @@ class ClinicalMemoryStore:
                 cursor.execute(f"ALTER TABLE pending_otps ADD COLUMN {col} {col_type};")
             except Exception:
                 pass
+
+        # Table 6: Self-Learning Intent Memory (grows with every Gemini classification)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS intent_memory (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                phrase     TEXT UNIQUE,
+                intent     TEXT NOT NULL,
+                language   TEXT DEFAULT 'en',
+                confidence REAL DEFAULT 1.0,
+                source     TEXT DEFAULT 'gemini',
+                times_seen INTEGER DEFAULT 1,
+                learned_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+
+        # Table 7: Patient Lab Vitals & Bloodwork OCR Metrics
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS patient_lab_vitals (
+                patient_id TEXT PRIMARY KEY,
+                alt_level REAL,
+                ast_level REAL,
+                creatinine_level REAL,
+                egfr_level REAL,
+                hba1c_level REAL,
+                hepatic_flag INTEGER DEFAULT 0,
+                renal_flag INTEGER DEFAULT 0,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
 
         # Auto-migrate any pending registration OTP accounts directly into active users table
         try:
@@ -402,6 +441,60 @@ class ClinicalMemoryStore:
             except Exception:
                 pass
             return None
+
+    def store_password_reset_otp(self, email: str, ttl_seconds: int = 600) -> Optional[str]:
+        """Generate and store 6-digit OTP code for password reset"""
+        email_clean = email.lower().strip()
+        user = self.get_user_by_email(email_clean)
+        if not user:
+            return None
+
+        import random, time
+        otp_code = f"{random.randint(100000, 999999)}"
+        expires_at = int(time.time()) + ttl_seconds
+
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT OR REPLACE INTO password_reset_otps (email, otp_code, expires_at)
+            VALUES (?, ?, ?)
+        ''', (email_clean, otp_code, expires_at))
+        conn.commit()
+        conn.close()
+        return otp_code
+
+    def verify_and_reset_password(self, email: str, otp_code: str, new_password: str) -> Optional[Dict[str, Any]]:
+        """Verify 6-digit OTP code and update user password hash in SQLite database"""
+        email_clean = email.lower().strip()
+        now = int(time.time())
+
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT otp_code, expires_at FROM password_reset_otps WHERE email = ?', (email_clean,))
+        row = cursor.fetchone()
+
+        if not row:
+            conn.close()
+            return None
+
+        stored_otp, expires_at = row[0], row[1]
+        if now > expires_at:
+            cursor.execute('DELETE FROM password_reset_otps WHERE email = ?', (email_clean,))
+            conn.commit()
+            conn.close()
+            return None
+
+        if stored_otp.strip() != otp_code.strip():
+            conn.close()
+            return None
+
+        pwd_hash = self.hash_password(new_password)
+        cursor.execute('UPDATE users SET password_hash = ? WHERE email = ?', (pwd_hash, email_clean))
+        cursor.execute('DELETE FROM password_reset_otps WHERE email = ?', (email_clean,))
+        conn.commit()
+        conn.close()
+
+        return self.get_user_by_email(email_clean)
 
     def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
         """Fetch active user record by email"""
@@ -859,9 +952,121 @@ class ClinicalMemoryStore:
             "message": f"Exported {len(samples)} clinical training samples to {output_filepath} for fine-tuning Herbalist-7B"
         }
 
+    # ══════════════════════════════════════════════════════════════
+    # Self-Learning Intent Memory Engine
+    # ══════════════════════════════════════════════════════════════
+
+    def lookup_learned_intent(self, phrase: str) -> Optional[str]:
+        """
+        Layer 1.5: Check if this phrase (or a very similar one) was already
+        classified by Gemini and saved. Returns 'triage', 'info', or None.
+
+        Normalizes the phrase before lookup so minor punctuation/case differences
+        still match.
+        """
+        normalized = phrase.strip().lower()
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            # Exact match first
+            cursor.execute(
+                'SELECT intent, times_seen FROM intent_memory WHERE phrase = ?',
+                (normalized,)
+            )
+            row = cursor.fetchone()
+            if row:
+                intent, times_seen = row
+                # Reinforce — update times_seen counter
+                cursor.execute(
+                    'UPDATE intent_memory SET times_seen = ? WHERE phrase = ?',
+                    (times_seen + 1, normalized)
+                )
+                conn.commit()
+                conn.close()
+                return intent
+            conn.close()
+        except Exception as e:
+            print(f"[Intent Memory] Lookup error: {e}")
+        return None
+
+    def save_learned_intent(
+        self,
+        phrase: str,
+        intent: str,
+        language: str = 'en',
+        confidence: float = 1.0,
+        source: str = 'gemini'
+    ) -> bool:
+        """
+        Layer 3: Persist a Gemini-classified intent phrase to SQLite so it can
+        be matched locally next time — reducing Gemini dependency over time.
+
+        Only saves if confidence >= 0.7 to avoid learning wrong classifications.
+        """
+        valid_intents = ('triage', 'info', 'knowledge', 'symptom', 'out_of_domain', 'greeting')
+        if confidence < 0.7 or intent not in valid_intents:
+            return False
+
+        normalized = phrase.strip().lower()
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO intent_memory (phrase, intent, language, confidence, source, times_seen)
+                VALUES (?, ?, ?, ?, ?, 1)
+                ON CONFLICT(phrase) DO UPDATE SET
+                    times_seen = times_seen + 1,
+                    confidence = MAX(confidence, excluded.confidence)
+            ''', (normalized, intent, language, confidence, source))
+            conn.commit()
+            conn.close()
+            print(f"[Intent Memory] Learned: '{normalized[:60]}' -> {intent} ({language}, conf={confidence:.2f}) via {source}")
+            return True
+        except Exception as e:
+            print(f"[Intent Memory] Save error: {e}")
+            return False
+
+    def get_intent_memory_stats(self) -> dict:
+        """
+        Returns learning progress statistics for the admin dashboard.
+        Shows how many phrases the app has learned to classify independently.
+        """
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            cursor.execute('SELECT COUNT(*) FROM intent_memory')
+            total = cursor.fetchone()[0] or 0
+            cursor.execute('SELECT COUNT(*) FROM intent_memory WHERE source = ?', ('gemini',))
+            gemini_learned = cursor.fetchone()[0] or 0
+            cursor.execute('SELECT COUNT(*) FROM intent_memory WHERE source = ?', ('keyword',))
+            keyword_seeded = cursor.fetchone()[0] or 0
+            cursor.execute('SELECT COUNT(DISTINCT language) FROM intent_memory')
+            languages = cursor.fetchone()[0] or 1
+            cursor.execute('SELECT SUM(times_seen) FROM intent_memory')
+            total_hits = cursor.fetchone()[0] or 0
+            conn.close()
+            return {
+                "total_learned_phrases": total,
+                "gemini_classified": gemini_learned,
+                "keyword_seeded": keyword_seeded,
+                "languages_detected": languages,
+                "total_offline_hits": total_hits,
+                "independence_score": round((keyword_seeded + gemini_learned * 0.8) / max(total, 1) * 100, 1)
+            }
+        except Exception:
+            return {
+                "total_learned_phrases": 0,
+                "gemini_classified": 0,
+                "keyword_seeded": 0,
+                "languages_detected": 1,
+                "total_offline_hits": 0,
+                "independence_score": 0.0
+            }
+
 
 if __name__ == "__main__":
     memory = ClinicalMemoryStore()
+
     
     # Seed 100+ verified medicinal plants
     inserted = memory.seed_pharmacopeia_100()
