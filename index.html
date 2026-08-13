@@ -54,6 +54,14 @@
             animation: dotPulse 1.4s infinite;
         }
 
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .spin-icon {
+            animation: spin 0.8s linear infinite;
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -3216,6 +3224,7 @@
             const nameGroup = document.getElementById('group-fullname');
             const usernameGroup = document.getElementById('group-username');
             const dobGroup = document.getElementById('group-dob');
+            const forgotLink = document.getElementById('forgot-password-link');
             const titleEl = document.getElementById('auth-modal-title');
             const submitBtn = document.getElementById('auth-submit-btn');
 
@@ -3231,6 +3240,7 @@
                 if (nameGroup) nameGroup.style.display = 'none';
                 if (usernameGroup) usernameGroup.style.display = 'none';
                 if (dobGroup) dobGroup.style.display = 'none';
+                if (forgotLink) forgotLink.style.display = 'inline-block';
                 titleEl.innerHTML = 'Sign In to Herbalist AI';
                 submitBtn.innerText = 'Sign In to Account';
             } else {
@@ -3241,8 +3251,9 @@
                 if (nameGroup) nameGroup.style.display = 'block';
                 if (usernameGroup) usernameGroup.style.display = 'block';
                 if (dobGroup) dobGroup.style.display = 'block';
+                if (forgotLink) forgotLink.style.display = 'none';
                 titleEl.innerHTML = 'Create Account';
-                submitBtn.innerText = 'Create Account & Send Code';
+                submitBtn.innerText = 'Create Account';
             }
         }
 
@@ -3253,6 +3264,7 @@
             const username = document.getElementById('auth-username') ? document.getElementById('auth-username').value.trim() : '';
             const dob = document.getElementById('auth-dob') ? document.getElementById('auth-dob').value.trim() : '';
             const errEl = document.getElementById('auth-error-msg');
+            const submitBtn = document.getElementById('auth-submit-btn');
             errEl.style.display = 'none';
 
             if (!email || !password || (currentAuthTab === 'register' && (!name || !username || !dob))) {
@@ -3261,8 +3273,15 @@
                 return;
             }
 
-            const endpoint = currentAuthTab === 'register' ? '/api/auth/register' : '/api/auth/login';
-            const payload = currentAuthTab === 'register' 
+            const isRegister = currentAuthTab === 'register';
+            const originalText = submitBtn.innerText;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = isRegister 
+                ? '<span style="display:inline-flex;align-items:center;gap:6px;"><svg class="spin-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg> Creating Account...</span>'
+                : '<span style="display:inline-flex;align-items:center;gap:6px;"><svg class="spin-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg> Signing In...</span>';
+
+            const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
+            const payload = isRegister 
                 ? { email, password, full_name: name, username: username || name.replace(/ /g, "_"), dob } 
                 : { email, password };
 
@@ -3312,6 +3331,9 @@
             } catch (e) {
                 errEl.innerText = 'Network error. Please check your internet connection and try again.';
                 errEl.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = originalText;
             }
         }
 
