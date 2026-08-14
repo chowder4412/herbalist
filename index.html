@@ -3363,9 +3363,9 @@
                     pendingEmailForOtp = data.email || email;
                     document.getElementById('auth-form-container').style.display = 'none';
                     document.getElementById('otp-form-container').style.display = 'block';
-                    document.getElementById('otp-email-sent-label').innerText = `We sent a 6-digit code to ${pendingEmailForOtp}`;
+                    document.getElementById('otp-email-sent-label').innerText = `We sent a 6-digit verification code to ${pendingEmailForOtp}`;
                     document.getElementById('auth-modal-title').innerText = 'Email Verification';
-                    showToast('✉️ 6-digit code dispatched to your email! Enter code below.', 'info');
+                    showToast('✉️ 6-digit verification code sent to your email! Please check your inbox.', 'info');
                 } else if (res.ok && (data.status === 'success' || data.access_token)) {
                     localStorage.setItem('herbalist_jwt_token', data.access_token);
                     updateAuthUI(data.user);
@@ -3391,6 +3391,74 @@
             }
         }
 
+        async function handleVerifyOtp() {
+            const otpCode = document.getElementById('otp-code-input').value.trim();
+            const errEl = document.getElementById('otp-error-msg');
+            if (errEl) errEl.style.display = 'none';
+
+            if (!otpCode || otpCode.length < 6) {
+                if (errEl) {
+                    errEl.innerText = 'Please enter the 6-digit verification code sent to your email.';
+                    errEl.style.display = 'block';
+                }
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/auth/verify-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: pendingEmailForOtp || document.getElementById('auth-email').value.trim(),
+                        otp_code: otpCode
+                    })
+                });
+
+                const data = await res.json();
+                if (res.ok && (data.status === 'success' || data.access_token)) {
+                    localStorage.setItem('herbalist_jwt_token', data.access_token);
+                    updateAuthUI(data.user);
+                    closeAuthModal();
+                    showToast(`🎉 Account activated! Welcome ${data.user ? (data.user.full_name || 'Patient') : ''}!`, 'success');
+                } else {
+                    if (errEl) {
+                        errEl.innerText = data.detail || 'Invalid verification code. Please check your email inbox or click Resend.';
+                        errEl.style.display = 'block';
+                    }
+                }
+            } catch (err) {
+                if (errEl) {
+                    errEl.innerText = 'Network connection error. Please try again.';
+                    errEl.style.display = 'block';
+                }
+            }
+        }
+
+        async function handleResendOtp(e) {
+            if (e) e.preventDefault();
+            const email = pendingEmailForOtp || document.getElementById('auth-email').value.trim();
+            if (!email) {
+                showToast('⚠️ No email specified for resend.', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/auth/resend-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast(`✉️ Fresh 6-digit verification code sent to ${email}! Check your inbox.`, 'success');
+                } else {
+                    showToast(`⚠️ ${data.detail || 'Failed to resend verification code.'}`, 'error');
+                }
+            } catch (err) {
+                showToast('⚠️ Connection error resending code.', 'error');
+            }
+        }
+
         /* ══════ Forgot Password JS Handlers ══════ */
         function openForgotPasswordStep(e) {
             if (e) e.preventDefault();
@@ -3409,11 +3477,13 @@
         async function handleSendPasswordResetOtp() {
             const email = document.getElementById('forgot-email-input').value.trim();
             const errEl = document.getElementById('forgot-error-msg');
-            errEl.style.display = 'none';
+            if (errEl) errEl.style.display = 'none';
 
             if (!email) {
-                errEl.innerText = 'Please enter your account email address.';
-                errEl.style.display = 'block';
+                if (errEl) {
+                    errEl.innerText = 'Please enter your account email address.';
+                    errEl.style.display = 'block';
+                }
                 return;
             }
 
@@ -3425,21 +3495,25 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    showToast(`📧 Password reset code sent to ${email}`, 'success');
                     document.getElementById('forgot-step-1').style.display = 'none';
                     document.getElementById('forgot-step-2').style.display = 'block';
                     pendingEmailForOtp = email;
+                    showToast(`📧 6-digit password reset code sent to ${email}! Check your inbox.`, 'success');
                 } else {
-                    if (data.detail === 'account_not_found') {
-                        errEl.innerText = 'No account found with this email address. Please check spelling or Create an Account.';
-                    } else {
-                        errEl.innerText = data.detail || 'Failed to send reset code.';
+                    if (errEl) {
+                        if (data.detail === 'account_not_found') {
+                            errEl.innerText = 'No account found with this email address. Please check spelling or Create an Account.';
+                        } else {
+                            errEl.innerText = data.detail || 'Failed to send reset code.';
+                        }
+                        errEl.style.display = 'block';
                     }
-                    errEl.style.display = 'block';
                 }
             } catch(err) {
-                errEl.innerText = 'Network error. Please check your connection and try again.';
-                errEl.style.display = 'block';
+                if (errEl) {
+                    errEl.innerText = 'Network error. Please check your connection and try again.';
+                    errEl.style.display = 'block';
+                }
             }
         }
 

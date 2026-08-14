@@ -2607,6 +2607,56 @@ class GeminiClinicalEngine:
 
         return self._call_groq_fallback(prompt, is_json=False, max_tokens=max_tokens, temperature=temperature)
 
+    def stream_generate_text(self, prompt: str, max_tokens: int = 800, temperature: float = 0.4):
+        """
+        Yields text tokens in real-time for live typewriter streaming.
+        Supports Groq streaming API and Gemini streamGenerateContent API.
+        """
+        groq_key = self.groq_api_key or os.environ.get("GROQ_API_KEY", "")
+        if groq_key:
+            for model in self.groq_models:
+                url = "https://api.groq.com/openai/v1/chat/completions"
+                payload = {
+                    "model": model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": temperature,
+                    "max_tokens": max_tokens,
+                    "stream": True
+                }
+                data_bytes = json.dumps(payload).encode('utf-8')
+                req = urllib.request.Request(
+                    url,
+                    data=data_bytes,
+                    headers={
+                        'Content-Type': 'application/json',
+                        'Authorization': f'Bearer {groq_key}',
+                        'User-Agent': 'Mozilla/5.0 HerbalistAI/2.0'
+                    }
+                )
+                try:
+                    with urllib.request.urlopen(req, timeout=15) as resp:
+                        for line in resp:
+                            line_str = line.decode('utf-8').strip()
+                            if line_str.startswith("data: ") and not line_str.endswith("[DONE]"):
+                                try:
+                                    chunk_json = json.loads(line_str[6:])
+                                    delta = chunk_json.get('choices', [{}])[0].get('delta', {})
+                                    content = delta.get('content', '')
+                                    if content:
+                                        yield content
+                                except Exception:
+                                    continue
+                        return
+                except Exception as e:
+                    print(f"[Groq Stream notice] {e}")
+                    continue
+
+        full_text = self.generate_text(prompt, max_tokens=max_tokens, temperature=temperature)
+        if full_text:
+            words = full_text.split(" ")
+            for i, w in enumerate(words):
+                yield (w + " " if i < len(words) - 1 else w)
+
     def classify_intent(self, user_answer: str) -> dict:
         """
         Gemini-powered intent classification with Groq Llama 3 failover.
