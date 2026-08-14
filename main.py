@@ -2,6 +2,7 @@ import os
 import json
 import uuid
 import sqlite3
+import re
 from typing import Optional, List, Dict, Any
 from contextlib import asynccontextmanager
 
@@ -1258,6 +1259,9 @@ async def register_user(body: RegisterRequest, background_tasks: BackgroundTasks
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters long")
     
     email_clean = body.email.lower().strip()
+    if not re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", email_clean):
+        raise HTTPException(status_code=400, detail="Please enter a valid email address (e.g. name@domain.com).")
+
     patient_username = (body.username or body.full_name).strip().replace(" ", "_")
     patient_dob = (body.dob or "").strip()
 
@@ -1384,6 +1388,8 @@ async def reset_password(body: ResetPasswordRequest, response: Response):
 async def login_user(body: LoginRequest, response: Response):
     """Authenticate user credentials and set HttpOnly Secure Cookie with detailed diagnostic messages"""
     email_clean = body.email.lower().strip()
+    if not re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", email_clean):
+        raise HTTPException(status_code=400, detail="Please enter a valid email address (e.g. name@domain.com).")
     
     # 1. Attempt active authentication
     user = memory_store.authenticate_user(email_clean, body.password)
@@ -1398,12 +1404,9 @@ async def login_user(body: LoginRequest, response: Response):
         )
         return {"status": "success", "user": user, "access_token": token}
 
-    # 2. Diagnose why authentication failed for clear user guidance
+    # 2. Check if pending registration OTP exists
     conn = memory_store.get_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT user_id FROM users WHERE email = ?', (email_clean,))
-    user_exists = cursor.fetchone()
-    
     cursor.execute('SELECT email FROM pending_otps WHERE email = ?', (email_clean,))
     pending_otp = cursor.fetchone()
     conn.close()
@@ -1413,13 +1416,8 @@ async def login_user(body: LoginRequest, response: Response):
             status_code=400,
             detail="verification_pending"
         )
-    elif not user_exists:
-        raise HTTPException(
-            status_code=404,
-            detail="account_not_found"
-        )
 
-    raise HTTPException(status_code=401, detail="Incorrect password. Please double-check your password and try again.")
+    raise HTTPException(status_code=401, detail="Incorrect email or password. Please check your credentials or click Create Account.")
 
 @app.post("/api/auth/logout")
 async def logout_user(response: Response):
