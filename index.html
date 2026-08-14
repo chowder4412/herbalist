@@ -1223,7 +1223,7 @@
                 <div class="form-group" id="group-password">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                         <label style="margin-bottom: 0;">Password</label>
-                        <a href="#" id="forgot-password-link" onclick="openForgotPasswordStep(event)" style="font-size: 11px; color: var(--accent-gold); text-decoration: none; font-weight: 600;">Forgot Password?</a>
+                        <a href="#" id="forgot-password-link" onclick="openForgotPasswordStep(event)" style="display: none; font-size: 11px; color: var(--accent-gold); text-decoration: none; font-weight: 600;">Forgot Password?</a>
                     </div>
                     <input type="password" id="auth-password" placeholder="••••••••">
                 </div>
@@ -3241,8 +3241,12 @@
             });
             const authErr = document.getElementById('auth-error-msg');
             const otpErr = document.getElementById('otp-error-msg');
+            const forgotLink = document.getElementById('forgot-password-link');
             if (authErr) { authErr.style.display = 'none'; authErr.innerText = ''; }
             if (otpErr) { otpErr.style.display = 'none'; otpErr.innerText = ''; }
+            if (forgotLink) {
+                forgotLink.style.display = (typeof currentAuthTab !== 'undefined' && currentAuthTab === 'register') ? 'none' : 'inline-block';
+            }
         }
 
         function openAuthModal(defaultTab = 'login') {
