@@ -39,6 +39,7 @@ from .diagnose import (
     DiagnoseRequest,
     LabUploadRequest,
     VisionScanRequest,
+    DrugScanRequest,
     session_manager
 )
 from .recovery_vault import router as recovery_vault_router

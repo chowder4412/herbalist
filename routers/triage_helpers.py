@@ -608,26 +608,40 @@ def generate_conversational_doctor_response(
     collected_context: Dict[str, Any] = None,
     pharmacopeia_context: List[Any] = None,
     emergency_prefix: str = "",
-    doctor=None
+    doctor=None,
+    modality: str = "auto"
 ) -> str:
-    """Generates a dynamic conversational response via Gemini Clinical Engine with Groq fallback."""
+    """Generates a dynamic conversational response via Gemini Clinical Engine with Groq fallback and modality awareness."""
     collected_clean = {k: v for k, v in (collected_context or {}).items() if v}
     collected_str = json.dumps(collected_clean) if collected_clean else "None so far"
     herbs_str = ", ".join([h.get("common_name", "") for h in (pharmacopeia_context or [])[:5] if isinstance(h, dict)])
     
+    clean_name = patient_username if (patient_username and patient_username not in ("PATIENT_GUEST", "Guest", "PATIENT_ACTIVE", "Patient")) else ""
+    patient_address_instruction = f"Address the patient warmly by their name '{clean_name.split()[0].title()}'." if clean_name else "Address the patient warmly as 'there' or 'friend'. NEVER output 'PATIENT_GUEST' or technical IDs."
+
+    modality_guide = {
+        "tcm": "CLINICAL MODALITY: Traditional Chinese Medicine (TCM). Frame etiology through Yin/Yang balance, Qi & Blood circulation, and Zang-Fu organ patterns with monographed Chinese/Kampo botanicals.",
+        "ayurveda": "CLINICAL MODALITY: Ayurvedic Medicine. Frame etiology through Tridosha balancing (Vata, Pitta, Kapha), Agni digestive fire, and Rasayana rejuvenating herbs (Ashwagandha, Tulsi, Triphala, Brahmi).",
+        "african": "CLINICAL MODALITY: African Indigenous Phytotherapy. Highlight proven African ethnobotanical compendiums (Vernonia amygdalina/Bitter leaf, Moringa, African Ginger, Hibiscus sabdariffa, Garcinia kola).",
+        "western": "CLINICAL MODALITY: Western Clinical Herbalism. Focus on pharmacodynamics, active bioactives (flavonoids, alkaloids, terpenes), German Commission E, and receptor affinities.",
+        "auto": "CLINICAL MODALITY: Global WHO Synthesis. Harmoniously synthesize Western clinical pharmacology with verified global traditional medicine monographs (WHO/TCM/Ayurveda/African)."
+    }.get(modality.lower(), "CLINICAL MODALITY: Global WHO Synthesis.")
+
     prompt = (
-        f"You are Dr. Herbalist, a world-class Senior Integrative AI Medical Doctor & Phytotherapy Specialist.\n"
-        f"You are conducting an active, empathetic medical consultation with patient '{patient_username}'.\n\n"
+        f"You are Dr. Herbalist (or Dr. Aisha when speaking to Nigerian patients), a world-class Senior Integrative Medical Doctor & Botanical Phytotherapy Specialist.\n"
+        f"{modality_guide}\n"
+        f"You are conducting an active, empathetic medical consultation.\n"
+        f"{patient_address_instruction}\n\n"
         f"PATIENT'S LATEST INPUT:\n\"{patient_message}\"\n\n"
         f"CLINICAL EVIDENCE COLLECTED SO FAR:\n{collected_str}\n\n"
         f"RELEVANT PHARMACOPEIA HERBS FOUND IN KNOWLEDGE BASE:\n{herbs_str if herbs_str else 'General Integrative Remedies'}\n\n"
         f"CLINICAL QUESTION / TARGET ITEM NEEDED NEXT:\n{target_goal}\n\n"
-        f"REQUIREMENTS FOR DR. HERBALIST:\n"
-        f"1. Respond with genuine clinical warmth, empathy, and logical medical reasoning.\n"
+        f"REQUIREMENTS FOR THE AI DOCTOR:\n"
+        f"1. Respond with genuine clinical warmth, empathy, and logical medical reasoning reflecting the chosen modality.\n"
         f"2. Validate what the patient stated, connecting their symptoms or answers to physiological mechanisms when appropriate.\n"
         f"3. Seamlessly ask the next clinical question ('{target_goal}') in a natural, fluid, conversational way without sounding like a static form.\n"
         f"4. Keep the response concise (2 to 4 sentences max). Use markdown formatting.\n"
-        f"5. Start directly with your doctor response (e.g. '🩺 **Dr. Herbalist**: ...'). Do NOT include meta text or labels."
+        f"5. Start directly with your doctor response (e.g. '🩺 **Dr. Herbalist**: ...' or '🩺 **Dr. Aisha**: ...'). Do NOT include meta text, labels, or technical IDs."
     )
     
     if doctor and getattr(doctor, 'gemini_engine', None):

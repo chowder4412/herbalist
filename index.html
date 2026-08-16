@@ -2148,7 +2148,7 @@
 
             <!-- FIREBASE EMAIL VERIFICATION PROMPT SCREEN -->
             <div id="verify-email-container" style="display: none;">
-                <div style="text-align: center; margin-bottom: 18px;">
+                <div style="text-align: center; margin-bottom: 16px;">
                     <div style="width: 58px; height: 58px; margin: 0 auto 12px auto; background: rgba(46, 204, 113, 0.12); border: 1px solid var(--accent-green); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 24px rgba(46, 204, 113, 0.35);">
                         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
@@ -2156,8 +2156,18 @@
                         </svg>
                     </div>
                     <h4 style="font-family: 'Outfit', sans-serif; font-size: 18px; color: #ffffff; margin: 0 0 6px 0;">Verify Your Email Address</h4>
-                    <p style="font-size: 12.5px; color: var(--text-muted); line-height: 1.45; margin: 0 0 10px 0;">We've sent a secure verification link to:<br><strong id="verify-sent-email-display" style="color: var(--accent-gold); font-size: 13px;">patient@email.com</strong></p>
-                    <p style="font-size: 12px; color: rgba(255,255,255,0.75); line-height: 1.4; margin: 0;">Please check your inbox (and spam folder) and click the link in the email to activate your account.</p>
+                    <p style="font-size: 12.5px; color: var(--text-muted); line-height: 1.45; margin: 0 0 12px 0;">We've sent a secure verification link to:<br><strong id="verify-sent-email-display" style="color: var(--accent-gold); font-size: 13.5px;">patient@email.com</strong></p>
+                </div>
+
+                <!-- Guidance Info Box -->
+                <div style="background: rgba(243, 156, 18, 0.08); border: 1px solid rgba(243, 156, 18, 0.25); border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; font-size: 12px; line-height: 1.5; color: rgba(255,255,255,0.85); text-align: left;">
+                    <div style="display: flex; align-items: flex-start; gap: 8px;">
+                        <span style="font-size: 14px; line-height: 1;">📬</span>
+                        <div>
+                            <strong>Check Inbox & Spam Folder</strong><br>
+                            If you don't see the email in your Primary Inbox, check your <strong>Spam / Junk folder</strong> and mark it as <em>"Report Not Spam"</em>.
+                        </div>
+                    </div>
                 </div>
 
                 <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px;">
@@ -2257,6 +2267,58 @@
 
             <div id="scanner-results" style="display: none; background: rgba(255,255,255,0.03); border: 1px solid rgba(46,204,113,0.2); border-radius: 16px; padding: 20px;">
                 <!-- Populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- RX DRUG-HERB INTERACTION CAMERA SCANNER MODAL -->
+    <div class="modal-overlay" id="drug-scanner-modal">
+        <div class="modal-card" style="max-width: 740px; width: 94%; max-height: 90vh; display: flex; flex-direction: column; padding: 24px; background: var(--sidebar-bg); border: 1px solid rgba(231, 76, 60, 0.4); border-radius: 24px; box-shadow: 0 25px 60px rgba(0,0,0,0.85);">
+            <div class="modal-header" style="margin-bottom: 16px;">
+                <div>
+                    <h3 style="font-family: 'Outfit', sans-serif; font-size: 21px; color: #ff7675; display: flex; align-items: center; gap: 10px;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10.5 20.5l10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"></path>
+                            <path d="m8.5 8.5 7 7"></path>
+                        </svg>
+                        Rx Drug-Herb Interaction Camera Scanner
+                    </h3>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Scan prescription bottles, pill boxes, or medication labels to evaluate CYP450 enzyme clearance and natural alternatives</p>
+                </div>
+                <button class="icon-btn" onclick="closeDrugScannerModal()">✕</button>
+            </div>
+
+            <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding-right: 4px;">
+                <!-- Camera / Upload Zone with Targeting Reticle -->
+                <div style="border: 2px dashed rgba(231, 76, 60, 0.4); border-radius: 18px; padding: 26px 20px; text-align: center; background: rgba(0,0,0,0.25); cursor: pointer; position: relative; overflow: hidden;" onclick="document.getElementById('drug-camera-file-input').click()">
+                    <div style="width: 52px; height: 52px; margin: 0 auto 10px auto; background: rgba(231, 76, 60, 0.12); border: 1px solid rgba(231, 76, 60, 0.35); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ff7675" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                            <circle cx="12" cy="13" r="4"></circle>
+                        </svg>
+                    </div>
+                    <div style="font-weight: 700; color: #fff; font-size: 15px; margin-bottom: 3px;">Point Camera at Prescription Bottle or Upload Photo</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">Optical OCR instantly identifies generic/brand medication & barcode</div>
+                    <input type="file" id="drug-camera-file-input" accept="image/*" capture="environment" style="display: none;" onchange="handleDrugImageSelected(event)">
+                </div>
+
+                <!-- Quick Prescription Drug Chips -->
+                <div>
+                    <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Or Select Common Rx Medication to Test:</div>
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap;" id="drug-quick-chips">
+                        <button onclick="quickScanDrug('Warfarin')" style="background: rgba(231,76,60,0.15); border: 1px solid rgba(231,76,60,0.3); color: #ff7675; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer;">🩸 Warfarin</button>
+                        <button onclick="quickScanDrug('Metformin')" style="background: rgba(243,156,18,0.15); border: 1px solid rgba(243,156,18,0.3); color: var(--accent-gold); padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer;">🍬 Metformin</button>
+                        <button onclick="quickScanDrug('Lisinopril')" style="background: rgba(52,152,219,0.15); border: 1px solid rgba(52,152,219,0.3); color: #3498db; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer;">🫀 Lisinopril</button>
+                        <button onclick="quickScanDrug('Sertraline')" style="background: rgba(155,89,182,0.15); border: 1px solid rgba(155,89,182,0.3); color: #9b59b6; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer;">🧠 Sertraline (Zoloft)</button>
+                        <button onclick="quickScanDrug('Atorvastatin')" style="background: rgba(46,204,113,0.15); border: 1px solid rgba(46,204,113,0.3); color: var(--accent-green); padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer;">🧈 Atorvastatin</button>
+                        <button onclick="quickScanDrug('Aspirin')" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer;">💊 Aspirin</button>
+                    </div>
+                </div>
+
+                <!-- Dynamic Results Box -->
+                <div id="drug-scanner-results" style="display: none; background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); border-radius: 18px; padding: 20px;">
+                    <!-- Injected dynamically -->
+                </div>
             </div>
         </div>
     </div>
@@ -2797,11 +2859,11 @@
 
     <!-- MULTIMODAL LAB OCR REPORT & BLOODWORK UPLOAD MODAL -->
     <div class="modal-overlay" id="lab-upload-modal">
-        <div class="modal-card" style="max-width: 600px; background: rgba(11, 19, 15, 0.98); border: 1px solid var(--accent-green); padding: 24px;">
-            <div class="modal-header" style="margin-bottom: 20px;">
+        <div class="modal-card" style="max-width: 780px; width: 94%; max-height: 90vh; background: rgba(11, 19, 15, 0.98); border: 1px solid var(--accent-green); padding: 24px; display: flex; flex-direction: column; border-radius: 24px; box-shadow: 0 25px 60px rgba(0,0,0,0.85);">
+            <div class="modal-header" style="margin-bottom: 16px;">
                 <div>
-                    <h3 style="font-family: 'Outfit', sans-serif; font-size: 20px; color: var(--accent-green); display: flex; align-items: center; gap: 10px;">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <h3 style="font-family: 'Outfit', sans-serif; font-size: 21px; color: var(--accent-green); display: flex; align-items: center; gap: 10px;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M14 2H6a2 2 0 0 1-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                             <polyline points="14 2 14 8 20 8"></polyline>
                             <path d="M16 13H8"></path>
@@ -2810,37 +2872,45 @@
                         </svg>
                         Upload Bloodwork & Lab Test Report
                     </h3>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Multimodal Vision AI extracts hepatic enzymes (ALT/AST), renal clearance (Creatinine/eGFR), and HbA1c with WHO Safety Gating</p>
                 </div>
                 <button class="icon-btn" onclick="closeLabUploadModal()">✕</button>
             </div>
 
-            <div style="background: rgba(46, 204, 113, 0.04); border: 1px dashed var(--accent-green); border-radius: 18px; padding: 32px 20px; text-align: center; margin-bottom: 18px; cursor: pointer;" onclick="document.getElementById('lab-file-input').click()">
-                <div style="width: 52px; height: 52px; margin: 0 auto 12px auto; background: rgba(46, 204, 113, 0.12); border: 1px solid rgba(46, 204, 113, 0.35); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
-                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="17 8 12 3 7 8"></polyline>
-                        <line x1="12" y1="3" x2="12" y2="15"></line>
-                    </svg>
+            <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding-right: 4px;">
+                <div style="background: rgba(46, 204, 113, 0.04); border: 1px dashed var(--accent-green); border-radius: 18px; padding: 28px 20px; text-align: center; cursor: pointer;" onclick="document.getElementById('lab-file-input').click()">
+                    <div style="width: 52px; height: 52px; margin: 0 auto 10px auto; background: rgba(46, 204, 113, 0.12); border: 1px solid rgba(46, 204, 113, 0.35); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                    </div>
+                    <div style="font-weight: 700; color: #fff; font-size: 15px; margin-bottom: 3px;">Click to Upload Lab PDF or Image</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">Supports JPG, PNG, WEBP, PDF lab test scans (Max 10MB)</div>
+                    <input type="file" id="lab-file-input" accept="image/*,.pdf" style="display: none;" onchange="handleLabFileSelected(event)">
                 </div>
-                <div style="font-weight: 700; color: #fff; font-size: 15px; margin-bottom: 4px;">Click to Upload Lab PDF or Image</div>
-                <div style="font-size: 12px; color: var(--text-muted);">Supports JPG, PNG, WEBP lab test scans</div>
-                <input type="file" id="lab-file-input" accept="image/*,.pdf" style="display: none;" onchange="handleLabFileSelected(event)">
+
+                <div id="lab-preview-container" style="display: none; text-align: center; background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); border-radius: 14px; padding: 12px;">
+                    <img id="lab-preview-img" style="max-height: 140px; border-radius: 10px; border: 1px solid var(--card-border);" src="">
+                    <div id="lab-file-name" style="font-size: 12px; color: var(--text-muted); margin-top: 6px;"></div>
+                </div>
+
+                <div id="lab-status-msg" style="font-size: 13px; text-align: center;"></div>
+
+                <button id="btn-submit-lab-ocr" onclick="submitLabUploadOCR()" style="width: 100%; padding: 13px; background: linear-gradient(135deg, var(--accent-green), #27ae60); color: #000; font-weight: 800; border: none; border-radius: 12px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <span>Scan & Analyze Lab Results with Vision AI</span>
+                </button>
+
+                <!-- Interactive Biomarkers Results Dashboard -->
+                <div id="lab-results-dashboard" style="display: none; background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); border-radius: 18px; padding: 18px;">
+                    <!-- Dynamically Injected -->
+                </div>
             </div>
-
-            <div id="lab-preview-container" style="display: none; margin-bottom: 16px; text-align: center;">
-                <img id="lab-preview-img" style="max-height: 160px; border-radius: 10px; border: 1px solid var(--card-border);" src="">
-                <div id="lab-file-name" style="font-size: 12px; color: var(--text-muted); margin-top: 6px;"></div>
-            </div>
-
-            <div id="lab-status-msg" style="font-size: 13px; margin-bottom: 14px; text-align: center;"></div>
-
-            <button id="btn-submit-lab-ocr" onclick="submitLabUploadOCR()" style="width: 100%; padding: 13px; background: linear-gradient(135deg, var(--accent-green), #27ae60); color: #000; font-weight: 800; border: none; border-radius: 12px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
-                <span>Scan & Analyze Lab Results with Vision AI</span>
-            </button>
         </div>
     </div>
 
@@ -2882,6 +2952,118 @@
         </div>
     </div>
 
+    <!-- DAILY DECOCTION ADHERENCE & PUSH REMINDERS MODAL -->
+    <div class="modal-overlay" id="adherence-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 10000; align-items: center; justify-content: center; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #111a14, #0d1410); border: 1px solid rgba(243,156,18,0.3); border-radius: 24px; width: 100%; max-width: 580px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,0.8), 0 0 30px rgba(243,156,18,0.15);">
+            <!-- Modal Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.08);">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 42px; height: 42px; border-radius: 12px; background: rgba(243,156,18,0.15); border: 1px solid var(--accent-gold); display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                        ⏰
+                    </div>
+                    <div>
+                        <h3 style="font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 700; color: #fff; margin: 0;">Daily Decoction Adherence</h3>
+                        <p style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">Maintain therapeutic bioactive serum levels & daily push reminders</p>
+                    </div>
+                </div>
+                <button class="icon-btn" onclick="closeAdherenceModal()" style="background: rgba(255,255,255,0.08); border-radius: 10px; width: 36px; height: 36px;">✕</button>
+            </div>
+
+            <div style="flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 18px;">
+                <!-- Streak Banner -->
+                <div style="background: linear-gradient(135deg, rgba(243,156,18,0.18), rgba(230,126,34,0.08)); border: 1px solid rgba(243,156,18,0.4); border-radius: 18px; padding: 18px; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 14px;">
+                        <div style="font-size: 38px; filter: drop-shadow(0 0 12px rgba(243,156,18,0.6));">🔥</div>
+                        <div>
+                            <div style="font-size: 22px; font-weight: 800; color: var(--accent-gold); font-family: 'Outfit', sans-serif;">
+                                <span id="adherence-streak-days">1</span>-Day Healing Streak
+                            </div>
+                            <div style="font-size: 12px; color: #d0e4d7; margin-top: 2px;">
+                                Bioactive Compliance: <strong id="adherence-compliance-pct" style="color: #2ecc71;">100%</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 11px; color: var(--text-muted);">Today's Doses</div>
+                        <div style="font-size: 18px; font-weight: 700; color: #fff;" id="adherence-today-status">0 / 2 Taken</div>
+                    </div>
+                </div>
+
+                <!-- Today's Schedule & 1-Click Checkin -->
+                <div>
+                    <h4 style="font-size: 13px; font-weight: 700; color: var(--accent-green); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
+                        🍵 Today's Phytotherapy Schedule
+                    </h4>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Morning Dose Card -->
+                        <div id="dose-card-morning" style="background: rgba(255,255,255,0.04); border: 1px solid var(--pill-border); border-radius: 14px; padding: 14px; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s ease;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="font-size: 22px;">🌅</div>
+                                <div>
+                                    <div style="font-weight: 700; font-size: 13px; color: #fff;">Morning Decoction (250 mL)</div>
+                                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Take 30 mins before breakfast • Scheduled: <span id="morning-time-label">08:00 AM</span></div>
+                                </div>
+                            </div>
+                            <button id="btn-log-morning" onclick="logDoseTaken('morning')" style="background: rgba(46,204,113,0.15); border: 1px solid var(--accent-green); color: var(--accent-green); padding: 6px 14px; border-radius: 10px; font-weight: 700; font-size: 11.5px; cursor: pointer; transition: all 0.2s ease;">
+                                ✓ Log Dose Taken
+                            </button>
+                        </div>
+
+                        <!-- Evening Dose Card -->
+                        <div id="dose-card-evening" style="background: rgba(255,255,255,0.04); border: 1px solid var(--pill-border); border-radius: 14px; padding: 14px; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s ease;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="font-size: 22px;">🌇</div>
+                                <div>
+                                    <div style="font-weight: 700; font-size: 13px; color: #fff;">Evening Restorative Infusion (250 mL)</div>
+                                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Take after dinner • Scheduled: <span id="evening-time-label">08:00 PM</span></div>
+                                </div>
+                            </div>
+                            <button id="btn-log-evening" onclick="logDoseTaken('evening')" style="background: rgba(46,204,113,0.15); border: 1px solid var(--accent-green); color: var(--accent-green); padding: 6px 14px; border-radius: 10px; font-weight: 700; font-size: 11.5px; cursor: pointer; transition: all 0.2s ease;">
+                                ✓ Log Dose Taken
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Browser Push Notifications Configuration -->
+                <div style="background: rgba(46,204,113,0.05); border: 1px solid rgba(46,204,113,0.2); border-radius: 16px; padding: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 16px;">🔔</span>
+                            <span style="font-weight: 700; font-size: 13px; color: #fff;">Daily Push Dose Reminders</span>
+                        </div>
+                        <button id="btn-enable-push" onclick="togglePushReminders()" style="background: rgba(255,255,255,0.08); border: 1px solid var(--pill-border); color: #fff; padding: 5px 12px; border-radius: 10px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                            Enable Push Notifications
+                        </button>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 11.5px; color: var(--text-muted);">
+                        <label style="display: flex; flex-direction: column; gap: 4px;">
+                            <span>Morning Reminder</span>
+                            <input type="time" id="adherence-time-morning" value="08:00" onchange="updateAdherenceTimes()" style="background: rgba(0,0,0,0.4); border: 1px solid var(--pill-border); color: #fff; padding: 6px 10px; border-radius: 8px; font-size: 12px;">
+                        </label>
+                        <label style="display: flex; flex-direction: column; gap: 4px;">
+                            <span>Evening Reminder</span>
+                            <input type="time" id="adherence-time-evening" value="20:00" onchange="updateAdherenceTimes()" style="background: rgba(0,0,0,0.4); border: 1px solid var(--pill-border); color: #fff; padding: 6px 10px; border-radius: 8px; font-size: 12px;">
+                        </label>
+                    </div>
+                    <div style="margin-top: 12px; display: flex; justify-content: flex-end;">
+                        <button onclick="sendTestReminderNotification()" style="background: transparent; border: none; color: var(--accent-green); font-size: 11px; cursor: pointer; text-decoration: underline;">
+                            ⚡ Send Test Notification Now
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 7-Day Adherence Calendar Log -->
+                <div>
+                    <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;">7-Day Adherence History</div>
+                    <div id="adherence-week-calendar" style="display: flex; justify-content: space-between; gap: 6px;">
+                        <!-- Will be populated dynamically by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- LIVE TELEHEALTH VOICE CONSULTATION OVERLAY MODAL -->
     <div class="telehealth-modal-overlay" id="voice-consultation-modal">
         <!-- Telehealth Top Header -->
@@ -2912,6 +3094,7 @@
             <!-- Voice Persona & Audio Settings Selector -->
             <div style="display: flex; align-items: center; gap: 10px;">
                 <select id="telehealth-voice-selector" onchange="changeTelehealthVoicePersona(this.value)" style="background: rgba(0,0,0,0.5); border: 1px solid var(--pill-border); color: #fff; padding: 8px 12px; border-radius: 12px; font-size: 12px; cursor: pointer; font-family: 'Inter', sans-serif;">
+                    <option value="female_ng" selected>🇳🇬 Dr. Aisha (Female - Nigerian English)</option>
                     <option value="male_uk">🩺 Dr. Herbalist (Male - British/Global)</option>
                     <option value="female_us">🌿 Dr. Maya (Female - Empathetic US)</option>
                     <option value="male_af">🌍 Dr. Kwame (African English)</option>
@@ -3135,10 +3318,25 @@
                     </svg>
                 </button>
             </div>
-            <div style="display: flex; gap: 8px; align-items: center;">
-                <button id="nav-auth-btn" onclick="openAuthModal()" style="background: rgba(255,255,255,0.08); border: 1px solid var(--pill-border); color: #fff; padding: 6px 14px; border-radius: 12px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0;">
-                    Sign In
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: nowrap;">
+                <!-- Multi-Tradition Modality Switcher (Default: Auto WHO Synthesis) -->
+                <div style="position: relative; display: flex; align-items: center;" title="Switch Clinical Medical Tradition (WHO Monographs)">
+                    <select id="clinical-modality-selector" onchange="changeClinicalModality(this.value)" style="background: rgba(0,0,0,0.45); border: 1px solid rgba(46,204,113,0.35); color: #d0e4d7; padding: 6px 26px 6px 10px; border-radius: 12px; font-weight: 700; font-size: 11.5px; cursor: pointer; font-family: 'Outfit', sans-serif; outline: none; appearance: none; -webkit-appearance: none;">
+                        <option value="auto" selected>🌐 Auto (WHO Global)</option>
+                        <option value="tcm">☯️ TCM (Chinese)</option>
+                        <option value="ayurveda">🕉️ Ayurveda (Tridosha)</option>
+                        <option value="african">🌍 African Ethnomedicine</option>
+                        <option value="western">🌿 Western Herbalism</option>
+                    </select>
+                    <span style="position: absolute; right: 9px; pointer-events: none; font-size: 9px; color: var(--accent-green);">▼</span>
+                </div>
+
+                <!-- Daily Decoction Adherence & Reminders -->
+                <button id="adherence-nav-btn" onclick="openAdherenceModal()" title="Daily Decoction Dose Adherence Tracker & Push Reminders" style="background: rgba(243,156,18,0.12); border: 1px solid var(--accent-gold); color: var(--accent-gold); padding: 6px 12px; border-radius: 12px; font-weight: 700; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all 0.2s ease;">
+                    <span id="nav-streak-flame">🔥</span>
+                    <span id="nav-streak-text">1-Day Streak</span>
                 </button>
+
                 <button class="voice-btn-top" onclick="openLiveVoiceConsultationModal()" id="telehealth-top-btn" title="Launch Real-Time Live Telehealth Consultation" style="background: linear-gradient(135deg, rgba(46,204,113,0.22), rgba(39,174,96,0.12)); border: 1px solid var(--accent-green); color: var(--accent-green); padding: 6px 14px; border-radius: 12px; font-weight: 700; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 7px; box-shadow: 0 0 12px rgba(46,204,113,0.2); transition: all 0.2s ease;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
@@ -3154,9 +3352,6 @@
                         <line x1="9" y1="3" x2="9" y2="21"></line>
                     </svg>
                     <span>Canvas</span>
-                </button>
-                <button class="icon-btn" onclick="window.print()" title="Print Prescription">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                 </button>
                 <button class="icon-btn" onclick="openHelpGuideModal()" title="Help & System Guide">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
@@ -3210,11 +3405,11 @@
                     </div>
 
             <!-- ATTACHMENT & CLINICAL VISION POPOVER MENU ANCHORED TO "+" ICON -->
-            <div id="attachment-popover-menu" class="attachment-popover" style="display: none; position: absolute; bottom: 74px; left: 16px; background: rgba(11, 19, 15, 0.98); border: 1px solid var(--accent-green); border-radius: 20px; box-shadow: 0 20px 45px rgba(0, 0, 0, 0.85); z-index: 1000; width: 285px; padding: 10px; backdrop-filter: blur(16px);">
+            <div id="attachment-popover-menu" class="attachment-popover" style="display: none; position: absolute; bottom: 74px; left: 16px; background: rgba(11, 19, 15, 0.98); border: 1px solid var(--accent-green); border-radius: 20px; box-shadow: 0 20px 45px rgba(0, 0, 0, 0.85); z-index: 1000; width: 300px; padding: 10px; backdrop-filter: blur(16px);">
                 <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; padding: 6px 10px 8px 10px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 6px;">Clinical Upload & Vision Tools</div>
                 
-                <div onclick="triggerVisionAiScanner(); toggleAttachmentPopover(false);" style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; cursor: pointer; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(46, 204, 113, 0.15)'" onmouseout="this.style.background='transparent'">
-                    <div style="width: 36px; height: 36px; background: rgba(46, 204, 113, 0.15); border: 1px solid rgba(46, 204, 113, 0.35); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <div onclick="triggerVisionAiScanner(); toggleAttachmentPopover(false);" style="display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: 14px; cursor: pointer; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(46, 204, 113, 0.15)'" onmouseout="this.style.background='transparent'">
+                    <div style="width: 34px; height: 34px; background: rgba(46, 204, 113, 0.15); border: 1px solid rgba(46, 204, 113, 0.35); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
                             <circle cx="12" cy="13" r="4"></circle>
@@ -3226,8 +3421,21 @@
                     </div>
                 </div>
 
-                <div onclick="openLabUploadModal(); toggleAttachmentPopover(false);" style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; cursor: pointer; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(52, 152, 219, 0.15)'" onmouseout="this.style.background='transparent'">
-                    <div style="width: 36px; height: 36px; background: rgba(52, 152, 219, 0.15); border: 1px solid rgba(52, 152, 219, 0.35); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <div onclick="openDrugScannerModal(); toggleAttachmentPopover(false);" style="display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: 14px; cursor: pointer; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(231, 76, 60, 0.15)'" onmouseout="this.style.background='transparent'">
+                    <div style="width: 34px; height: 34px; background: rgba(231, 76, 60, 0.15); border: 1px solid rgba(231, 76, 60, 0.35); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10.5 20.5l10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"></path>
+                            <path d="m8.5 8.5 7 7"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <div style="font-size: 13px; font-weight: 700; color: #fff;">Rx Drug-Herb Camera Scanner</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">Scan Prescription Bottle / Pill Label</div>
+                    </div>
+                </div>
+
+                <div onclick="openLabUploadModal(); toggleAttachmentPopover(false);" style="display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: 14px; cursor: pointer; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(52, 152, 219, 0.15)'" onmouseout="this.style.background='transparent'">
+                    <div style="width: 34px; height: 34px; background: rgba(52, 152, 219, 0.15); border: 1px solid rgba(52, 152, 219, 0.35); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3498db" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M14 2H6a2 2 0 0 1-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                             <polyline points="14 2 14 8 20 8"></polyline>
@@ -3242,8 +3450,8 @@
                     </div>
                 </div>
 
-                <div onclick="triggerChatFileUpload(); toggleAttachmentPopover(false);" style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; cursor: pointer; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(243, 156, 18, 0.15)'" onmouseout="this.style.background='transparent'">
-                    <div style="width: 36px; height: 36px; background: rgba(243, 156, 18, 0.15); border: 1px solid rgba(243, 156, 18, 0.35); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <div onclick="triggerChatFileUpload(); toggleAttachmentPopover(false);" style="display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: 14px; cursor: pointer; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(243, 156, 18, 0.15)'" onmouseout="this.style.background='transparent'">
+                    <div style="width: 34px; height: 34px; background: rgba(243, 156, 18, 0.15); border: 1px solid rgba(243, 156, 18, 0.35); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f39c12" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
                         </svg>
@@ -7026,6 +7234,781 @@
             }
         }
 
+        /* ══════ RX DRUG-HERB CAMERA SCANNER JS ══════ */
+        function openDrugScannerModal() {
+            const modal = document.getElementById('drug-scanner-modal');
+            if (modal) modal.classList.add('active');
+        }
+
+        function closeDrugScannerModal() {
+            const modal = document.getElementById('drug-scanner-modal');
+            if (modal) modal.classList.remove('active');
+        }
+
+        async function handleDrugImageSelected(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const resultsEl = document.getElementById('drug-scanner-results');
+            resultsEl.style.display = 'block';
+            resultsEl.innerHTML = '<div style="color:#ff7675;text-align:center;padding:24px;"><div style="font-size:24px;margin-bottom:8px;">📷</div>Scanning prescription bottle label, OCR barcode, and CYP450 clearance pathways with Multimodal AI...</div>';
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const base64Data = e.target.result.split(',')[1] || e.target.result;
+                try {
+                    const res = await fetch('/api/vision/scan-drug', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            image_data: base64Data,
+                            file_name: file.name,
+                            mime_type: file.type || 'image/jpeg'
+                        })
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        renderDrugScanResults(data);
+                    } else {
+                        resultsEl.innerHTML = '<div style="color:var(--danger);text-align:center;">Failed to parse medication label. Try selecting a quick drug chip below.</div>';
+                    }
+                } catch(err) {
+                    resultsEl.innerHTML = '<div style="color:var(--danger);text-align:center;">OCR connection error. Please try again.</div>';
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function quickScanDrug(drugName) {
+            const resultsEl = document.getElementById('drug-scanner-results');
+            resultsEl.style.display = 'block';
+            resultsEl.innerHTML = `<div style="color:#ff7675;text-align:center;padding:24px;"><div style="font-size:24px;margin-bottom:8px;">⚡</div>Evaluating clinical safety & CYP450 interactions for <strong>${drugName}</strong>...</div>`;
+
+            try {
+                const res = await fetch('/api/vision/scan-drug', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ drug_name: drugName })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    renderDrugScanResults(data);
+                }
+            } catch(e) {
+                resultsEl.innerHTML = '<div style="color:var(--danger);text-align:center;">Error evaluating drug interaction.</div>';
+            }
+        }
+
+        function renderDrugScanResults(data) {
+            const resultsEl = document.getElementById('drug-scanner-results');
+            if (!resultsEl) return;
+
+            const i = data.interaction || {};
+            const sub = data.botanical_substitute || {};
+            const badgeColor = i.color_code || '#2ecc71';
+
+            let substitutesHtml = '';
+            if (sub && sub.botanical_substitutes && sub.botanical_substitutes.length > 0) {
+                substitutesHtml = `
+                    <div style="background: rgba(46,204,113,0.06); border: 1px solid rgba(46,204,113,0.25); border-radius: 14px; padding: 14px; margin-top: 12px;">
+                        <div style="font-size: 12px; font-weight: 700; color: var(--accent-green); text-transform: uppercase; margin-bottom: 6px;">🌿 Evidence-Based Botanical Alternatives:</div>
+                        ${sub.botanical_substitutes.map(s => `
+                            <div style="font-size: 12px; color: #fff; margin-bottom: 4px;">• <strong>${s.name}</strong> (<em>${s.botanical}</em>) — <span style="color: var(--accent-gold);">${s.active_constituent}</span></div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            resultsEl.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+                    <div>
+                        <h4 style="font-family:'Outfit',sans-serif;font-size:18px;color:#ffffff;margin:0;">${data.identified_drug}</h4>
+                        <span style="font-size:11px;color:var(--text-muted);">Optical Confidence: ${data.confidence_score || 98}%</span>
+                    </div>
+                    <span style="background:${badgeColor}25;border:1px solid ${badgeColor};color:${badgeColor};padding:4px 10px;border-radius:12px;font-weight:700;font-size:12px;">
+                        ${i.badge_icon || '🛡️'} ${i.risk_level || 'CLEARED'}
+                    </span>
+                </div>
+
+                <div style="font-size: 13px; color: #fff; line-height: 1.5; margin-bottom: 10px;">
+                    <strong>Pharmacokinetic Mechanism:</strong><br>
+                    <span style="color: rgba(255,255,255,0.85);">${i.pharmacokinetic_mechanism || 'No severe CYP450 metabolic inhibition detected.'}</span>
+                </div>
+
+                <div style="background: rgba(0,0,0,0.3); border-left: 3px solid ${badgeColor}; padding: 10px 14px; border-radius: 0 10px 10px 0; font-size: 12px; color: #fff; margin-bottom: 12px;">
+                    <strong>Clinical Action:</strong> ${i.clinical_guidance || 'Maintain recommended 2-hour window between prescription pill and botanical infusion.'}
+                </div>
+
+                ${substitutesHtml}
+
+                <button onclick="prescribeScannedDrugInteraction('${data.identified_drug}')" style="width:100%;margin-top:14px;padding:12px;background:linear-gradient(135deg,var(--accent-green),#27ae60);color:#000;border:none;border-radius:12px;font-weight:800;cursor:pointer;font-size:13.5px;">
+                    ⚡ Apply ${data.identified_drug} Safety Clearance to Dr. Herbalist
+                </button>
+            `;
+        }
+
+        function prescribeScannedDrugInteraction(drugName) {
+            closeDrugScannerModal();
+            showSection('consultation');
+            const input = document.getElementById('user-input');
+            if (input) {
+                input.value = `I am currently taking ${drugName}. Please formulate a safe phytotherapy protocol accounting for drug clearance.`;
+                submitQuery();
+            }
+        }
+
+        /* ══════ MULTIMODAL LAB OCR REPORT & BIOMARKERS JS ══════ */
+        let uploadedLabBase64 = null;
+        let uploadedLabFileName = '';
+
+        function openLabUploadModal() {
+            const modal = document.getElementById('lab-upload-modal');
+            if (modal) modal.classList.add('active');
+        }
+
+        function closeLabUploadModal() {
+            const modal = document.getElementById('lab-upload-modal');
+            if (modal) modal.classList.remove('active');
+        }
+
+        function handleLabFileSelected(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            uploadedLabFileName = file.name;
+            const previewContainer = document.getElementById('lab-preview-container');
+            const previewImg = document.getElementById('lab-preview-img');
+            const fileNameEl = document.getElementById('lab-file-name');
+            const statusMsg = document.getElementById('lab-status-msg');
+
+            if (statusMsg) statusMsg.innerHTML = '<span style="color:var(--accent-green);">✓ File loaded. Click "Scan & Analyze" to process.</span>';
+            if (fileNameEl) fileNameEl.innerText = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                uploadedLabBase64 = e.target.result.split(',')[1] || e.target.result;
+                if (previewImg && file.type.startsWith('image/')) {
+                    previewImg.src = e.target.result;
+                    if (previewContainer) previewContainer.style.display = 'block';
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function submitLabUploadOCR() {
+            const statusMsg = document.getElementById('lab-status-msg');
+            const submitBtn = document.getElementById('btn-submit-lab-ocr');
+            const dashboardEl = document.getElementById('lab-results-dashboard');
+
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span>Scanning Biomarkers with Vision AI...</span>';
+            }
+            if (statusMsg) statusMsg.innerHTML = '<span style="color:var(--accent-gold);">Extracting clinical hepatic enzymes, renal eGFR, and HbA1c...</span>';
+
+            try {
+                const res = await fetch('/api/upload-lab-results', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        file_base64: uploadedLabBase64 || '',
+                        file_name: uploadedLabFileName || 'Lab_Report.pdf',
+                        patient_id: 'PATIENT_ACTIVE'
+                    })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (statusMsg) statusMsg.innerHTML = '<span style="color:var(--accent-green);">✓ Lab Analysis & WHO Safety Gating Complete!</span>';
+                    renderLabBiomarkersDashboard(data);
+                } else {
+                    if (statusMsg) statusMsg.innerHTML = '<span style="color:var(--danger);">Error processing lab report.</span>';
+                }
+            } catch(err) {
+                if (statusMsg) statusMsg.innerHTML = '<span style="color:var(--danger);">Connection error. Please try again.</span>';
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<span>Scan & Analyze Lab Results with Vision AI</span>';
+                }
+            }
+        }
+
+        function renderLabBiomarkersDashboard(data) {
+            const dashboardEl = document.getElementById('lab-results-dashboard');
+            if (!dashboardEl) return;
+            dashboardEl.style.display = 'block';
+
+            const markers = data.biomarkers || [];
+            const safetyAction = data.safety_action || 'All WHO Safety Gates Passed';
+
+            dashboardEl.innerHTML = `
+                <!-- WHO Safety Banner -->
+                <div style="background: rgba(46, 204, 113, 0.1); border: 1px solid var(--accent-green); border-radius: 14px; padding: 14px; margin-bottom: 16px;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                        <span style="font-size: 16px;">🛡️</span>
+                        <strong style="color: #fff; font-size: 13.5px;">WHO Clinical Safety Clearance Status:</strong>
+                    </div>
+                    <div style="font-size: 12px; color: var(--accent-green); line-height: 1.4;">${safetyAction}</div>
+                </div>
+
+                <!-- Structured Biomarker Metric Cards -->
+                <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Extracted Clinical Blood Biomarkers:</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">
+                    ${markers.map(m => `
+                        <div style="background: rgba(255,255,255,0.03); border: 1px solid ${m.status_color}50; border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 4px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <strong style="font-size: 12.5px; color: #fff;">${m.name.split('(')[0].trim()}</strong>
+                                <span style="font-size: 10px; font-weight: 800; color: ${m.status_color}; background: ${m.status_color}20; padding: 2px 6px; border-radius: 6px;">${m.status}</span>
+                            </div>
+                            <div style="font-size: 18px; font-weight: 800; color: ${m.status_color}; font-family: 'Outfit', sans-serif;">
+                                ${m.value} <span style="font-size: 11px; color: var(--text-muted); font-weight: 400;">${m.unit}</span>
+                            </div>
+                            <div style="font-size: 10.5px; color: var(--text-muted);">Ref Range: ${m.ref_range}</div>
+                            <div style="font-size: 11px; color: var(--accent-gold); margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 4px;">
+                                🌿 <strong>Protocol:</strong> ${m.botanical_protocol}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <button onclick="applyLabBiomarkersToConsultation()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, var(--accent-green), #27ae60); color: #000; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; font-size: 13.5px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <span>🌿 Apply Lab Biomarkers to Dr. Herbalist Consultation</span>
+                </button>
+            `;
+        }
+
+        function applyLabBiomarkersToConsultation() {
+            closeLabUploadModal();
+            showSection('consultation');
+            const input = document.getElementById('user-input');
+            if (input) {
+                input.value = `I have uploaded my recent laboratory bloodwork panel. Please analyze my hepatic enzymes, eGFR renal clearance, and HbA1c values to formulate an evidence-backed phytotherapy prescription.`;
+                submitQuery();
+            }
+        }
+
+        /* ══════ LIVE TELEHEALTH VOICE AI DOCTOR CONSULTATION HUD JS ══════ */
+        let telehealthVoiceActive = false;
+        let telehealthWaveformAnimId = null;
+        let voiceConsultationSynth = window.speechSynthesis;
+        let activeSpeechRecognition = null;
+        let telehealthCallTimerInterval = null;
+        let telehealthCallSeconds = 0;
+        let lastTelehealthDiagnosisData = null;
+
+        function openLiveVoiceConsultationModal() {
+            const modal = document.getElementById('voice-consultation-modal');
+            if (modal) modal.classList.add('active');
+            telehealthVoiceActive = true;
+
+            // Start Call Duration Timer
+            telehealthCallSeconds = 0;
+            const timerDisplay = document.getElementById('telehealth-timer-display');
+            if (timerDisplay) timerDisplay.innerText = '⏱ 00:00';
+            if (telehealthCallTimerInterval) clearInterval(telehealthCallTimerInterval);
+            telehealthCallTimerInterval = setInterval(() => {
+                telehealthCallSeconds++;
+                const mins = String(Math.floor(telehealthCallSeconds / 60)).padStart(2, '0');
+                const secs = String(telehealthCallSeconds % 60).padStart(2, '0');
+                if (timerDisplay) timerDisplay.innerText = `⏱ ${mins}:${secs}`;
+            }, 1000);
+
+            startTelehealthWaveform();
+            initVoiceConsultationLoop();
+        }
+
+        function closeLiveVoiceConsultationModal() {
+            const modal = document.getElementById('voice-consultation-modal');
+            if (modal) modal.classList.remove('active');
+            telehealthVoiceActive = false;
+
+            if (telehealthCallTimerInterval) {
+                clearInterval(telehealthCallTimerInterval);
+                telehealthCallTimerInterval = null;
+            }
+            if (telehealthWaveformAnimId) cancelAnimationFrame(telehealthWaveformAnimId);
+            if (voiceConsultationSynth) voiceConsultationSynth.cancel();
+            if (activeSpeechRecognition) {
+                try { activeSpeechRecognition.stop(); } catch(e) {}
+            }
+
+            // If a prescription was formulated during call, slide open canvas
+            if (lastTelehealthDiagnosisData) {
+                showSection('consultation');
+                if (typeof toggleArtifactsCanvas === 'function') {
+                    toggleArtifactsCanvas(true);
+                }
+            }
+        }
+
+        function toggleTelehealthMic() {
+            const micBtn = document.getElementById('telehealth-mic-btn');
+            const micText = document.getElementById('telehealth-mic-text');
+            if (micBtn && micBtn.classList.contains('active-mic')) {
+                micBtn.classList.remove('active-mic');
+                if (micText) micText.innerText = 'Microphone Muted';
+                if (activeSpeechRecognition) {
+                    try { activeSpeechRecognition.stop(); } catch(e) {}
+                }
+                showToast('🔇 Microphone Muted', 'info');
+            } else if (micBtn) {
+                micBtn.classList.add('active-mic');
+                if (micText) micText.innerText = 'Microphone ON';
+                initVoiceConsultationLoop();
+                showToast('🎙️ Microphone Active', 'success');
+            }
+        }
+
+        function interruptDoctorSpeaking() {
+            if (voiceConsultationSynth) voiceConsultationSynth.cancel();
+            const statusBadge = document.getElementById('telehealth-status-badge');
+            if (statusBadge) statusBadge.innerText = '🎙️ Listening to you... Speak freely';
+            initVoiceConsultationLoop();
+            showToast('⏸️ Doctor speech paused. Listening to patient...', 'info');
+        }
+
+        function initVoiceConsultationLoop() {
+            if (!telehealthVoiceActive) return;
+            const captionBody = document.getElementById('caption-text-body');
+            const statusBadge = document.getElementById('telehealth-status-badge');
+
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (activeSpeechRecognition) {
+                    try { activeSpeechRecognition.stop(); } catch(e) {}
+                }
+                activeSpeechRecognition = new SpeechRecognition();
+                activeSpeechRecognition.continuous = false;
+                activeSpeechRecognition.interimResults = true;
+                activeSpeechRecognition.lang = 'en-US';
+
+                activeSpeechRecognition.onstart = () => {
+                    if (statusBadge) statusBadge.innerText = '🎙️ Listening to you... Speak freely';
+                };
+
+                activeSpeechRecognition.onresult = (event) => {
+                    let transcript = '';
+                    for (let idx = event.resultIndex; idx < event.results.length; idx++) {
+                        transcript += event.results[idx][0].transcript;
+                    }
+                    if (captionBody) captionBody.innerText = `"${transcript}"`;
+                    if (event.results[0].isFinal) {
+                        handleLiveVoiceDoctorResponse(transcript);
+                    }
+                };
+
+                activeSpeechRecognition.onerror = (err) => {
+                    if (telehealthVoiceActive && statusBadge) {
+                        statusBadge.innerText = '🎙️ Ready. Speak freely into your microphone.';
+                    }
+                };
+
+                try { activeSpeechRecognition.start(); } catch(e) {}
+            }
+        }
+
+        let activeVoicePersona = 'female_ng'; // Default to Dr. Aisha (Female - Nigerian English)
+
+        function changeTelehealthVoicePersona(personaKey) {
+            activeVoicePersona = personaKey;
+            const personaLabel = document.getElementById('telehealth-persona-label');
+            const captionsSpeaker = document.getElementById('caption-speaker-label');
+
+            const personas = {
+                'female_ng': { name: 'Dr. Aisha', title: '🩺 Dr. Aisha (Senior Nigerian Integrative Phytotherapist)', flag: '🇳🇬' },
+                'male_uk': { name: 'Dr. Herbalist', title: '🩺 Dr. Herbalist (Senior Integrative MD - British/Global)', flag: '🇬🇧' },
+                'female_us': { name: 'Dr. Maya', title: '🌿 Dr. Maya (Empathetic US Clinical Herbalist)', flag: '🇺🇸' },
+                'male_af': { name: 'Dr. Kwame', title: '🌍 Dr. Kwame (African Traditional Herbalist)', flag: '🇬🇭' },
+                'female_fr': { name: 'Dr. Sophie', title: '🇫🇷 Dr. Sophie (Phytothérapie Clinique)', flag: '🇫🇷' },
+                'male_sw': { name: 'Dkt. Amani', title: '🌴 Dkt. Amani (Swahili Ethnomedicine)', flag: '🇰🇪' }
+            };
+
+            const selected = personas[personaKey] || personas['female_ng'];
+            if (personaLabel) personaLabel.innerText = selected.title;
+            if (captionsSpeaker) captionsSpeaker.innerText = `${selected.name} (Live Voice)`;
+            showToast(`${selected.flag} Voice changed to ${selected.name}`, 'info');
+        }
+
+        async function handleLiveVoiceDoctorResponse(patientQuery) {
+            const statusBadge = document.getElementById('telehealth-status-badge');
+            const captionBody = document.getElementById('caption-text-body');
+            const captionSpeaker = document.getElementById('caption-speaker-label');
+
+            const doctorName = activeVoicePersona === 'female_ng' ? 'Dr. Aisha' : (activeVoicePersona === 'female_us' ? 'Dr. Maya' : 'Dr. Herbalist');
+            if (statusBadge) statusBadge.innerText = `🧠 ${doctorName} is analyzing phytomedicinal protocols...`;
+
+            try {
+                const token = localStorage.getItem('herbalist_jwt_token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                let activeUserName = '';
+                try {
+                    const savedUser = JSON.parse(localStorage.getItem('herbalist_user') || '{}');
+                    activeUserName = savedUser.full_name || savedUser.name || savedUser.username || (savedUser.email ? savedUser.email.split('@')[0] : '');
+                } catch(e) {}
+
+                const res = await fetch('/api/diagnose', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({ 
+                        complaint: patientQuery, 
+                        session_id: 'telehealth_live_session',
+                        patient_id: activeUserName || undefined
+                    })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    lastTelehealthDiagnosisData = data;
+                    let reply = data.conversational_message || data.diagnosis || "I recommend preparing an organic adaptogenic herbal infusion with careful attention to proper simmering temperature.";
+                    
+                    // Replace any accidental PATIENT_GUEST with patient name
+                    if (activeUserName) {
+                        reply = reply.replace(/PATIENT_GUEST/g, activeUserName.split(' ')[0]);
+                    } else {
+                        reply = reply.replace(/PATIENT_GUEST/g, 'there');
+                    }
+
+                    if (captionSpeaker) captionSpeaker.innerText = `${doctorName} AI`;
+                    if (captionBody) captionBody.innerText = `"${reply.slice(0, 240)}..."`;
+                    if (statusBadge) statusBadge.innerText = `🔊 ${doctorName} Speaking...`;
+
+                    speakDoctorCadence(reply);
+                }
+            } catch(e) {
+                if (statusBadge) statusBadge.innerText = '🎙️ Listening to you... Speak freely';
+                initVoiceConsultationLoop();
+            }
+        }
+
+        function speakDoctorCadence(text) {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+
+            // Strip markdown, asterisks, brackets, and speaker prefixes
+            const cleanText = text
+                .replace(/\*\*Dr\.\s*[A-Za-z]+\*\*:\s*/gi, '')
+                .replace(/[*#_`]/g, '')
+                .replace(/PATIENT_GUEST/g, '')
+                .slice(0, 320);
+
+            const utter = new SpeechSynthesisUtterance(cleanText);
+            const voices = window.speechSynthesis.getVoices() || [];
+
+            if (activeVoicePersona === 'female_ng') {
+                // Nigerian English Voice matching
+                const ngVoice = voices.find(v => (v.lang === 'en-NG' || v.lang === 'en_NG') || (v.name && v.name.toLowerCase().includes('nigeria')));
+                if (ngVoice) {
+                    utter.voice = ngVoice;
+                } else {
+                    // Fallback to warm melodic female English voice
+                    const femaleVoice = voices.find(v => (v.lang.startsWith('en') && (v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('zira') || v.name.toLowerCase().includes('samantha') || v.name.toLowerCase().includes('victoria') || v.name.toLowerCase().includes('google'))));
+                    if (femaleVoice) utter.voice = femaleVoice;
+                }
+                utter.rate = 0.94;
+                utter.pitch = 1.12; // Natural, friendly Nigerian melodic pitch
+            } else if (activeVoicePersona === 'male_uk') {
+                const ukVoice = voices.find(v => v.lang === 'en-GB' || v.lang === 'en_GB');
+                if (ukVoice) utter.voice = ukVoice;
+                utter.rate = 0.95;
+                utter.pitch = 0.95;
+            } else if (activeVoicePersona === 'female_us') {
+                const usVoice = voices.find(v => v.lang === 'en-US' && v.name.toLowerCase().includes('female'));
+                if (usVoice) utter.voice = usVoice;
+                utter.rate = 0.96;
+                utter.pitch = 1.05;
+            } else if (activeVoicePersona === 'male_af') {
+                const afVoice = voices.find(v => v.lang.includes('ZA') || v.lang.includes('NG') || v.lang.includes('KE'));
+                if (afVoice) utter.voice = afVoice;
+                utter.rate = 0.92;
+                utter.pitch = 0.92;
+            }
+
+            utter.onend = () => {
+                const statusBadge = document.getElementById('telehealth-status-badge');
+                if (statusBadge) statusBadge.innerText = '🎙️ Listening to you... Speak freely';
+                // Automatically resume listening for continuous hands-free dialogue!
+                if (telehealthVoiceActive) {
+                    setTimeout(() => { initVoiceConsultationLoop(); }, 400);
+                }
+            };
+            window.speechSynthesis.speak(utter);
+        }
+
+        function startTelehealthWaveform() {
+            const canvas = document.getElementById('telehealth-waveform-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let phase = 0;
+
+            function draw() {
+                if (!telehealthVoiceActive) return;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                phase += 0.08;
+
+                // Glowing emerald waveform line
+                ctx.beginPath();
+                ctx.lineWidth = 2.5;
+                ctx.strokeStyle = '#2ecc71';
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = 'rgba(46, 204, 113, 0.6)';
+
+                for (let x = 0; x < canvas.width; x++) {
+                    const y = (canvas.height / 2) + Math.sin(x * 0.04 + phase) * 16 * Math.sin(x * 0.01);
+                    if (x === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+
+                // Secondary cyan harmonic line
+                ctx.beginPath();
+                ctx.lineWidth = 1.5;
+                ctx.strokeStyle = '#00f2fe';
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = 'rgba(0, 242, 254, 0.4)';
+
+                for (let x = 0; x < canvas.width; x++) {
+                    const y = (canvas.height / 2) + Math.cos(x * 0.05 - phase) * 10 * Math.sin(x * 0.015);
+                    if (x === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+
+                telehealthWaveformAnimId = requestAnimationFrame(draw);
+            }
+            draw();
+        }
+
+        /* ══════ MULTI-TRADITION MODALITY SWITCHER JS ══════ */
+        let activeClinicalModality = localStorage.getItem('herbalist_modality') || 'auto';
+
+        function changeClinicalModality(modalityKey) {
+            activeClinicalModality = modalityKey;
+            localStorage.setItem('herbalist_modality', modalityKey);
+
+            const modalitySelector = document.getElementById('clinical-modality-selector');
+            if (modalitySelector) modalitySelector.value = modalityKey;
+
+            const descriptions = {
+                'auto': '🌐 Auto: Global WHO Synthesis active (TCM + Ayurveda + African + Western)',
+                'tcm': '☯️ TCM: Traditional Chinese Medicine active (Yin/Yang, Qi & Meridians)',
+                'ayurveda': '🕉️ Ayurveda: Tridosha (Vata/Pitta/Kapha) balancing active',
+                'african': '🌍 African: Indigenous Ethnobotanical Phytotherapy active',
+                'western': '🌿 Western: Clinical Pharmacology & Active Bioactives active'
+            };
+
+            showToast(descriptions[modalityKey] || '🌐 Clinical Modality Updated', 'success');
+        }
+
+        /* ══════ DAILY DECOCTION ADHERENCE & PUSH REMINDERS JS ══════ */
+        let adherenceState = {
+            streak: 1,
+            lastDoseDate: new Date().toISOString().split('T')[0],
+            todayMorning: false,
+            todayEvening: false,
+            pushEnabled: false,
+            morningTime: '08:00',
+            eveningTime: '20:00',
+            history: { 'Mon': true, 'Tue': true, 'Wed': true, 'Thu': true, 'Fri': true, 'Sat': false, 'Sun': false }
+        };
+
+        function initAdherenceSystem() {
+            try {
+                const saved = localStorage.getItem('herbalist_adherence');
+                if (saved) {
+                    adherenceState = Object.assign(adherenceState, JSON.parse(saved));
+                }
+            } catch(e) {}
+
+            // Sync selector on load
+            const modalitySelector = document.getElementById('clinical-modality-selector');
+            if (modalitySelector) modalitySelector.value = activeClinicalModality;
+
+            updateAdherenceUI();
+        }
+
+        function updateAdherenceUI() {
+            const streakDaysEl = document.getElementById('adherence-streak-days');
+            const navStreakText = document.getElementById('nav-streak-text');
+            const todayStatusEl = document.getElementById('adherence-today-status');
+            const compliancePctEl = document.getElementById('adherence-compliance-pct');
+
+            if (streakDaysEl) streakDaysEl.innerText = adherenceState.streak;
+            if (navStreakText) navStreakText.innerText = `${adherenceState.streak}-Day Streak`;
+
+            const takenCount = (adherenceState.todayMorning ? 1 : 0) + (adherenceState.todayEvening ? 1 : 0);
+            if (todayStatusEl) todayStatusEl.innerText = `${takenCount} / 2 Taken`;
+
+            const pct = Math.min(100, Math.round((adherenceState.streak / (adherenceState.streak + 0.5)) * 100));
+            if (compliancePctEl) compliancePctEl.innerText = `${pct}%`;
+
+            // Update Morning Button
+            const btnMorning = document.getElementById('btn-log-morning');
+            const cardMorning = document.getElementById('dose-card-morning');
+            if (btnMorning && cardMorning) {
+                if (adherenceState.todayMorning) {
+                    btnMorning.innerText = '✅ Taken';
+                    btnMorning.style.background = 'rgba(46,204,113,0.3)';
+                    btnMorning.style.color = '#fff';
+                    cardMorning.style.borderColor = 'rgba(46,204,113,0.5)';
+                } else {
+                    btnMorning.innerText = '✓ Log Dose Taken';
+                    btnMorning.style.background = 'rgba(46,204,113,0.15)';
+                    btnMorning.style.color = 'var(--accent-green)';
+                    cardMorning.style.borderColor = 'var(--pill-border)';
+                }
+            }
+
+            // Update Evening Button
+            const btnEvening = document.getElementById('btn-log-evening');
+            const cardEvening = document.getElementById('dose-card-evening');
+            if (btnEvening && cardEvening) {
+                if (adherenceState.todayEvening) {
+                    btnEvening.innerText = '✅ Taken';
+                    btnEvening.style.background = 'rgba(46,204,113,0.3)';
+                    btnEvening.style.color = '#fff';
+                    cardEvening.style.borderColor = 'rgba(46,204,113,0.5)';
+                } else {
+                    btnEvening.innerText = '✓ Log Dose Taken';
+                    btnEvening.style.background = 'rgba(46,204,113,0.15)';
+                    btnEvening.style.color = 'var(--accent-green)';
+                    cardEvening.style.borderColor = 'var(--pill-border)';
+                }
+            }
+
+            // Update Push Button
+            const btnPush = document.getElementById('btn-enable-push');
+            if (btnPush) {
+                if (adherenceState.pushEnabled && Notification.permission === 'granted') {
+                    btnPush.innerText = '🔔 Push Active';
+                    btnPush.style.background = 'rgba(46,204,113,0.2)';
+                    btnPush.style.color = 'var(--accent-green)';
+                    btnPush.style.borderColor = 'var(--accent-green)';
+                } else {
+                    btnPush.innerText = 'Enable Push Notifications';
+                }
+            }
+
+            renderAdherenceCalendar();
+        }
+
+        function openAdherenceModal() {
+            const modal = document.getElementById('adherence-modal');
+            if (modal) modal.style.display = 'flex';
+            updateAdherenceUI();
+        }
+
+        function closeAdherenceModal() {
+            const modal = document.getElementById('adherence-modal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function logDoseTaken(doseType) {
+            const today = new Date().toISOString().split('T')[0];
+            if (doseType === 'morning') {
+                adherenceState.todayMorning = true;
+                showToast('🌅 Morning 250mL Decoction Logged! Therapeutic Bioactives Absorbed.', 'success');
+            } else if (doseType === 'evening') {
+                adherenceState.todayEvening = true;
+                showToast('🌇 Evening 250mL Restorative Infusion Logged!', 'success');
+            }
+
+            if (adherenceState.todayMorning && adherenceState.todayEvening) {
+                adherenceState.streak += 1;
+                showToast(`🔥 Fantastic! 100% Daily Adherence Achieved! Streak increased to ${adherenceState.streak} days!`, 'success');
+            }
+
+            try {
+                localStorage.setItem('herbalist_adherence', JSON.stringify(adherenceState));
+            } catch(e) {}
+
+            updateAdherenceUI();
+        }
+
+        async function togglePushReminders() {
+            if (!('Notification' in window)) {
+                showToast('⚠️ Desktop notifications not supported by this browser.', 'warning');
+                return;
+            }
+
+            if (Notification.permission === 'granted') {
+                adherenceState.pushEnabled = !adherenceState.pushEnabled;
+                try { localStorage.setItem('herbalist_adherence', JSON.stringify(adherenceState)); } catch(e) {}
+                updateAdherenceUI();
+                showToast(adherenceState.pushEnabled ? '🔔 Push Reminders Active!' : '🔕 Push Reminders Paused', 'info');
+            } else {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    adherenceState.pushEnabled = true;
+                    try { localStorage.setItem('herbalist_adherence', JSON.stringify(adherenceState)); } catch(e) {}
+                    updateAdherenceUI();
+                    new Notification('🌿 Herbalist AI Reminders Enabled', {
+                        body: 'Daily decoction dose notifications scheduled for morning and evening!',
+                        icon: '/favicon.ico'
+                    });
+                    showToast('✅ Push Notifications Permitted & Activated!', 'success');
+                } else {
+                    showToast('⚠️ Notification permission denied in browser settings.', 'warning');
+                }
+            }
+        }
+
+        function sendTestReminderNotification() {
+            if (!('Notification' in window) || Notification.permission !== 'granted') {
+                togglePushReminders();
+                return;
+            }
+
+            new Notification('🍵 Daily Phytotherapy Dose Reminder', {
+                body: 'Time for your 250mL warm botanical decoction to maintain optimal bioactive plasma levels!',
+                icon: '/favicon.ico'
+            });
+            showToast('⚡ Test notification dispatched to your desktop/device!', 'success');
+        }
+
+        function updateAdherenceTimes() {
+            const morningInput = document.getElementById('adherence-time-morning');
+            const eveningInput = document.getElementById('adherence-time-evening');
+            const morningLabel = document.getElementById('morning-time-label');
+            const eveningLabel = document.getElementById('evening-time-label');
+
+            if (morningInput) adherenceState.morningTime = morningInput.value;
+            if (eveningInput) adherenceState.eveningTime = eveningInput.value;
+
+            if (morningLabel && morningInput) morningLabel.innerText = `${morningInput.value} AM`;
+            if (eveningLabel && eveningInput) eveningLabel.innerText = `${eveningInput.value} PM`;
+
+            try { localStorage.setItem('herbalist_adherence', JSON.stringify(adherenceState)); } catch(e) {}
+            showToast('⏱️ Dose reminder times updated!', 'info');
+        }
+
+        function renderAdherenceCalendar() {
+            const container = document.getElementById('adherence-week-calendar');
+            if (!container) return;
+
+            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            const todayIdx = (new Date().getDay() + 6) % 7; // Mon=0, Sun=6
+
+            container.innerHTML = days.map((day, idx) => {
+                const isCompleted = idx < todayIdx ? true : (idx === todayIdx ? (adherenceState.todayMorning || adherenceState.todayEvening) : false);
+                const isToday = idx === todayIdx;
+
+                return `
+                    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 4px; border-radius: 12px; background: ${isToday ? 'rgba(46,204,113,0.15)' : 'rgba(255,255,255,0.03)'}; border: 1px solid ${isToday ? 'var(--accent-green)' : 'rgba(255,255,255,0.06)'};">
+                        <span style="font-size: 10px; color: ${isToday ? 'var(--accent-green)' : 'var(--text-muted)'}; font-weight: 700;">${day}</span>
+                        <div style="width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; background: ${isCompleted ? 'rgba(46,204,113,0.2)' : 'rgba(255,255,255,0.05)'}; color: ${isCompleted ? '#2ecc71' : 'var(--text-muted)'}; border: 1px solid ${isCompleted ? '#2ecc71' : 'transparent'};">
+                            ${isCompleted ? '✓' : '•'}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Initialize on DOM load
+        document.addEventListener('DOMContentLoaded', initAdherenceSystem);
+
         /* ══════ Saved Prescriptions JS ══════ */
         async function loadSavedPrescriptions() {
             const container = document.getElementById('prescriptions-list-container');
@@ -7526,7 +8509,7 @@
             if (fromLogin) {
                 showToast('⚠️ Please click the verification link in your email to sign in.', 'error');
             } else {
-                showToast(`✉️ Verification link sent to ${email}! Check your inbox.`, 'success');
+                showToast(`✉️ Verification link sent to ${email}! (Check Spam folder if not in Inbox)`, 'success');
             }
         }
 
