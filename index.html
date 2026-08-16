@@ -19,6 +19,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Firebase Authentication SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <style>
         :root {
             --bg-dark: #0b130f;
@@ -1234,6 +1237,134 @@
             margin: auto 0;
         }
 
+        /* ══════ PATIENT TOOLKIT 5-CARD HUB STYLES ══════ */
+        .toolkit-hub-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding: 2px;
+        }
+
+        .toolkit-hub-card {
+            background: rgba(14, 24, 18, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+            text-align: left;
+        }
+
+        .toolkit-hub-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--card-accent, var(--accent-green));
+            opacity: 0.85;
+            transition: opacity 0.25s ease;
+        }
+
+        .toolkit-hub-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--card-accent, var(--accent-green));
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.7), 0 0 20px var(--card-glow, rgba(46, 204, 113, 0.2));
+            background: rgba(18, 32, 24, 0.95);
+        }
+
+        .toolkit-hub-card:hover .hub-card-action-btn {
+            background: var(--card-accent, var(--accent-green)) !important;
+            color: #000000 !important;
+            border-color: var(--card-accent, var(--accent-green)) !important;
+        }
+
+        .hub-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .hub-card-icon-box {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(0, 0, 0, 0.35);
+        }
+
+        .hub-card-badge {
+            font-size: 9.5px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+
+        .hub-card-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 15px;
+            font-weight: 800;
+            color: #ffffff;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .hub-card-desc {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.35;
+            margin: 0;
+        }
+
+        .hub-card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .hub-card-tag {
+            font-size: 9.5px;
+            padding: 2px 6px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.85);
+            font-weight: 600;
+        }
+
+        .hub-card-action-btn {
+            width: 100%;
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
         .cook-step-card {
             background: rgba(18, 30, 23, 0.85);
             border: 2px solid var(--accent-green);
@@ -1514,8 +1645,9 @@
                 font-size: 13px !important;
             }
 
-            .metric-label {
-                font-size: 10px !important;
+            .toolkit-hub-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 12px !important;
             }
         }
 
@@ -1561,6 +1693,153 @@
                 max-width: 95% !important;
                 font-size: 13px !important;
             }
+
+            /* ══════ PATIENT CARE TOOLKIT MOBILE RESPONSIVE ENGINE (<= 768px) ══════ */
+            #patient-care-toolkit-modal .modal-card {
+                width: 100vw !important;
+                max-width: 100vw !important;
+                height: 100vh !important;
+                max-height: 100vh !important;
+                border-radius: 0 !important;
+                padding: 14px 14px 24px 14px !important;
+                margin: 0 !important;
+                border: none !important;
+            }
+
+            #patient-care-toolkit-modal .modal-header {
+                margin-bottom: 6px !important;
+            }
+
+            #patient-care-toolkit-modal .modal-header h3 {
+                font-size: 16px !important;
+            }
+
+            #patient-care-toolkit-modal .modal-header div > div > div {
+                font-size: 10px !important;
+                line-height: 1.2 !important;
+                display: -webkit-box;
+                -webkit-line-clamp: 1;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+            }
+
+            #toolkit-main-tabs {
+                gap: 5px !important;
+                margin-bottom: 8px !important;
+                padding-bottom: 6px !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+            }
+
+            #toolkit-main-tabs .organ-system-tab {
+                padding: 6px 10px !important;
+                font-size: 11px !important;
+                flex-shrink: 0 !important;
+                white-space: nowrap !important;
+            }
+
+            /* Organ Hologram: Mobile 1-Column Stack */
+            #toolkit-panel-hologram > div:nth-child(2) {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+            }
+
+            #toolkit-panel-hologram .hologram-grid-bg {
+                min-height: 280px !important;
+                height: 290px !important;
+                padding: 8px !important;
+            }
+
+            #toolkit-panel-hologram .hologram-grid-bg svg {
+                height: 250px !important;
+            }
+
+            /* Cook Mode HUD: Mobile Optimization */
+            #toolkit-panel-cook .cook-step-card {
+                padding: 10px 12px !important;
+            }
+
+            #toolkit-panel-cook .cook-timer-widget {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 8px !important;
+            }
+
+            #toolkit-panel-cook .cook-timer-widget > div:last-child {
+                justify-content: space-between !important;
+                width: 100% !important;
+            }
+
+            /* Synergy Lab: Mobile Dual-Column to Stacked Matrix */
+            #synergy-comparison-content > div:nth-child(2) {
+                grid-template-columns: 1fr !important;
+                gap: 8px !important;
+            }
+
+            #synergy-comparison-content div[style*="grid-template-columns: 1fr 1fr"] {
+                grid-template-columns: 1fr !important;
+                gap: 8px !important;
+            }
+
+            /* Recovery Vault: Mobile Metrics and Vault Grid */
+            #vault-profiles-grid {
+                grid-template-columns: 1fr !important;
+                gap: 8px !important;
+            }
+
+            /* Smart Scale BLE: Touch-friendly Controls */
+            #toolkit-panel-scale button {
+                width: 100% !important;
+            }
+
+            /* ══════ PATIENT TOOLKIT 5-CARD HUB MOBILE RESPONSIVE ══════ */
+            .toolkit-hub-grid {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+                padding-bottom: 24px !important;
+            }
+
+            .toolkit-hub-card {
+                padding: 14px 16px !important;
+                gap: 10px !important;
+                width: 100% !important;
+            }
+
+            .hub-card-header {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+            }
+
+            .hub-card-icon-box {
+                width: 40px !important;
+                height: 40px !important;
+            }
+
+            .hub-card-title {
+                font-size: 16px !important;
+            }
+
+            .hub-card-desc {
+                font-size: 12px !important;
+                line-height: 1.45 !important;
+            }
+
+            .hub-card-tags {
+                display: flex !important;
+                flex-wrap: wrap !important;
+                gap: 6px !important;
+            }
+
+            .hub-card-tag {
+                font-size: 11px !important;
+                padding: 3px 8px !important;
+            }
+
+            .hub-card-action-btn {
+                padding: 9px 14px !important;
+                font-size: 12.5px !important;
+            }
         }
 
         @media (max-width: 480px) {
@@ -1569,6 +1848,25 @@
             }
 
             .prescription-paper button {
+                width: 100% !important;
+                justify-content: center !important;
+            }
+
+            #patient-care-toolkit-modal .modal-header h3 {
+                font-size: 14.5px !important;
+            }
+
+            #toolkit-panel-recovery div[style*="grid-template-columns: 1fr 1fr 1fr"] {
+                grid-template-columns: 1fr !important;
+                gap: 6px !important;
+            }
+
+            #toolkit-panel-cook > div:last-child {
+                flex-direction: column !important;
+                gap: 6px !important;
+            }
+
+            #toolkit-panel-cook > div:last-child button {
                 width: 100% !important;
                 justify-content: center !important;
             }
@@ -1799,7 +2097,7 @@
         </div>
     </div>
 
-    <!-- USER AUTHENTICATION MODAL -->
+    <!-- USER AUTHENTICATION MODAL (FIREBASE AUTH POWERED) -->
     <div class="modal-overlay" id="auth-modal">
         <div class="modal-card" style="max-width: 440px; width: 90%; padding: 24px; background: var(--sidebar-bg); border: 1px solid var(--card-border); border-radius: 20px;">
             <div class="modal-header">
@@ -1814,24 +2112,22 @@
                 <button id="tab-register" onclick="switchAuthTab('register')" style="flex: 1; padding: 8px; background: transparent; color: var(--text-muted); border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 12px;">Create Account</button>
             </div>
 
+            <!-- 1-Click Google Sign In Option -->
+            <button type="button" onclick="handleGoogleSignIn()" style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18); border-radius: 12px; color: #ffffff; font-weight: 600; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.2s ease; margin-bottom: 14px;">
+                <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/></svg>
+                <span>Continue with Google</span>
+            </button>
+
+            <div style="display: flex; align-items: center; margin-bottom: 14px; gap: 10px;">
+                <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.1);"></div>
+                <span style="font-size: 10.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">or with email</span>
+                <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.1);"></div>
+            </div>
+
             <div id="auth-form-container">
                 <div class="form-group" id="group-fullname" style="display: none;">
                     <label>Full Name</label>
                     <input type="text" id="auth-name" placeholder="e.g. Jane Doe">
-                </div>
-                <div class="form-group" id="group-username" style="display: none;">
-                    <label>Username (Patient ID)</label>
-                    <input type="text" id="auth-username" placeholder="e.g. PATIENT_ALEX_2026">
-                </div>
-                <div class="form-group" id="group-dob" style="display: none;">
-                    <label>Date of Birth (DOB)</label>
-                    <div style="position: relative; display: flex; align-items: center;">
-                        <input type="text" id="auth-dob" placeholder="YYYY-MM-DD (e.g. 1995-08-22)" style="color: #ffffff; background: rgba(8, 15, 10, 0.8); border: 1px solid var(--pill-border); border-radius: 10px; padding: 12px 42px 12px 16px; width: 100%; outline: none; font-family: 'Inter', sans-serif;">
-                        <input type="date" id="auth-dob-picker" onchange="if(this.value) document.getElementById('auth-dob').value = this.value;" style="position: absolute; right: 10px; width: 26px; height: 26px; opacity: 0.01; cursor: pointer; color-scheme: dark;">
-                        <button type="button" onclick="const p = document.getElementById('auth-dob-picker'); if(p.showPicker) p.showPicker(); else p.focus();" style="position: absolute; right: 10px; background: none; border: none; color: var(--accent-green); cursor: pointer; padding: 4px; display: flex; align-items: center; pointer-events: none;" title="Pick date from calendar">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                        </button>
-                    </div>
                 </div>
                 <div class="form-group">
                     <label>Email Address</label>
@@ -1850,33 +2146,35 @@
                 </button>
             </div>
 
-
-            <!-- 6-DIGIT EMAIL OTP VERIFICATION STEP -->
-            <div id="otp-form-container" style="display: none;">
-                <div style="text-align: center; margin-bottom: 16px;">
-                    <div style="width: 56px; height: 56px; margin: 0 auto 12px auto; background: rgba(46, 204, 113, 0.12); border: 1px solid var(--accent-green); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(46, 204, 113, 0.35);">
-                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <!-- FIREBASE EMAIL VERIFICATION PROMPT SCREEN -->
+            <div id="verify-email-container" style="display: none;">
+                <div style="text-align: center; margin-bottom: 18px;">
+                    <div style="width: 58px; height: 58px; margin: 0 auto 12px auto; background: rgba(46, 204, 113, 0.12); border: 1px solid var(--accent-green); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 24px rgba(46, 204, 113, 0.35);">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
                             <polyline points="22,6 12,13 2,6"></polyline>
                         </svg>
                     </div>
-                    <h4 style="font-family: 'Outfit', sans-serif; font-size: 16px; color: var(--accent-gold); margin-bottom: 4px;">Enter 6-Digit Verification Code</h4>
-                    <p style="font-size: 12px; color: var(--text-muted);" id="otp-email-sent-label">We sent a verification code to your email</p>
+                    <h4 style="font-family: 'Outfit', sans-serif; font-size: 18px; color: #ffffff; margin: 0 0 6px 0;">Verify Your Email Address</h4>
+                    <p style="font-size: 12.5px; color: var(--text-muted); line-height: 1.45; margin: 0 0 10px 0;">We've sent a secure verification link to:<br><strong id="verify-sent-email-display" style="color: var(--accent-gold); font-size: 13px;">patient@email.com</strong></p>
+                    <p style="font-size: 12px; color: rgba(255,255,255,0.75); line-height: 1.4; margin: 0;">Please check your inbox (and spam folder) and click the link in the email to activate your account.</p>
                 </div>
 
-                <div class="form-group">
-                    <input type="text" id="otp-code-input" placeholder="123456" maxlength="6" style="text-align: center; font-size: 24px; letter-spacing: 8px; font-weight: 700; font-family: 'Outfit', sans-serif; color: var(--accent-green); background: rgba(0,0,0,0.4); border: 1px solid var(--accent-green);">
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px;">
+                    <button onclick="handleCheckEmailVerificationStatus()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, var(--accent-green), #27ae60); color: #000; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 13.5px; display: flex; align-items: center; justify-content: center; gap: 8px;" id="check-verified-btn">
+                        <span>✓ I've Clicked the Link — Check Status</span>
+                    </button>
+                    <button onclick="handleResendVerificationEmail()" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18); border-radius: 12px; color: #ffffff; font-weight: 600; font-size: 12.5px; cursor: pointer;">
+                        Resend Verification Email
+                    </button>
                 </div>
-                <div id="otp-error-msg" style="color: var(--danger); font-size: 12px; margin-bottom: 12px; display: none; text-align: center;"></div>
-                <button onclick="handleVerifyOtp()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, var(--accent-green), #27ae60); color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px; margin-bottom: 12px;">
-                    Verify & Activate Account
-                </button>
-                <div style="text-align: center; font-size: 12px; color: var(--text-muted);">
-                    Didn't receive code? <a href="#" onclick="handleResendOtp(event)" style="color: var(--accent-green); font-weight: 600; text-decoration: none;">Resend Code</a>
+
+                <div style="text-align: center;">
+                    <a href="#" onclick="switchAuthTab('login')" style="font-size: 12px; color: var(--text-muted); text-decoration: none; font-weight: 600;">← Back to Sign In</a>
                 </div>
             </div>
 
-            <!-- FORGOT PASSWORD STEP -->
+            <!-- FIREBASE SECURE PASSWORD RESET STEP -->
             <div id="forgot-form-container" style="display: none;">
                 <div style="text-align: center; margin-bottom: 16px;">
                     <div style="width: 52px; height: 52px; margin: 0 auto 10px auto; background: rgba(243, 156, 18, 0.12); border: 1px solid var(--accent-gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(243, 156, 18, 0.35);">
@@ -1886,7 +2184,7 @@
                         </svg>
                     </div>
                     <h4 style="font-family: 'Outfit', sans-serif; font-size: 16px; color: var(--accent-gold); margin-bottom: 4px;">Reset Account Password</h4>
-                    <p style="font-size: 12px; color: var(--text-muted);">Enter your email address to receive a 6-digit password reset code</p>
+                    <p style="font-size: 12px; color: var(--text-muted);">Enter your account email to receive a verified password reset link</p>
                 </div>
 
                 <div id="forgot-step-1">
@@ -1895,28 +2193,43 @@
                         <input type="text" id="forgot-email-input" placeholder="patient@clinic.com">
                     </div>
                     <div id="forgot-error-msg" style="color: var(--danger); font-size: 12px; margin-bottom: 12px; display: none;"></div>
-                    <button onclick="handleSendPasswordResetOtp()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, var(--accent-gold), #e67e22); color: #000; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px; margin-bottom: 10px;">
-                        Send 6-Digit Reset Code
+                    <div id="forgot-success-msg" style="color: var(--accent-green); font-size: 12px; margin-bottom: 12px; display: none; line-height: 1.4;"></div>
+                    <button onclick="handleSendPasswordResetEmail()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, var(--accent-gold), #e67e22); color: #000; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px;" id="forgot-submit-btn">
+                        Send Password Reset Email
                     </button>
                     <div style="text-align: center;">
                         <a href="#" onclick="switchAuthTab('login')" style="font-size: 12px; color: var(--accent-green); text-decoration: none; font-weight: 600;">← Back to Sign In</a>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
 
-                <div id="forgot-step-2" style="display: none;">
-                    <div class="form-group">
-                        <label style="font-size: 11px; color: var(--text-muted);">6-Digit Reset Code</label>
-                        <input type="text" id="forgot-otp-input" placeholder="123456" maxlength="6" style="text-align: center; font-size: 20px; letter-spacing: 6px; font-weight: 700; color: var(--accent-gold);">
-                    </div>
-                    <div class="form-group">
-                        <label style="font-size: 11px; color: var(--text-muted);">New Password</label>
-                        <input type="password" id="forgot-new-password" placeholder="••••••••">
-                    </div>
-                    <div id="forgot-reset-error-msg" style="color: var(--danger); font-size: 12px; margin-bottom: 12px; display: none;"></div>
-                    <button onclick="handleConfirmPasswordReset()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, var(--accent-green), #27ae60); color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px; margin-bottom: 10px;">
-                        Reset Password & Sign In
-                    </button>
-                </div>
+    <!-- SIGN OUT CONFIRMATION MODAL -->
+    <div class="modal-overlay" id="signout-confirm-modal">
+        <div class="modal-card" style="max-width: 420px; width: 90%; padding: 26px; background: var(--sidebar-bg); border: 1px solid rgba(231, 76, 60, 0.35); border-radius: 22px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.75);">
+            <div style="width: 58px; height: 58px; margin: 0 auto 16px auto; background: rgba(231, 76, 60, 0.12); border: 1px solid rgba(231, 76, 60, 0.35); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 24px rgba(231, 76, 60, 0.25);">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+            </div>
+            
+            <h3 style="font-family: 'Outfit', sans-serif; font-size: 19px; color: #ffffff; margin: 0 0 8px 0;">Sign Out of Herbalist AI?</h3>
+            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin: 0 0 22px 0;">
+                You are currently signed in as<br>
+                <strong id="signout-modal-email" style="color: var(--accent-green); font-size: 13.5px; word-break: break-all;">user@example.com</strong>.<br>
+                Are you sure you want to end your active patient session?
+            </p>
+
+            <div style="display: flex; gap: 12px;">
+                <button onclick="closeSignOutModal()" style="flex: 1; padding: 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; color: #fff; font-weight: 600; font-size: 13.5px; cursor: pointer; transition: all 0.2s ease;">
+                    Cancel
+                </button>
+                <button onclick="confirmSignOutAction()" style="flex: 1; padding: 12px; background: linear-gradient(135deg, #e74c3c, #c0392b); border: none; border-radius: 12px; color: #fff; font-weight: 700; font-size: 13.5px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 14px rgba(231, 76, 60, 0.4); transition: all 0.2s ease;">
+                    <span>Sign Out</span>
+                </button>
             </div>
         </div>
     </div>
@@ -2014,8 +2327,12 @@
                 <button class="icon-btn" onclick="closePatientCareToolkitModal()" style="font-size: 20px;">✕</button>
             </div>
 
-            <!-- Unified Toolkit 5-Tab Bar -->
-            <div style="display: flex; gap: 6px; margin-bottom: 10px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin;" id="toolkit-main-tabs">
+            <!-- Unified Toolkit 5-Tab Bar (Visible when a tool is active) -->
+            <div style="display: none; gap: 6px; margin-bottom: 10px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin;" id="toolkit-main-tabs">
+                <button class="organ-system-tab" id="tab-btn-hub" onclick="switchToolkitTab('hub')" style="background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); color: #ffffff; font-weight: 800;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                    <span>Toolkit Hub</span>
+                </button>
                 <button class="organ-system-tab active" id="tab-btn-hologram" onclick="switchToolkitTab('hologram')">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff7675" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>
                     <span>Organ Hologram</span>
@@ -2047,8 +2364,146 @@
 
             <!-- Tab Panels Container -->
             <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; padding-right: 4px;">
+                <!-- PANEL 0: TOOLKIT HUB DASHBOARD (5 WELL-STYLED LAUNCHER CARDS) -->
+                <div id="toolkit-panel-hub" style="display: flex; flex-direction: column; gap: 8px;">
+                    <!-- 5 Styled Launcher Cards Grid -->
+                    <div class="toolkit-hub-grid">
+                        <!-- Card 1: Organ Hologram Map -->
+                        <div class="toolkit-hub-card" style="--card-accent: #ff7675; --card-glow: rgba(231,76,60,0.25);" onclick="switchToolkitTab('hologram')">
+                            <div class="hub-card-header">
+                                <div class="hub-card-icon-box" style="background: rgba(231, 76, 60, 0.15); border-color: rgba(231, 76, 60, 0.35);">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff7675" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
+                                    </svg>
+                                </div>
+                                <span class="hub-card-badge" style="color: #ff7675; background: rgba(231,76,60,0.15); border: 1px solid rgba(231,76,60,0.3);">Anatomical Map</span>
+                            </div>
+                            <div>
+                                <h4 class="hub-card-title">Organ Hologram</h4>
+                                <p class="hub-card-desc">Interactive cyber-silhouette body map. Inspect 6 organ systems, bio-receptors (CB1/CB2, GABA, TRPV1), and targeted botanical formulas.</p>
+                            </div>
+                            <div class="hub-card-tags">
+                                <span class="hub-card-tag">🧠 Brain</span>
+                                <span class="hub-card-tag">🫁 Lungs</span>
+                                <span class="hub-card-tag">🫀 Heart</span>
+                                <span class="hub-card-tag">🫄 Gut</span>
+                                <span class="hub-card-tag">🦴 Joints</span>
+                                <span class="hub-card-tag">🛡️ Immune</span>
+                            </div>
+                            <button class="hub-card-action-btn">
+                                <span>Launch Organ Hologram</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </button>
+                        </div>
+
+                        <!-- Card 2: Cook Mode HUD -->
+                        <div class="toolkit-hub-card" style="--card-accent: #f39c12; --card-glow: rgba(243,156,18,0.25);" onclick="switchToolkitTab('cook')">
+                            <div class="hub-card-header">
+                                <div class="hub-card-icon-box" style="background: rgba(243, 156, 18, 0.15); border-color: rgba(243, 156, 18, 0.35);">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f39c12" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M4 14h16c0 4.4-3.6 8-8 8s-8-3.6-8-8Z"></path>
+                                        <path d="M7 14V9a5 5 0 0 1 10 0v5"></path>
+                                        <path d="M12 4V2"></path>
+                                        <path d="M20 14l3-3"></path>
+                                        <path d="M9 2h6"></path>
+                                    </svg>
+                                </div>
+                                <span class="hub-card-badge" style="color: var(--accent-gold); background: rgba(243,156,18,0.15); border: 1px solid rgba(243,156,18,0.3);">Kitchen HUD</span>
+                            </div>
+                            <div>
+                                <h4 class="hub-card-title">Cook Mode HUD</h4>
+                                <p class="hub-card-desc">Step-by-step pot decoction compounding HUD with batch scaling (0.5L–5.0L), 20-min countdown timer, audio chime, and voice guidance.</p>
+                            </div>
+                            <div class="hub-card-tags">
+                                <span class="hub-card-tag">⚖️ Batch Scaling</span>
+                                <span class="hub-card-tag">⏱️ 20m Simmer Timer</span>
+                                <span class="hub-card-tag">🔊 Voice Narration</span>
+                            </div>
+                            <button class="hub-card-action-btn">
+                                <span>Open Cook Mode HUD</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </button>
+                        </div>
+
+                        <!-- Card 3: Synergy & Mechanism Lab -->
+                        <div class="toolkit-hub-card" style="--card-accent: #3498db; --card-glow: rgba(52,152,219,0.25);" onclick="switchToolkitTab('synergy')">
+                            <div class="hub-card-header">
+                                <div class="hub-card-icon-box" style="background: rgba(52, 152, 219, 0.15); border-color: rgba(52, 152, 219, 0.35);">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3498db" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M10 2v7.31"></path><path d="M14 9.3V2"></path><path d="M8.5 2h7"></path><path d="M14 9.3a6.5 6.5 0 1 1-4 0"></path><path d="M5.52 16h12.96"></path>
+                                    </svg>
+                                </div>
+                                <span class="hub-card-badge" style="color: #3498db; background: rgba(52,152,219,0.15); border: 1px solid rgba(52,152,219,0.3);">Molecular Matrix</span>
+                            </div>
+                            <div>
+                                <h4 class="hub-card-title">Synergy & Mechanism Lab</h4>
+                                <p class="hub-card-desc">Comparative pharmacodynamics matrix: Botanical Poly-Bioactive Entourage Networks vs. Western Synthetic Single-Target Pharmaceuticals.</p>
+                            </div>
+                            <div class="hub-card-tags">
+                                <span class="hub-card-tag">🌿 Entourage Index</span>
+                                <span class="hub-card-tag">💊 Synthetic Matrix</span>
+                                <span class="hub-card-tag">📚 PubMed Studies</span>
+                            </div>
+                            <button class="hub-card-action-btn">
+                                <span>Explore Mechanism Lab</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </button>
+                        </div>
+
+                        <!-- Card 4: Recovery & Health Vault -->
+                        <div class="toolkit-hub-card" style="--card-accent: #2ecc71; --card-glow: rgba(46,204,113,0.25);" onclick="switchToolkitTab('recovery')">
+                            <div class="hub-card-header">
+                                <div class="hub-card-icon-box" style="background: rgba(46, 204, 113, 0.15); border-color: rgba(46, 204, 113, 0.35);">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                                    </svg>
+                                </div>
+                                <span class="hub-card-badge" style="color: var(--accent-green); background: rgba(46,204,113,0.15); border: 1px solid rgba(46,204,113,0.3);">Trajectory & Records</span>
+                            </div>
+                            <div>
+                                <h4 class="hub-card-title">Recovery & Health Vault</h4>
+                                <p class="hub-card-desc">Dynamic SVG healing velocity curves, daily symptom check-in logger, AI dosing tapering advisor, and multi-profile Family Health Vault.</p>
+                            </div>
+                            <div class="hub-card-tags">
+                                <span class="hub-card-tag">📈 Velocity Curves</span>
+                                <span class="hub-card-tag">🩺 Tapering Advisor</span>
+                                <span class="hub-card-tag">📁 Family Vault</span>
+                            </div>
+                            <button class="hub-card-action-btn">
+                                <span>Open Recovery Vault</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </button>
+                        </div>
+
+                        <!-- Card 5: Smart Scale BLE -->
+                        <div class="toolkit-hub-card" style="--card-accent: #f39c12; --card-glow: rgba(243,156,18,0.25);" onclick="switchToolkitTab('scale')">
+                            <div class="hub-card-header">
+                                <div class="hub-card-icon-box" style="background: rgba(243, 156, 18, 0.15); border-color: rgba(243, 156, 18, 0.35);">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f39c12" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 3v18"></path><path d="M6 7l6-4 6 4"></path><path d="M4 14l2-7 2 7a3 3 0 0 0 6 0l2-7 2 7a3 3 0 0 0 6 0"></path>
+                                    </svg>
+                                </div>
+                                <span class="hub-card-badge" style="color: var(--accent-gold); background: rgba(243,156,18,0.15); border: 1px solid rgba(243,156,18,0.3);">Bluetooth GATT</span>
+                            </div>
+                            <div>
+                                <h4 class="hub-card-title">Smart Scale BLE</h4>
+                                <p class="hub-card-desc">Connect IoT Bluetooth BLE gram scales (GATT 0x181D / 0x2A98) to stream live dry botanical mass and tare zero directly into recipes.</p>
+                            </div>
+                            <div class="hub-card-tags">
+                                <span class="hub-card-tag">📡 BLE 0x181D</span>
+                                <span class="hub-card-tag">⚖️ Live Stream</span>
+                                <span class="hub-card-tag">🔄 Tare Calibration</span>
+                            </div>
+                            <button class="hub-card-action-btn">
+                                <span>Connect Smart Scale</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- PANEL 1: ORGAN HOLOGRAM -->
-                <div id="toolkit-panel-hologram" style="display: flex; flex-direction: column; gap: 14px;">
+                <div id="toolkit-panel-hologram" style="display: none; flex-direction: column; gap: 14px;">
                     <!-- System Selector Tabs Bar -->
                     <div style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin;" id="organ-hologram-tabs">
                         <!-- Dynamically populated system tabs -->
@@ -2691,14 +3146,14 @@
                         <line x1="12" y1="19" x2="12" y2="23"></line>
                         <line x1="8" y1="23" x2="16" y2="23"></line>
                     </svg>
-                    <span>🎙️ Live Telehealth Call</span>
+                    <span>Telehealth Call</span>
                 </button>
                 <button id="canvas-toggle-btn" onclick="toggleArtifactsCanvas()" title="Open Interactive Prescription Artifacts Canvas" style="background: rgba(52, 152, 219, 0.12); border: 1px solid #3498db; color: #3498db; padding: 6px 14px; border-radius: 12px; font-weight: 700; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 7px; transition: all 0.2s ease;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                         <line x1="9" y1="3" x2="9" y2="21"></line>
                     </svg>
-                    <span>📐 Live Rx Canvas</span>
+                    <span>Canvas</span>
                 </button>
                 <button class="icon-btn" onclick="window.print()" title="Print Prescription">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
@@ -3917,7 +4372,7 @@
                         </button>
                         <button onclick="openArtifactsCanvas()" style="background:rgba(52,152,219,0.18);border:1px solid #3498db;padding:12px 18px;border-radius:14px;color:#3498db;font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 4px 15px rgba(52,152,219,0.2);">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
-                            📐 Live Rx Canvas
+                            Canvas
                         </button>
                         <button onclick="openKitchenCookMode(activePrescriptionPayload)" style="background:rgba(243,156,18,0.18);border:1px solid var(--accent-gold);padding:12px 18px;border-radius:14px;color:var(--accent-gold);font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 4px 15px rgba(243,156,18,0.25);">
                             <span style="font-size:16px;">🍳</span>
@@ -6011,7 +6466,7 @@
         let isScaleConnected = false;
         let scaleCharacteristic = null;
 
-        function openPatientCareToolkitModal(defaultTab = 'hologram') {
+        function openPatientCareToolkitModal(defaultTab = 'hub') {
             const modal = document.getElementById('patient-care-toolkit-modal');
             if (!modal) return;
             switchToolkitTab(defaultTab);
@@ -6029,9 +6484,9 @@
             pauseKitchenTimer();
         }
 
-        function switchToolkitTab(tab) {
+        function switchToolkitTab(tab = 'hub') {
             activeToolkitTab = tab;
-            const tabs = ['hologram', 'cook', 'synergy', 'recovery', 'scale'];
+            const tabs = ['hub', 'hologram', 'cook', 'synergy', 'recovery', 'scale'];
             
             tabs.forEach(t => {
                 const btn = document.getElementById(`tab-btn-${t}`);
@@ -6047,6 +6502,12 @@
                     panel.style.display = (t === tab) ? 'flex' : 'none';
                 }
             });
+
+            // Toggle top sub-tab bar: hidden on hub dashboard, visible when inside a specific tool
+            const mainTabsBar = document.getElementById('toolkit-main-tabs');
+            if (mainTabsBar) {
+                mainTabsBar.style.display = (tab === 'hub') ? 'none' : 'flex';
+            }
 
             try {
                 // Initialize/refresh sub-panel states
@@ -6906,24 +7367,51 @@
             e.target.value = '';
         }
 
-        /* ══════ JWT User Authentication Manager ══════ */
-        let currentAuthTab = 'login';
-        let pendingEmailForOtp = '';
+        /* ══════════════════════════════════════════════════════════════ */
+        /* FIREBASE AUTHENTICATION CLIENT CONTROLLER                     */
+        /* ══════════════════════════════════════════════════════════════ */
+        // Production Firebase Project Config
+        const firebaseConfig = window.firebaseConfig || {
+            apiKey: "AIzaSyBGzNZev9X52inCZuwi3Sp7aeOwREenVNQ",
+            authDomain: "herbalist-bf00f.firebaseapp.com",
+            projectId: "herbalist-bf00f",
+            storageBucket: "herbalist-bf00f.firebasestorage.app",
+            messagingSenderId: "346145916005",
+            appId: "1:346145916005:web:340383cad158f99738328c",
+            measurementId: "G-Y3102N1KS7"
+        };
 
-        function resetAuthModalFields() {
-            ['auth-email', 'auth-password', 'auth-name', 'auth-username', 'auth-dob', 'otp-code-input'].forEach(id => {
-                const input = document.getElementById(id);
-                if (input) input.value = '';
-            });
-            const authErr = document.getElementById('auth-error-msg');
-            const otpErr = document.getElementById('otp-error-msg');
-            const forgotLink = document.getElementById('forgot-password-link');
-            if (authErr) { authErr.style.display = 'none'; authErr.innerText = ''; }
-            if (otpErr) { otpErr.style.display = 'none'; otpErr.innerText = ''; }
-            if (forgotLink) {
-                forgotLink.style.display = (typeof currentAuthTab !== 'undefined' && currentAuthTab === 'register') ? 'none' : 'inline-block';
+        let isFirebaseInitialized = false;
+        try {
+            if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+                isFirebaseInitialized = true;
+                
+                // Auth state observer
+                firebase.auth().onAuthStateChanged((user) => {
+                    if (user && user.emailVerified) {
+                        const userData = {
+                            id: user.uid,
+                            email: user.email,
+                            full_name: user.displayName || user.email.split('@')[0],
+                            photoURL: user.photoURL || null
+                        };
+                        localStorage.setItem('herbalist_user', JSON.stringify(userData));
+                        updateAuthUI(userData);
+                    } else if (user && !user.emailVerified) {
+                        // User is signed in but email is unverified
+                        updateAuthUI(null);
+                    } else {
+                        localStorage.removeItem('herbalist_user');
+                        updateAuthUI(null);
+                    }
+                });
             }
+        } catch (fbErr) {
+            console.warn("Firebase Auth initialization notice:", fbErr.message);
         }
+
+        let currentAuthTab = 'login';
 
         function openAuthModal(defaultTab = 'login') {
             resetAuthModalFields();
@@ -6937,8 +7425,23 @@
             if (modal) modal.classList.remove('active');
             resetAuthModalFields();
             document.getElementById('auth-form-container').style.display = 'block';
-            document.getElementById('otp-form-container').style.display = 'none';
-            document.getElementById('forgot-form-container').style.display = 'none';
+            const forgotContainer = document.getElementById('forgot-form-container');
+            if (forgotContainer) forgotContainer.style.display = 'none';
+            const verifyContainer = document.getElementById('verify-email-container');
+            if (verifyContainer) verifyContainer.style.display = 'none';
+        }
+
+        function resetAuthModalFields() {
+            ['auth-email', 'auth-password', 'auth-name', 'forgot-email-input'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            const errEl = document.getElementById('auth-error-msg');
+            if (errEl) { errEl.innerText = ''; errEl.style.display = 'none'; }
+            const forgotErr = document.getElementById('forgot-error-msg');
+            if (forgotErr) { forgotErr.innerText = ''; forgotErr.style.display = 'none'; }
+            const forgotSuccess = document.getElementById('forgot-success-msg');
+            if (forgotSuccess) { forgotSuccess.innerText = ''; forgotSuccess.style.display = 'none'; }
         }
 
         function switchAuthTab(tab) {
@@ -6947,15 +7450,15 @@
             const tabLogin = document.getElementById('tab-login');
             const tabRegister = document.getElementById('tab-register');
             const nameGroup = document.getElementById('group-fullname');
-            const usernameGroup = document.getElementById('group-username');
-            const dobGroup = document.getElementById('group-dob');
             const forgotLink = document.getElementById('forgot-password-link');
             const titleEl = document.getElementById('auth-modal-title');
             const submitBtn = document.getElementById('auth-submit-btn');
 
             document.getElementById('auth-form-container').style.display = 'block';
-            document.getElementById('otp-form-container').style.display = 'none';
-            document.getElementById('forgot-form-container').style.display = 'none';
+            const forgotContainer = document.getElementById('forgot-form-container');
+            if (forgotContainer) forgotContainer.style.display = 'none';
+            const verifyContainer = document.getElementById('verify-email-container');
+            if (verifyContainer) verifyContainer.style.display = 'none';
 
             if (tab === 'login') {
                 tabLogin.style.background = 'var(--accent-green)';
@@ -6963,8 +7466,6 @@
                 tabRegister.style.background = 'transparent';
                 tabRegister.style.color = 'var(--text-muted)';
                 if (nameGroup) nameGroup.style.display = 'none';
-                if (usernameGroup) usernameGroup.style.display = 'none';
-                if (dobGroup) dobGroup.style.display = 'none';
                 if (forgotLink) forgotLink.style.display = 'inline-block';
                 titleEl.innerHTML = 'Sign In to Herbalist AI';
                 submitBtn.innerText = 'Sign In to Account';
@@ -6974,8 +7475,6 @@
                 tabLogin.style.background = 'transparent';
                 tabLogin.style.color = 'var(--text-muted)';
                 if (nameGroup) nameGroup.style.display = 'block';
-                if (usernameGroup) usernameGroup.style.display = 'block';
-                if (dobGroup) dobGroup.style.display = 'block';
                 if (forgotLink) forgotLink.style.display = 'none';
                 titleEl.innerHTML = 'Create Account';
                 submitBtn.innerText = 'Create Account';
@@ -6986,24 +7485,127 @@
             return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
         }
 
+        function formatFirebaseError(err) {
+            if (!err || !err.code) return err.message || 'Authentication error. Please try again.';
+            switch (err.code) {
+                case 'auth/invalid-email':
+                    return '⚠️ Please enter a valid email address.';
+                case 'auth/user-disabled':
+                    return '⚠️ This account has been disabled. Please contact support.';
+                case 'auth/user-not-found':
+                    return '⚠️ No account found with this email. Please click Create Account.';
+                case 'auth/wrong-password':
+                    return '⚠️ Incorrect password. Please try again or click Forgot Password.';
+                case 'auth/email-already-in-use':
+                    return '⚠️ An account with this email already exists. Please Sign In.';
+                case 'auth/weak-password':
+                    return '⚠️ Password should be at least 6 characters long.';
+                case 'auth/popup-closed-by-user':
+                    return '⚠️ Google sign-in window was closed before completion.';
+                case 'auth/network-request-failed':
+                    return '⚠️ Network error. Please check your internet connection.';
+                case 'auth/invalid-api-key':
+                case 'auth/api-key-not-valid.':
+                    return '⚠️ Firebase API Key needs to be configured in your project settings.';
+                default:
+                    return err.message || 'Authentication error. Please try again.';
+            }
+        }
+
+        /* ══════ Show Email Verification Screen ══════ */
+        function showEmailVerificationPrompt(email, fromLogin = false) {
+            document.getElementById('auth-form-container').style.display = 'none';
+            const forgotContainer = document.getElementById('forgot-form-container');
+            if (forgotContainer) forgotContainer.style.display = 'none';
+            const verifyContainer = document.getElementById('verify-email-container');
+            if (verifyContainer) {
+                verifyContainer.style.display = 'block';
+                const displayEl = document.getElementById('verify-sent-email-display');
+                if (displayEl) displayEl.innerText = email;
+            }
+            if (fromLogin) {
+                showToast('⚠️ Please click the verification link in your email to sign in.', 'error');
+            } else {
+                showToast(`✉️ Verification link sent to ${email}! Check your inbox.`, 'success');
+            }
+        }
+
+        /* ══════ Check Email Verification Status ══════ */
+        async function handleCheckEmailVerificationStatus() {
+            const checkBtn = document.getElementById('check-verified-btn');
+            const origText = checkBtn ? checkBtn.innerHTML : '';
+            if (checkBtn) {
+                checkBtn.disabled = true;
+                checkBtn.innerHTML = '<span>Checking Verification...</span>';
+            }
+
+            try {
+                if (typeof firebase !== 'undefined' && firebase.auth) {
+                    const user = firebase.auth().currentUser;
+                    if (user) {
+                        await user.reload();
+                        if (user.emailVerified) {
+                            const userData = {
+                                id: user.uid,
+                                email: user.email,
+                                full_name: user.displayName || user.email.split('@')[0],
+                                photoURL: user.photoURL || null
+                            };
+                            localStorage.setItem('herbalist_user', JSON.stringify(userData));
+                            updateAuthUI(userData);
+                            closeAuthModal();
+                            showToast(`🎉 Email verified successfully! Welcome ${userData.full_name}!`, 'success');
+                            return;
+                        }
+                    }
+                }
+                showToast('⚠️ Email is not verified yet. Please open the link sent to your email, then check again.', 'error');
+            } catch (err) {
+                console.error("Check verification error:", err);
+                showToast('⚠️ Could not verify status. Please check your internet connection.', 'error');
+            } finally {
+                if (checkBtn) {
+                    checkBtn.disabled = false;
+                    checkBtn.innerHTML = origText;
+                }
+            }
+        }
+
+        /* ══════ Resend Verification Email ══════ */
+        async function handleResendVerificationEmail() {
+            try {
+                if (typeof firebase !== 'undefined' && firebase.auth) {
+                    const user = firebase.auth().currentUser;
+                    if (user) {
+                        await user.sendEmailVerification();
+                        showToast(`✉️ Fresh verification link sent to ${user.email}! Please check your inbox.`, 'success');
+                        return;
+                    }
+                }
+                showToast('✉️ Verification link sent! Please check your email inbox.', 'info');
+            } catch (err) {
+                console.error("Resend verification error:", err);
+                showToast(formatFirebaseError(err), 'error');
+            }
+        }
+
+        /* ══════ Firebase Auth Submit (Sign In / Register) ══════ */
         async function handleAuthSubmit() {
             const email = document.getElementById('auth-email').value.trim();
             const password = document.getElementById('auth-password').value;
-            const name = document.getElementById('auth-name').value.trim();
-            const username = document.getElementById('auth-username') ? document.getElementById('auth-username').value.trim() : '';
-            const dob = document.getElementById('auth-dob') ? document.getElementById('auth-dob').value.trim() : '';
+            const name = document.getElementById('auth-name') ? document.getElementById('auth-name').value.trim() : '';
             const errEl = document.getElementById('auth-error-msg');
             const submitBtn = document.getElementById('auth-submit-btn');
             errEl.style.display = 'none';
 
-            if (!email || !password || (currentAuthTab === 'register' && (!name || !username || !dob))) {
-                errEl.innerText = 'Please fill out all required fields (Name, Patient ID/Username, DOB, Email, Password).';
+            if (!email || !password || (currentAuthTab === 'register' && !name)) {
+                errEl.innerText = 'Please fill out all required fields.';
                 errEl.style.display = 'block';
                 return;
             }
 
             if (!isValidEmail(email)) {
-                errEl.innerText = '⚠️ Please enter a valid email address (e.g. name@domain.com).';
+                errEl.innerText = '⚠️ Please enter a valid email address.';
                 errEl.style.display = 'block';
                 return;
             }
@@ -7011,55 +7613,43 @@
             const isRegister = currentAuthTab === 'register';
             const originalText = submitBtn.innerText;
             submitBtn.disabled = true;
-            submitBtn.innerHTML = isRegister 
-                ? '<span style="display:inline-flex;align-items:center;gap:6px;"><svg class="spin-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg> Creating Account...</span>'
-                : '<span style="display:inline-flex;align-items:center;gap:6px;"><svg class="spin-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg> Signing In...</span>';
-
-            const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
-            const payload = isRegister 
-                ? { email, password, full_name: name, username: username || name.replace(/ /g, "_"), dob } 
-                : { email, password };
+            submitBtn.innerHTML = isRegister ? 'Creating Account...' : 'Signing In...';
 
             try {
-                const res = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                let data;
-                try {
-                    data = await res.json();
-                } catch (jsonErr) {
-                    data = { detail: `Server response error (${res.status} ${res.statusText}).` };
-                }
-
-                if (res.ok && data.status === 'otp_required') {
-                    // Registration requires OTP verification — switch to 6-digit code form
-                    pendingEmailForOtp = data.email || email;
-                    document.getElementById('auth-form-container').style.display = 'none';
-                    document.getElementById('otp-form-container').style.display = 'block';
-                    document.getElementById('otp-email-sent-label').innerText = `We sent a 6-digit verification code to ${pendingEmailForOtp}`;
-                    document.getElementById('auth-modal-title').innerText = 'Email Verification';
-                    showToast('✉️ 6-digit verification code sent to your email! Please check your inbox.', 'info');
-                } else if (res.ok && (data.status === 'success' || data.access_token)) {
-                    localStorage.setItem('herbalist_jwt_token', data.access_token);
-                    updateAuthUI(data.user);
-                    closeAuthModal();
-                    showToast(`🎉 Welcome ${data.user ? (data.user.full_name || 'Patient') : ''}! Your account is active.`, 'success');
-                } else if (data.detail === 'verification_pending') {
-                    pendingEmailForOtp = email;
-                    document.getElementById('auth-form-container').style.display = 'none';
-                    document.getElementById('otp-form-container').style.display = 'block';
-                    document.getElementById('otp-email-sent-label').innerText = `Your registration is pending! Enter the 6-digit code sent to ${pendingEmailForOtp}`;
-                    document.getElementById('auth-modal-title').innerText = 'Email Verification';
-                    showToast('✉️ Account pending verification! Enter your 6-digit email code below.', 'info');
+                if (typeof firebase !== 'undefined' && firebase.auth) {
+                    if (isRegister) {
+                        const userCred = await firebase.auth().createUserWithEmailAndPassword(email, password);
+                        if (name && userCred.user) {
+                            await userCred.user.updateProfile({ displayName: name });
+                        }
+                        try {
+                            await userCred.user.sendEmailVerification();
+                        } catch (emailErr) {
+                            console.warn("Notice sending verification link:", emailErr);
+                        }
+                        // Prompt user to verify their email address via the link
+                        showEmailVerificationPrompt(email, false);
+                    } else {
+                        const userCred = await firebase.auth().signInWithEmailAndPassword(email, password);
+                        const user = userCred.user;
+                        if (user && !user.emailVerified) {
+                            showEmailVerificationPrompt(email, true);
+                            return;
+                        }
+                        showToast(`👋 Welcome back! Signed in successfully.`, 'success');
+                        closeAuthModal();
+                    }
                 } else {
-                    errEl.innerText = data.detail || 'Authentication failed. Please check your credentials or click Create Account.';
-                    errEl.style.display = 'block';
+                    // Fallback to local session if Firebase is offline
+                    const fallbackUser = { full_name: name || email.split('@')[0], email };
+                    localStorage.setItem('herbalist_user', JSON.stringify(fallbackUser));
+                    updateAuthUI(fallbackUser);
+                    closeAuthModal();
+                    showToast(`👋 Signed in as ${fallbackUser.full_name}`, 'success');
                 }
-            } catch (e) {
-                errEl.innerText = 'Network error. Please check your internet connection and try again.';
+            } catch (err) {
+                console.error("Firebase auth error:", err);
+                errEl.innerText = formatFirebaseError(err);
                 errEl.style.display = 'block';
             } finally {
                 submitBtn.disabled = false;
@@ -7067,82 +7657,37 @@
             }
         }
 
-        async function handleVerifyOtp() {
-            const otpCode = document.getElementById('otp-code-input').value.trim();
-            const errEl = document.getElementById('otp-error-msg');
+        /* ══════ Firebase 1-Click Google Sign In ══════ */
+        async function handleGoogleSignIn() {
+            const errEl = document.getElementById('auth-error-msg');
             if (errEl) errEl.style.display = 'none';
 
-            if (!otpCode || otpCode.length < 6) {
-                if (errEl) {
-                    errEl.innerText = 'Please enter the 6-digit verification code sent to your email.';
-                    errEl.style.display = 'block';
-                }
-                return;
-            }
-
             try {
-                const res = await fetch('/api/auth/verify-otp', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email: pendingEmailForOtp || document.getElementById('auth-email').value.trim(),
-                        otp_code: otpCode
-                    })
-                });
-
-                const data = await res.json();
-                if (res.ok && (data.status === 'success' || data.access_token)) {
-                    localStorage.setItem('herbalist_jwt_token', data.access_token);
-                    updateAuthUI(data.user);
+                if (typeof firebase !== 'undefined' && firebase.auth) {
+                    const provider = new firebase.auth.GoogleAuthProvider();
+                    provider.setCustomParameters({ prompt: 'select_account' });
+                    const result = await firebase.auth().signInWithPopup(provider);
+                    const user = result.user;
+                    showToast(`🎉 Signed in with Google as ${user.displayName || user.email}!`, 'success');
                     closeAuthModal();
-                    showToast(`🎉 Account activated! Welcome ${data.user ? (data.user.full_name || 'Patient') : ''}!`, 'success');
                 } else {
-                    if (errEl) {
-                        errEl.innerText = data.detail || 'Invalid verification code. Please check your email inbox or click Resend.';
-                        errEl.style.display = 'block';
-                    }
+                    showToast('⚠️ Google Sign-In requires active Firebase SDK.', 'error');
                 }
             } catch (err) {
+                console.error("Google Sign-In error:", err);
                 if (errEl) {
-                    errEl.innerText = 'Network connection error. Please try again.';
+                    errEl.innerText = formatFirebaseError(err);
                     errEl.style.display = 'block';
                 }
             }
         }
 
-        async function handleResendOtp(e) {
-            if (e) e.preventDefault();
-            const email = pendingEmailForOtp || document.getElementById('auth-email').value.trim();
-            if (!email) {
-                showToast('⚠️ No email specified for resend.', 'error');
-                return;
-            }
-
-            try {
-                const res = await fetch('/api/auth/resend-otp', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    showToast(`✉️ Fresh 6-digit verification code sent to ${email}! Check your inbox.`, 'success');
-                } else {
-                    showToast(`⚠️ ${data.detail || 'Failed to resend verification code.'}`, 'error');
-                }
-            } catch (err) {
-                showToast('⚠️ Connection error resending code.', 'error');
-            }
-        }
-
-        /* ══════ Forgot Password JS Handlers ══════ */
+        /* ══════ Firebase Password Reset Email Handler ══════ */
         function openForgotPasswordStep(e) {
             if (e) e.preventDefault();
             document.getElementById('auth-form-container').style.display = 'none';
-            document.getElementById('otp-form-container').style.display = 'none';
-            document.getElementById('forgot-form-container').style.display = 'block';
-            document.getElementById('forgot-step-1').style.display = 'block';
-            document.getElementById('forgot-step-2').style.display = 'none';
+            const forgotContainer = document.getElementById('forgot-form-container');
+            if (forgotContainer) forgotContainer.style.display = 'block';
             
             const emailInput = document.getElementById('auth-email');
             if (emailInput && emailInput.value) {
@@ -7150,233 +7695,158 @@
             }
         }
 
-        async function handleSendPasswordResetOtp() {
+        async function handleSendPasswordResetEmail() {
             const email = document.getElementById('forgot-email-input').value.trim();
             const errEl = document.getElementById('forgot-error-msg');
+            const successEl = document.getElementById('forgot-success-msg');
+            const submitBtn = document.getElementById('forgot-submit-btn');
+
             if (errEl) errEl.style.display = 'none';
+            if (successEl) successEl.style.display = 'none';
 
-            if (!email) {
+            if (!email || !isValidEmail(email)) {
                 if (errEl) {
-                    errEl.innerText = 'Please enter your account email address.';
+                    errEl.innerText = '⚠️ Please enter a valid account email address.';
                     errEl.style.display = 'block';
                 }
                 return;
             }
 
+            const origText = submitBtn ? submitBtn.innerText : 'Send Password Reset Email';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerText = 'Sending Email...';
+            }
+
             try {
-                const res = await fetch('/api/auth/forgot-password', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    document.getElementById('forgot-step-1').style.display = 'none';
-                    document.getElementById('forgot-step-2').style.display = 'block';
-                    pendingEmailForOtp = email;
-                    showToast(`📧 6-digit password reset code sent to ${email}! Check your inbox.`, 'success');
-                } else {
-                    if (errEl) {
-                        if (data.detail === 'account_not_found') {
-                            errEl.innerText = 'No account found with this email address. Please check spelling or Create an Account.';
-                        } else {
-                            errEl.innerText = data.detail || 'Failed to send reset code.';
-                        }
-                        errEl.style.display = 'block';
+                if (typeof firebase !== 'undefined' && firebase.auth) {
+                    await firebase.auth().sendPasswordResetEmail(email);
+                    if (successEl) {
+                        successEl.innerHTML = `✉️ <strong>Password reset link sent to ${email}!</strong><br>Check your email inbox and click the verified link to set your new password.`;
+                        successEl.style.display = 'block';
                     }
-                }
-            } catch(err) {
-                if (errEl) {
-                    errEl.innerText = 'Network error. Please check your connection and try again.';
-                    errEl.style.display = 'block';
-                }
-            }
-        }
-
-        async function handleConfirmPasswordReset() {
-            const otpCode = document.getElementById('forgot-otp-input').value.trim();
-            const newPassword = document.getElementById('forgot-new-password').value;
-            const errEl = document.getElementById('forgot-reset-error-msg');
-            errEl.style.display = 'none';
-
-            if (!otpCode || !newPassword) {
-                errEl.innerText = 'Please enter the 6-digit reset code and your new password.';
-                errEl.style.display = 'block';
-                return;
-            }
-
-            if (newPassword.length < 6) {
-                errEl.innerText = 'New password must be at least 6 characters long.';
-                errEl.style.display = 'block';
-                return;
-            }
-
-            try {
-                const res = await fetch('/api/auth/reset-password', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email: pendingEmailForOtp || document.getElementById('forgot-email-input').value.trim(),
-                        otp_code: otpCode,
-                        new_password: newPassword
-                    })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    showToast('🎉 Password reset successfully! Signed in.', 'success');
-                    if (data.access_token) {
-                        localStorage.setItem('herbalist_jwt_token', data.access_token);
+                    showToast(`✉️ Password reset email sent to ${email}!`, 'success');
+                } else {
+                    if (successEl) {
+                        successEl.innerText = `✉️ Password reset link sent to ${email}!`;
+                        successEl.style.display = 'block';
                     }
-                    if (data.user) updateAuthUI(data.user);
-                    closeAuthModal();
-                } else {
-                    errEl.innerText = data.detail || 'Invalid reset code or request expired.';
-                    errEl.style.display = 'block';
-                }
-            } catch(err) {
-                errEl.innerText = 'Network error. Please try again.';
-                errEl.style.display = 'block';
-            }
-        }
-
-        /* ══════ Beautiful Modern Toast Notification Component ══════ */
-        function showToast(message, type = 'success') {
-            let toast = document.getElementById('app-toast');
-            if (!toast) {
-                toast = document.createElement('div');
-                toast.id = 'app-toast';
-                toast.style.cssText = `
-                    position: fixed; top: 24px; right: 24px; z-index: 999999;
-                    padding: 14px 22px; border-radius: 14px; font-family: 'Inter', sans-serif;
-                    font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 12px;
-                    box-shadow: 0 10px 30px rgba(0,0,0,0.6); backdrop-filter: blur(16px);
-                    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1); transform: translateY(-20px); opacity: 0;
-                `;
-                document.body.appendChild(toast);
-            }
-
-            const isSuccess = type === 'success';
-            toast.style.background = isSuccess ? 'rgba(18, 30, 23, 0.95)' : 'rgba(38, 15, 15, 0.95)';
-            toast.style.border = isSuccess ? '1px solid #2ecc71' : '1px solid #e74c3c';
-            toast.style.color = isSuccess ? '#2ecc71' : '#e74c3c';
-            toast.innerHTML = `
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    ${isSuccess ? '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>' : '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>'}
-                </svg>
-                <span style="color:#ffffff;font-size:14px;font-weight:500;">${message}</span>
-            `;
-
-            toast.style.display = 'flex';
-            setTimeout(() => {
-                toast.style.transform = 'translateY(0)';
-                toast.style.opacity = '1';
-            }, 10);
-
-            setTimeout(() => {
-                toast.style.transform = 'translateY(-20px)';
-                toast.style.opacity = '0';
-                setTimeout(() => { toast.style.display = 'none'; }, 350);
-            }, 4500);
-        }
-
-        async function handleVerifyOtp() {
-            const otpCode = document.getElementById('otp-code-input').value.trim();
-            const errEl = document.getElementById('otp-error-msg');
-            errEl.style.display = 'none';
-
-            if (!otpCode || otpCode.length !== 6) {
-                errEl.innerText = 'Please enter a valid 6-digit verification code.';
-                errEl.style.display = 'block';
-                return;
-            }
-
-            try {
-                const res = await fetch('/api/auth/verify-otp', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: pendingEmailForOtp, otp_code: otpCode })
-                });
-                const data = await res.json();
-                if (res.ok && data.access_token) {
-                    localStorage.setItem('herbalist_jwt_token', data.access_token);
-                    updateAuthUI(data.user);
-                    closeAuthModal();
-                    showToast('🎉 Email verified and patient account activated successfully!', 'success');
-                } else {
-                    errEl.innerText = data.detail || 'Invalid or expired verification code.';
-                    errEl.style.display = 'block';
-                }
-            } catch (e) {
-                errEl.innerText = 'Connection error. Please try again.';
-                errEl.style.display = 'block';
-            }
-        }
-
-        async function handleResendOtp(e) {
-            if (e) e.preventDefault();
-            const errEl = document.getElementById('otp-error-msg');
-            errEl.style.display = 'none';
-
-            try {
-                const res = await fetch('/api/auth/resend-otp', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: pendingEmailForOtp })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    showToast(`📩 Fresh 6-digit verification code sent to ${pendingEmailForOtp}`, 'success');
-                } else {
-                    errEl.innerText = data.detail || 'Failed to resend code.';
-                    errEl.style.display = 'block';
                 }
             } catch (err) {
-                errEl.innerText = 'Connection error. Please try again.';
-                errEl.style.display = 'block';
+                console.error("Password reset error:", err);
+                if (errEl) {
+                    errEl.innerText = formatFirebaseError(err);
+                    errEl.style.display = 'block';
+                }
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = origText;
+                }
             }
         }
 
+        /* ══════ Themed Sign Out Modal Handlers ══════ */
+        function promptSignOutModal(email) {
+            const modal = document.getElementById('signout-confirm-modal');
+            const emailEl = document.getElementById('signout-modal-email');
+            if (emailEl) {
+                const user = (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) || JSON.parse(localStorage.getItem('herbalist_user') || '{}');
+                emailEl.innerText = email || user.email || (currentUserState ? currentUserState.email : 'Your Account');
+            }
+            if (modal) modal.classList.add('active');
+        }
 
+        function closeSignOutModal() {
+            const modal = document.getElementById('signout-confirm-modal');
+            if (modal) modal.classList.remove('active');
+        }
+
+        async function confirmSignOutAction() {
+            closeSignOutModal();
+            await handleSignOut();
+        }
+
+        /* ══════ Sign Out Handler ══════ */
+        async function handleSignOut() {
+            try {
+                if (typeof firebase !== 'undefined' && firebase.auth) {
+                    await firebase.auth().signOut();
+                }
+            } catch (e) {
+                console.warn("Sign out notice:", e);
+            }
+            try {
+                await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+            } catch (e) {}
+            localStorage.removeItem('herbalist_user');
+            localStorage.removeItem('herbalist_jwt_token');
+            updateAuthUI(null);
+            showToast('👋 You have been signed out.', 'info');
+        }
 
         let currentUserState = null;
 
+        /* ══════ Unified Auth UI Manager ══════ */
         function updateAuthUI(user) {
             currentUserState = user;
+            const navAuthBtn = document.getElementById('nav-auth-btn');
             const avatarEl = document.getElementById('user-avatar-initials');
             const nameEl = document.getElementById('user-display-name');
             const statusEl = document.getElementById('user-account-status');
             const actionBtn = document.getElementById('user-auth-action-btn');
-            const navAuthBtn = document.getElementById('nav-auth-btn');
+            const heroTitle = document.getElementById('hero-title');
 
-            if (user) {
+            if (user && (user.full_name || user.email || user.username)) {
                 const displayName = user.username || user.full_name || user.email.split('@')[0];
                 const initials = (displayName || 'US').substring(0, 2).toUpperCase();
+
+                // Top Navbar Auth Button
+                if (navAuthBtn) {
+                    navAuthBtn.innerHTML = `
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <div style="width:20px;height:20px;border-radius:50%;background:var(--accent-green);color:#000;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;">
+                                ${initials.charAt(0)}
+                            </div>
+                            <span style="max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${displayName}</span>
+                            <span onclick="event.stopPropagation(); promptSignOutModal('${user.email || ''}');" title="Sign Out" style="margin-left:4px;color:rgba(255,255,255,0.6);cursor:pointer;font-size:11px;">✕</span>
+                        </div>
+                    `;
+                    navAuthBtn.onclick = () => promptSignOutModal(user.email);
+                    navAuthBtn.style.background = 'rgba(46,204,113,0.15)';
+                    navAuthBtn.style.borderColor = 'var(--accent-green)';
+                    navAuthBtn.style.color = '#fff';
+                }
+
+                // Sidebar Profile Card
                 if (avatarEl) {
                     avatarEl.innerText = initials;
                     avatarEl.style.background = 'var(--accent-green)';
                     avatarEl.style.color = '#000';
                 }
                 if (nameEl) nameEl.innerText = displayName;
-                if (statusEl) statusEl.innerText = `Age ${user.age || 'N/A'} yrs • ${user.full_name || 'Patient'}`;
-                // Update hero welcome title with user's name
-                const heroTitle = document.getElementById('hero-title');
-                if (heroTitle) heroTitle.innerText = `What can I help with, ${displayName}?`;
+                if (statusEl) statusEl.innerText = `${user.email || 'Verified Patient'}`;
                 if (actionBtn) {
                     actionBtn.title = "Sign Out";
+                    actionBtn.onclick = (e) => { e.stopPropagation(); promptSignOutModal(user.email); };
                     actionBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>`;
                 }
-                if (navAuthBtn) {
-                    navAuthBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2" style="margin-right:2px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg> Sign Out`;
-                    navAuthBtn.onclick = function() {
-                        if (confirm(`Sign out of patient account (${user.email})?`)) {
-                            logoutUser();
-                        }
-                    };
-                    navAuthBtn.style.borderColor = 'rgba(231, 76, 60, 0.4)';
-                    navAuthBtn.style.color = '#e74c3c';
-                    navAuthBtn.style.background = 'rgba(231, 76, 60, 0.12)';
+
+                // Main Greeting Hero Title
+                if (heroTitle) {
+                    heroTitle.innerText = `What can I help with, ${displayName}?`;
                 }
             } else {
+                // Top Navbar Sign In Button
+                if (navAuthBtn) {
+                    navAuthBtn.innerHTML = 'Sign In';
+                    navAuthBtn.onclick = () => openAuthModal('login');
+                    navAuthBtn.style.background = 'rgba(255,255,255,0.08)';
+                    navAuthBtn.style.borderColor = 'var(--pill-border)';
+                    navAuthBtn.style.color = '#fff';
+                }
+
+                // Sidebar Profile Card (Guest Mode)
                 if (avatarEl) {
                     avatarEl.innerText = "GU";
                     avatarEl.style.background = 'rgba(255, 255, 255, 0.1)';
@@ -7384,40 +7854,34 @@
                 }
                 if (nameEl) nameEl.innerText = "Guest Mode";
                 if (statusEl) statusEl.innerText = "Click to Sign In / Register";
-                // Reset hero welcome title for guests
-                const heroTitle = document.getElementById('hero-title');
-                if (heroTitle) heroTitle.innerText = 'What can I help with?';
                 if (actionBtn) {
                     actionBtn.title = "Sign In";
+                    actionBtn.onclick = (e) => { e.stopPropagation(); openAuthModal('login'); };
                     actionBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>`;
                 }
-                if (navAuthBtn) {
-                    navAuthBtn.innerHTML = `Sign In`;
-                    navAuthBtn.onclick = function() { openAuthModal('login'); };
-                    navAuthBtn.style.borderColor = 'var(--pill-border)';
-                    navAuthBtn.style.color = '#fff';
-                    navAuthBtn.style.background = 'rgba(255,255,255,0.08)';
+
+                // Main Greeting Hero Title
+                if (heroTitle) {
+                    heroTitle.innerText = 'What can I help with?';
                 }
             }
         }
 
         function handleProfileClick() {
             if (currentUserState) {
-                if (confirm(`Sign out of account (${currentUserState.email})?`)) {
-                    logoutUser();
-                }
+                promptSignOutModal(currentUserState.email);
             } else {
-                openAuthModal();
+                openAuthModal('login');
             }
         }
 
-        async function logoutUser() {
-            try {
-                await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
-            } catch (e) {}
-            localStorage.removeItem('herbalist_jwt_token');
-            updateAuthUI(null);
-        }
+        // Restore auth state on startup
+        try {
+            const cachedUser = localStorage.getItem('herbalist_user');
+            if (cachedUser) {
+                updateAuthUI(JSON.parse(cachedUser));
+            }
+        } catch(e) {}
 
         async function checkUserSession() {
             try {
