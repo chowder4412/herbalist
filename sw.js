@@ -1,5 +1,6 @@
-const CACHE_NAME = 'herbalist-pwa-v3.0';
+const CACHE_NAME = 'herbalist-pwa-v4.0';
 const ASSETS_TO_CACHE = [
+  '/',
   '/manifest.json'
 ];
 
@@ -25,7 +26,10 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request).catch(async () => {
       const cached = await caches.match(event.request);
-      return cached || new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
+      if (cached) return cached;
+      return new Response('<!-- Herbalist AI Offline Mode -->', {
+        headers: { 'Content-Type': 'text/html' }
+      });
     })
   );
 });

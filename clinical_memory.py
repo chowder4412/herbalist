@@ -20,6 +20,10 @@ class ClinicalMemoryStore:
 
     def get_connection(self):
         """Connect to Turso Cloud database or fallback to local SQLite"""
+        # If a custom db_path is specified (e.g. during isolated unit tests), use local SQLite directly
+        if self.db_path != "clinical_memory.db":
+            return sqlite3.connect(self.db_path)
+
         turso_url = os.getenv("TURSO_DATABASE_URL", "").strip()
         turso_token = os.getenv("TURSO_AUTH_TOKEN", "").strip()
         if turso_url and turso_token:

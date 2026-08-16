@@ -127,23 +127,29 @@ class HerbalistAPIHandler(BaseHTTPRequestHandler):
         
         if parsed_path.path == '/api/recents' or parsed_path.path == '/api/memory-stats':
             stats = memory_store.get_memory_stats()
-            conn = sqlite3.connect(memory_store.db_path)
-            cursor = conn.cursor()
-            cursor.execute('SELECT case_id, symptoms, primary_diagnosis, prescribed_formulation, bioactive_match_score, timestamp FROM episodic_cases ORDER BY timestamp DESC LIMIT 10')
-            rows = cursor.fetchall()
-            conn.close()
-            
+            token = self.get_auth_token()
+            user_auth = verify_jwt_token(token) if token else None
+
             recents = []
-            for r in rows:
-                recents.append({
-                    "case_id": r[0],
-                    "title": r[2] if r[2] != "Health Maintenance Examination" else r[1].split(',')[0].title(),
-                    "symptoms": r[1],
-                    "diagnosis": r[2],
-                    "formulation": r[3],
-                    "match_score": r[4],
-                    "timestamp": r[5]
-                })
+            if user_auth and ("user_id" in user_auth or "email" in user_auth):
+                conn = sqlite3.connect(memory_store.db_path)
+                cursor = conn.cursor()
+                user_id = user_auth.get("user_id", "")
+                user_email = user_auth.get("email", "")
+                cursor.execute('SELECT case_id, symptoms, primary_diagnosis, prescribed_formulation, bioactive_match_score, timestamp FROM episodic_cases WHERE patient_id = ? OR patient_id = ? ORDER BY timestamp DESC LIMIT 10', (user_id, user_email))
+                rows = cursor.fetchall()
+                conn.close()
+
+                for r in rows:
+                    recents.append({
+                        "case_id": r[0],
+                        "title": r[2] if r[2] != "Health Maintenance Examination" else r[1].split(',')[0].title(),
+                        "symptoms": r[1],
+                        "diagnosis": r[2],
+                        "formulation": r[3],
+                        "match_score": r[4],
+                        "timestamp": r[5]
+                    })
                 
             response_data = {
                 "status": "success",
