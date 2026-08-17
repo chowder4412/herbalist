@@ -2328,12 +2328,20 @@
         <div class="modal-card" style="max-width: 850px; width: 92%; height: 80vh; display: flex; flex-direction: column; padding: 24px; background: var(--sidebar-bg); border: 1px solid var(--card-border); border-radius: 24px;">
             <div class="modal-header" style="margin-bottom: 16px;">
                 <div>
-                    <h3 style="font-family: 'Outfit', sans-serif; font-size: 20px; color: var(--accent-green); display: flex; align-items: center; gap: 8px;">
-                        📋 Saved Patient Clinical Prescriptions
-                    </h3>
-                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">View, print, and export official SHA-256 verified clinical prescription records</p>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <h3 style="font-family: 'Outfit', sans-serif; font-size: 20px; color: var(--accent-green); display: flex; align-items: center; gap: 8px; margin: 0;">
+                            📋 Saved Patient Clinical Prescriptions
+                        </h3>
+                        <span id="saved-rx-count-badge" style="background: rgba(46,204,113,0.15); border: 1px solid rgba(46,204,113,0.35); color: var(--accent-green); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 8px;">0 Saved</span>
+                    </div>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Load into Cook Mode HUD, Canvas, and Vault, or export & delete records</p>
                 </div>
-                <button class="icon-btn" onclick="closePrescriptionsModal()">✕</button>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <button id="btn-clear-all-rx" onclick="clearAllSavedPrescriptions()" style="display: none; background: rgba(231,76,60,0.12); border: 1px solid rgba(231,76,60,0.3); color: #ff7675; padding: 6px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer;">
+                        🗑️ Clear All
+                    </button>
+                    <button class="icon-btn" onclick="closePrescriptionsModal()">✕</button>
+                </div>
             </div>
 
             <div style="margin-bottom: 14px;">
@@ -2711,7 +2719,7 @@
                     </div>
 
                     <!-- Step Navigation Controls -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap;">
+                    <div id="cook-step-nav-controls" style="display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap;">
                         <button class="kitchen-hud-btn" id="cook-prev-btn" onclick="prevCookStep()">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                 <polyline points="15 18 9 12 15 6"></polyline>
@@ -2753,74 +2761,92 @@
                 </div>
 
                 <!-- PANEL 4: RECOVERY TRACKER & HEALTH VAULT -->
-                <div id="toolkit-panel-recovery" style="display: none; flex-direction: column; gap: 8px;">
+                <div id="toolkit-panel-recovery" style="display: none; flex-direction: column; gap: 12px;">
                     <!-- Recovery Summary Metric Header -->
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
-                        <div style="background: rgba(46,204,113,0.08); border: 1px solid rgba(46,204,113,0.25); border-radius: 10px; padding: 8px; text-align: center;">
-                            <div style="font-size: 9px; font-weight: 800; color: var(--accent-green); text-transform: uppercase;">Recovery Velocity</div>
-                            <div style="font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 800; color: #2ecc71; margin-top: 1px;" id="recovery-velocity-stat">75.0%</div>
-                            <div style="font-size: 9.5px; color: rgba(255,255,255,0.6);" id="recovery-status-label">Resolution Rate</div>
+                        <div style="background: rgba(46,204,113,0.08); border: 1px solid rgba(46,204,113,0.25); border-radius: 12px; padding: 10px; text-align: center;">
+                            <div style="font-size: 9px; font-weight: 800; color: var(--accent-green); text-transform: uppercase;">Healing Streak</div>
+                            <div style="font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 800; color: #2ecc71; margin-top: 1px;" id="recovery-velocity-stat">0 Days</div>
+                            <div style="font-size: 9.5px; color: rgba(255,255,255,0.6);" id="recovery-status-label">Active Adherence</div>
                         </div>
-                        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 8px; text-align: center;">
-                            <div style="font-size: 9px; font-weight: 800; color: var(--accent-gold); text-transform: uppercase;">Current Severity</div>
-                            <div style="font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 800; color: #f39c12; margin-top: 1px;" id="recovery-severity-stat">2 / 10</div>
-                            <div style="font-size: 9.5px; color: rgba(255,255,255,0.6);">Mild / Resolving</div>
+                        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 10px; text-align: center;">
+                            <div style="font-size: 9px; font-weight: 800; color: var(--accent-gold); text-transform: uppercase;">Today's Doses</div>
+                            <div style="font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 800; color: #f39c12; margin-top: 1px;" id="vault-today-doses-stat">0 / 2 Taken</div>
+                            <div style="font-size: 9.5px; color: rgba(255,255,255,0.6);">Morning & Evening</div>
                         </div>
-                        <div style="background: rgba(52,152,219,0.08); border: 1px solid rgba(52,152,219,0.25); border-radius: 10px; padding: 8px; text-align: center;">
-                            <div style="font-size: 9px; font-weight: 800; color: #3498db; text-transform: uppercase;">Active Patient</div>
-                            <div style="font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 700; color: #fff; margin-top: 2px;" id="recovery-active-patient-name">Mustapha</div>
-                            <div style="font-size: 9.5px; color: rgba(255,255,255,0.6);">70.0 kg • Age 30</div>
-                        </div>
-                    </div>
-
-                    <!-- Interactive SVG Recovery Curve Canvas Box -->
-                    <div style="background: rgba(0,0,0,0.35); border: 1px solid var(--card-border); border-radius: 12px; padding: 10px 14px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                            <h4 style="font-family: 'Outfit', sans-serif; font-size: 13px; color: #fff; margin: 0;">Symptom Progression Curve (Days 1–5)</h4>
-                            <span style="font-size: 10px; font-weight: 700; color: #2ecc71; background: rgba(46,204,113,0.15); padding: 2px 6px; border-radius: 6px;">Scale: 1–10</span>
-                        </div>
-                        <div id="recovery-chart-container" style="width: 100%; overflow-x: auto;">
-                            <!-- Dynamically rendered SVG Recovery Curve -->
+                        <div style="background: rgba(52,152,219,0.08); border: 1px solid rgba(52,152,219,0.25); border-radius: 12px; padding: 10px; text-align: center;">
+                            <div style="font-size: 9px; font-weight: 800; color: #3498db; text-transform: uppercase;">Active Profile</div>
+                            <div style="font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 700; color: #fff; margin-top: 3px;" id="recovery-active-patient-name">Patient</div>
+                            <div style="font-size: 9.5px; color: rgba(255,255,255,0.6);" id="vault-user-status-text">Verified Account</div>
                         </div>
                     </div>
 
-                    <!-- Dr. Herbalist Tapering Advisor -->
-                    <div style="background: rgba(46,204,113,0.06); border-left: 3px solid var(--accent-green); padding: 8px 12px; border-radius: 0 10px 10px 0;">
-                        <div style="font-size: 10px; font-weight: 800; color: var(--accent-green); text-transform: uppercase; margin-bottom: 2px;">🩺 Dr. Herbalist AI Dosing Tapering Advisor</div>
-                        <div style="font-size: 11.5px; color: #f4f9f5; line-height: 1.4;" id="recovery-tapering-text">
-                            Symptoms have resolved by >75%. Dr. Herbalist recommends tapering decoction to 1 maintenance cup daily for 2 days, then discontinuing.
-                        </div>
-                    </div>
-
-                    <!-- Daily Check-In Form -->
-                    <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--card-border); border-radius: 12px; padding: 10px 14px;">
-                        <h5 style="font-family: 'Outfit', sans-serif; font-size: 12px; color: #fff; margin: 0 0 6px 0;">Log Today's Recovery Check-In</h5>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">
+                    <!-- Eye-Catching Main Screen Top Navbar Sync Control -->
+                    <div style="background: linear-gradient(135deg, rgba(243,156,18,0.12), rgba(46,204,113,0.06)); border: 1px solid rgba(243,156,18,0.35); border-radius: 16px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; gap: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                        <div style="display: flex; align-items: center; gap: 14px;">
+                            <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(243,156,18,0.18); border: 1px solid var(--accent-gold); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; box-shadow: 0 0 14px rgba(243,156,18,0.3);">
+                                🔥
+                            </div>
                             <div>
-                                <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-bottom: 3px;">
-                                    <span>Current Symptom Severity:</span>
-                                    <strong id="checkin-sev-val" style="color: var(--accent-gold);">3 / 10</strong>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 14px; color: #fff;">Pin Streak & Quick Check-in to Main Screen</span>
+                                    <span style="font-size: 9.5px; font-weight: 800; color: var(--accent-gold); background: rgba(243,156,18,0.18); border: 1px solid rgba(243,156,18,0.4); padding: 1px 7px; border-radius: 6px; text-transform: uppercase;">Top Bar Shortcut</span>
                                 </div>
-                                <input type="range" min="1" max="10" value="3" id="checkin-sev-slider" oninput="document.getElementById('checkin-sev-val').innerText = this.value + ' / 10';" style="width: 100%; accent-color: var(--accent-green);">
-                            </div>
-                            <div>
-                                <label style="font-size: 10px; color: var(--text-muted); margin-bottom: 3px; display: block;">Body Temp (°C)</label>
-                                <input type="number" step="0.1" id="checkin-temp" value="36.8" style="width: 100%; padding: 4px 10px; background: rgba(0,0,0,0.4); border: 1px solid var(--card-border); border-radius: 8px; color: #fff; font-size: 11px;">
+                                <div style="font-size: 11.5px; color: #d0e4d7; margin-top: 2px;">
+                                    Adds a live <span style="color: var(--accent-gold); font-weight: 700;">[ 🔥 0-Day Streak ✕ ]</span> widget to your top navbar for instant 1-click dose tracking without opening the toolkit.
+                                </div>
                             </div>
                         </div>
-                        <div style="margin-bottom: 8px;">
-                            <input type="text" id="checkin-notes" placeholder="Notes (e.g. Cough gone, mild throat tickle remaining...)" style="width: 100%; padding: 5px 10px; background: rgba(0,0,0,0.4); border: 1px solid var(--card-border); border-radius: 8px; color: #fff; font-size: 11px;">
-                        </div>
-                        <button onclick="submitDailyRecoveryCheckin()" style="width: 100%; padding: 7px; background: linear-gradient(135deg, var(--accent-green), #27ae60); color: #000; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 11px;">
-                            ✓ Record Today's Check-In & Update Trajectory
+                        <button id="btn-vault-toggle-pin" onclick="toggleMainScreenPin()" style="background: linear-gradient(135deg, rgba(243,156,18,0.25), rgba(230,126,34,0.15)); border: 1px solid var(--accent-gold); color: #fff; padding: 10px 18px; border-radius: 12px; font-weight: 700; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; white-space: nowrap; transition: all 0.25s ease; box-shadow: 0 0 12px rgba(243,156,18,0.2);">
+                            <span style="font-size: 14px;">📌</span>
+                            <span>Pin to Main Screen</span>
                         </button>
                     </div>
 
-                    <!-- Digital Health Vault Patient Profiles Section -->
-                    <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 10px 14px;">
-                        <h5 style="font-family: 'Outfit', sans-serif; font-size: 12px; color: #fff; margin: 0 0 6px 0;">📁 Digital Health Vault & Patient Records</h5>
-                        <div id="vault-profiles-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px;">
-                            <div style="color: var(--text-muted); text-align: center; padding: 12px; grid-column: 1/-1;">Loading patient profiles...</div>
+                    <!-- 1-Click Today's Dose Check-in Cards (In Sync with Main Screen) -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div id="vault-dose-card-morning" style="background: rgba(255,255,255,0.03); border: 1px solid var(--pill-border); border-radius: 14px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-size: 12px; font-weight: 700; color: #fff;">🌅 Morning Dose (250mL)</div>
+                                <div style="font-size: 10.5px; color: var(--text-muted);">Before breakfast</div>
+                            </div>
+                            <button id="vault-btn-morning" onclick="logDoseTaken('morning')" style="background: rgba(46,204,113,0.15); border: 1px solid var(--accent-green); color: var(--accent-green); padding: 5px 12px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">
+                                ✓ Log
+                            </button>
+                        </div>
+                        <div id="vault-dose-card-evening" style="background: rgba(255,255,255,0.03); border: 1px solid var(--pill-border); border-radius: 14px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-size: 12px; font-weight: 700; color: #fff;">🌇 Evening Dose (250mL)</div>
+                                <div style="font-size: 10.5px; color: var(--text-muted);">After dinner</div>
+                            </div>
+                            <button id="vault-btn-evening" onclick="logDoseTaken('evening')" style="background: rgba(46,204,113,0.15); border: 1px solid var(--accent-green); color: var(--accent-green); padding: 5px 12px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">
+                                ✓ Log
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Simplified Symptom Severity Check-In Form -->
+                    <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--card-border); border-radius: 14px; padding: 12px 16px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="font-weight: 700; font-size: 12.5px; color: #fff;">Daily Symptom Check-In</span>
+                            <span style="font-size: 11px; font-weight: 800; color: var(--accent-gold);" id="checkin-sev-val">3 / 10</span>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
+                            <input type="range" min="1" max="10" value="3" id="checkin-sev-slider" oninput="document.getElementById('checkin-sev-val').innerText = this.value + ' / 10';" style="flex: 1; accent-color: var(--accent-green);">
+                            <button onclick="submitDailyRecoveryCheckin()" style="padding: 6px 14px; background: var(--accent-green); color: #000; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 11px; white-space: nowrap;">
+                                ✓ Save Check-In
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Clean Interactive SVG Recovery Curve Canvas Box -->
+                    <div style="background: rgba(0,0,0,0.35); border: 1px solid var(--card-border); border-radius: 14px; padding: 12px 16px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <h4 style="font-family: 'Outfit', sans-serif; font-size: 13px; color: #fff; margin: 0;">Symptom Progression Curve</h4>
+                            <span style="font-size: 10px; font-weight: 700; color: #2ecc71; background: rgba(46,204,113,0.15); padding: 2px 6px; border-radius: 6px;">Severity Scale: 1–10</span>
+                        </div>
+                        <div id="recovery-chart-container" style="width: 100%; overflow-x: auto;">
+                            <!-- Dynamically rendered SVG Recovery Curve -->
                         </div>
                     </div>
                 </div>
@@ -2970,16 +2996,36 @@
             </div>
 
             <div style="flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 18px;">
-                <!-- Streak Banner -->
+                <!-- Main Screen Pin Activation Toggle -->
+                <div style="background: linear-gradient(135deg, rgba(243,156,18,0.12), rgba(46,204,113,0.06)); border: 1px solid rgba(243,156,18,0.35); border-radius: 16px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; gap: 14px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(243,156,18,0.18); border: 1px solid var(--accent-gold); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">
+                            🔥
+                        </div>
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 13.5px; color: #fff;">Pin Streak Widget to Top Navbar</span>
+                                <span style="font-size: 9px; font-weight: 800; color: var(--accent-gold); background: rgba(243,156,18,0.18); border: 1px solid rgba(243,156,18,0.4); padding: 1px 6px; border-radius: 6px; text-transform: uppercase;">Top Bar Shortcut</span>
+                            </div>
+                            <div style="font-size: 11px; color: #d0e4d7; margin-top: 2px;">Keep your live streak & 1-click dose check-in visible on the main screen top bar</div>
+                        </div>
+                    </div>
+                    <button id="btn-toggle-main-pin" onclick="toggleMainScreenPin()" style="background: linear-gradient(135deg, rgba(243,156,18,0.25), rgba(230,126,34,0.15)); border: 1px solid var(--accent-gold); color: #fff; padding: 8px 16px; border-radius: 12px; font-weight: 700; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; transition: all 0.25s ease;">
+                        <span style="font-size: 14px;">📌</span>
+                        <span>Pin to Main Screen</span>
+                    </button>
+                </div>
+
+                <!-- Streak Banner (Starts at 0 with 0% until real logs) -->
                 <div style="background: linear-gradient(135deg, rgba(243,156,18,0.18), rgba(230,126,34,0.08)); border: 1px solid rgba(243,156,18,0.4); border-radius: 18px; padding: 18px; display: flex; justify-content: space-between; align-items: center;">
                     <div style="display: flex; align-items: center; gap: 14px;">
                         <div style="font-size: 38px; filter: drop-shadow(0 0 12px rgba(243,156,18,0.6));">🔥</div>
                         <div>
                             <div style="font-size: 22px; font-weight: 800; color: var(--accent-gold); font-family: 'Outfit', sans-serif;">
-                                <span id="adherence-streak-days">1</span>-Day Healing Streak
+                                <span id="adherence-streak-days">0</span>-Day Healing Streak
                             </div>
                             <div style="font-size: 12px; color: #d0e4d7; margin-top: 2px;">
-                                Bioactive Compliance: <strong id="adherence-compliance-pct" style="color: #2ecc71;">100%</strong>
+                                Bioactive Compliance: <strong id="adherence-compliance-pct" style="color: #2ecc71;">0%</strong>
                             </div>
                         </div>
                     </div>
@@ -3331,11 +3377,14 @@
                     <span style="position: absolute; right: 9px; pointer-events: none; font-size: 9px; color: var(--accent-green);">▼</span>
                 </div>
 
-                <!-- Daily Decoction Adherence & Reminders -->
-                <button id="adherence-nav-btn" onclick="openAdherenceModal()" title="Daily Decoction Dose Adherence Tracker & Push Reminders" style="background: rgba(243,156,18,0.12); border: 1px solid var(--accent-gold); color: var(--accent-gold); padding: 6px 12px; border-radius: 12px; font-weight: 700; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all 0.2s ease;">
-                    <span id="nav-streak-flame">🔥</span>
-                    <span id="nav-streak-text">1-Day Streak</span>
-                </button>
+                <!-- Daily Decoction Adherence & Reminders (Hidden until activated in Vault / Modal) -->
+                <div id="adherence-nav-container" style="display: none; align-items: center; gap: 4px; background: rgba(243,156,18,0.12); border: 1px solid var(--accent-gold); padding: 4px 8px 4px 10px; border-radius: 12px;">
+                    <button id="adherence-nav-btn" onclick="openAdherenceModal()" title="Daily Decoction Dose Adherence Tracker & Push Reminders" style="background: transparent; border: none; color: var(--accent-gold); font-weight: 700; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 0;">
+                        <span id="nav-streak-flame">🔥</span>
+                        <span id="nav-streak-text">0-Day Streak</span>
+                    </button>
+                    <button onclick="dismissMainScreenAdherence(event)" title="Hide streak from main screen (Can re-enable anytime in Health Vault)" style="background: transparent; border: none; color: rgba(243,156,18,0.6); font-size: 11px; font-weight: bold; cursor: pointer; padding: 0 2px; line-height: 1;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(243,156,18,0.6)'">✕</button>
+                </div>
 
                 <button class="voice-btn-top" onclick="openLiveVoiceConsultationModal()" id="telehealth-top-btn" title="Launch Real-Time Live Telehealth Consultation" style="background: linear-gradient(135deg, rgba(46,204,113,0.22), rgba(39,174,96,0.12)); border: 1px solid var(--accent-green); color: var(--accent-green); padding: 6px 14px; border-radius: 12px; font-weight: 700; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 7px; box-shadow: 0 0 12px rgba(46,204,113,0.2); transition: all 0.2s ease;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -4593,11 +4642,17 @@
                         <button onclick="speakText(this.closest('.chat-bubble').innerText)" style="background:rgba(46,204,113,0.15);border:1px solid var(--accent-green);padding:12px 18px;border-radius:14px;color:var(--accent-green);font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;cursor:pointer;">
                             🔊 Listen to Doctor
                         </button>
+                        <button onclick="saveCurrentPrescription(activePrescriptionPayload)" style="background:rgba(46,204,113,0.18);border:1px solid var(--accent-green);padding:12px 18px;border-radius:14px;color:var(--accent-green);font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 4px 15px rgba(46,204,113,0.2);">
+                            <span>💾</span>
+                            <span>Save Prescription</span>
+                        </button>
                         <button onclick="window.print()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);padding:12px 20px;border-radius:14px;color:#fff;font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px;cursor:pointer;">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                             Print Prescription
                         </button>
                     </div>
+
+                    ${renderRegimenSurveyHTML(data, data.rx_id || ('rx_' + Date.now()))}
 
                     ${renderFollowUpChipsHTML(data.follow_up_suggestions || ['What foods should I avoid with this remedy?', 'How long can I store this 2.0L brew in the fridge?', 'Can I take this alongside vitamins?'])}
                 `);
@@ -5186,10 +5241,21 @@
 
         function closePharmacopeiaModal() { document.getElementById('pharmacopeia-modal')?.classList.remove('active'); }
         function closeScannerModal() { document.getElementById('scanner-modal')?.classList.remove('active'); }
+        function openPrescriptionsModal() {
+            closeAllModals();
+            const modal = document.getElementById('prescriptions-modal');
+            if (modal) {
+                modal.classList.add('active');
+                loadSavedPrescriptions();
+            }
+        }
         function closePrescriptionsModal() { document.getElementById('prescriptions-modal')?.classList.remove('active'); }
         function closeRagModal() { document.getElementById('rag-modal')?.classList.remove('active'); }
         function closeSynergyLabModal() { document.getElementById('synergy-lab-modal')?.classList.remove('active'); }
         function closeVaultRecoveryModal() { document.getElementById('vault-recovery-modal')?.classList.remove('active'); }
+
+        window.openPrescriptionsModal = openPrescriptionsModal;
+        window.closePrescriptionsModal = closePrescriptionsModal;
 
         /* ══════════════════════════════════════════════════════════════ */
         /* LONGITUDINAL RECOVERY & MULTI-PROFILE FAMILY VAULT ENGINE      */
@@ -5689,6 +5755,22 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Canvas Quick Care Suite Action Buttons -->
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px;">
+                        <button onclick="saveCurrentPrescription(canvasActivePrescription || activePrescriptionPayload)" style="flex: 1; min-width: 140px; background: rgba(46,204,113,0.18); border: 1px solid var(--accent-green); color: var(--accent-green); padding: 10px 14px; border-radius: 12px; font-weight: 700; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            <span>💾</span>
+                            <span>Save to Library</span>
+                        </button>
+                        <button onclick="openKitchenCookMode(canvasActivePrescription || activePrescriptionPayload)" style="flex: 1; min-width: 150px; background: linear-gradient(135deg, rgba(243,156,18,0.22), rgba(230,126,34,0.12)); border: 1px solid var(--accent-gold); color: #fff; padding: 10px 14px; border-radius: 12px; font-weight: 700; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            <span>🍲</span>
+                            <span>Compound in Cook Mode</span>
+                        </button>
+                        <button onclick="openVaultRecoveryModal()" style="flex: 1; min-width: 140px; background: rgba(52,152,219,0.15); border: 1px solid #3498db; color: #3498db; padding: 10px 14px; border-radius: 12px; font-weight: 700; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            <span>📈</span>
+                            <span>Track in Vault</span>
+                        </button>
+                    </div>
                 </div>
             `;
         }
@@ -6162,33 +6244,142 @@
         }
 
         /* ══════════════════════════════════════════════════════════════ */
-        /* PREDICTIVE CONTEXTUAL FOLLOW-UP ACTION CHIPS JS               */
+        /* PATIENT MEDICATION ONBOARDING & REGIMEN ACTIVATION SURVEY JS   */
         /* ══════════════════════════════════════════════════════════════ */
-        function renderFollowUpChipsHTML(suggestions) {
-            if (!suggestions || suggestions.length === 0) return '';
+        let cachedPrescriptionsRegistry = {};
+
+        function renderRegimenSurveyHTML(data, rxId) {
+            if (!data) return '';
+            const id = rxId || ('rx_' + Date.now());
+            cachedPrescriptionsRegistry[id] = data;
+            const f = data.formulation || {};
+            const rxName = f.formulation_name || data.primary_diagnosis || 'Formulated Botanical Prescription';
+
             return `
-                <div class="follow-up-chips-wrapper">
-                    <div style="font-size: 11px; font-weight: 700; color: var(--accent-green); text-transform: uppercase; width: 100%; letter-spacing: 0.5px; margin-bottom: 2px;">
-                        💡 Suggested Clinical Follow-Ups:
+                <div class="rx-regimen-activation-card" id="rx-activation-banner-${id}" style="margin-top: 16px; background: linear-gradient(135deg, rgba(46,204,113,0.12), rgba(243,156,18,0.08)); border: 1px solid rgba(46,204,113,0.35); border-radius: 16px; padding: 16px 18px; box-shadow: 0 8px 24px rgba(0,0,0,0.35);">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(46,204,113,0.2); border: 1px solid var(--accent-green); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">
+                                📋
+                            </div>
+                            <div>
+                                <h4 style="font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 800; color: #fff; margin: 0;">
+                                    Activate "${rxName}" in Your Patient Care Suite?
+                                </h4>
+                                <p style="font-size: 11.5px; color: #d0e4d7; margin: 2px 0 0 0;">
+                                    Select which tools you want to activate for this botanical medicine:
+                                </p>
+                            </div>
+                        </div>
+                        <span style="font-size: 10px; font-weight: 800; color: var(--accent-gold); background: rgba(243,156,18,0.15); border: 1px solid rgba(243,156,18,0.35); padding: 2px 8px; border-radius: 6px; text-transform: uppercase;">1-Click Setup</span>
                     </div>
-                    ${suggestions.map(s => `
-                        <button class="follow-up-action-chip" onclick="clickFollowUpChip(this.innerText)">
-                            <span>💬</span>
-                            <span>${s}</span>
+
+                    <!-- Survey Option Checkboxes -->
+                    <div style="display: flex; flex-direction: column; gap: 8px; margin: 12px 0; font-size: 12px; color: #fff;">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; background: rgba(0,0,0,0.25); padding: 9px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.06); transition: all 0.2s ease;">
+                            <input type="checkbox" id="survey-check-cook-${id}" checked style="accent-color: var(--accent-green); width: 16px; height: 16px;">
+                            <span>🍲 <strong>Add to Kitchen Cook Mode HUD</strong> (Step-by-step pot brewing & Bluetooth scale batching)</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; background: rgba(0,0,0,0.25); padding: 9px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.06); transition: all 0.2s ease;">
+                            <input type="checkbox" id="survey-check-vault-${id}" checked style="accent-color: var(--accent-green); width: 16px; height: 16px;">
+                            <span>📈 <strong>Add to Recovery & Health Vault</strong> (Healing trajectory velocity & clinical records)</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; background: rgba(0,0,0,0.25); padding: 9px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.06); transition: all 0.2s ease;">
+                            <input type="checkbox" id="survey-check-pin-${id}" checked style="accent-color: var(--accent-gold); width: 16px; height: 16px;">
+                            <span>🔥 <strong>Pin Daily Dose Adherence to Top Bar</strong> (1-click morning & evening check-in shortcut)</span>
+                        </label>
+                    </div>
+
+                    <!-- Action Controls -->
+                    <div style="display: flex; gap: 10px; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
+                        <button onclick="dismissRegimenSurvey('${id}')" style="background: transparent; border: 1px solid rgba(255,255,255,0.15); color: var(--text-muted); padding: 8px 14px; border-radius: 10px; font-size: 11.5px; font-weight: 600; cursor: pointer;">
+                            View Prescription Only
                         </button>
-                    `).join('')}
+                        <button onclick="submitRegimenSurvey('${id}')" style="background: linear-gradient(135deg, var(--accent-green), #27ae60); color: #000; border: none; padding: 8px 18px; border-radius: 10px; font-size: 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 0 14px rgba(46,204,113,0.3);">
+                            <span>🚀 Activate Selected in Care Suite</span>
+                        </button>
+                    </div>
                 </div>
             `;
         }
 
-        function clickFollowUpChip(text) {
-            const clean = text.replace(/^💬\s*/, '').trim();
-            const input = document.getElementById('user-input');
-            if (input) {
-                input.value = clean;
-                submitQuery();
+        function submitRegimenSurvey(rxId) {
+            const data = cachedPrescriptionsRegistry[rxId] || activePrescriptionPayload || {};
+            const checkCook = document.getElementById(`survey-check-cook-${rxId}`) ? document.getElementById(`survey-check-cook-${rxId}`).checked : true;
+            const checkVault = document.getElementById(`survey-check-vault-${rxId}`) ? document.getElementById(`survey-check-vault-${rxId}`).checked : true;
+            const checkPin = document.getElementById(`survey-check-pin-${rxId}`) ? document.getElementById(`survey-check-pin-${rxId}`).checked : true;
+
+            // 1. Save active prescription in memory and storage
+            activePrescriptionPayload = data;
+            canvasActivePrescription = data;
+            try {
+                localStorage.setItem('herbalist_active_cook_rx', JSON.stringify(data));
+                localStorage.setItem('herbalist_latest_rx', JSON.stringify(data));
+            } catch(e) {}
+
+            // 2. Process Cook Mode HUD
+            if (checkCook) {
+                initKitchenCookData(data);
+            }
+
+            // 3. Process Recovery & Health Vault
+            if (checkVault) {
+                loadVaultPatientProfiles();
+            }
+
+            // 4. Process Top Bar Pin
+            if (checkPin) {
+                adherenceState.activated = true;
+                try { localStorage.setItem('herbalist_adherence', JSON.stringify(adherenceState)); } catch(e) {}
+                updateAdherenceUI();
+            }
+
+            // 5. Replace Banner with Confirmation HUD
+            const banner = document.getElementById(`rx-activation-banner-${rxId}`);
+            if (banner) {
+                banner.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <span style="font-size:20px;">✅</span>
+                            <div>
+                                <strong style="color:var(--accent-green);font-size:13px;">Prescription Regimen Successfully Activated!</strong>
+                                <div style="font-size:11px;color:#d0e4d7;">Loaded into Cook Mode HUD, Recovery Vault, and Adherence Tracker.</div>
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:8px;">
+                            <button onclick="openKitchenCookMode(activePrescriptionPayload)" style="background:rgba(243,156,18,0.18);border:1px solid var(--accent-gold);color:var(--accent-gold);padding:6px 12px;border-radius:8px;font-size:11.5px;font-weight:700;cursor:pointer;">
+                                🍲 Open Cook Mode HUD
+                            </button>
+                            <button onclick="openVaultRecoveryModal()" style="background:rgba(46,204,113,0.18);border:1px solid var(--accent-green);color:var(--accent-green);padding:6px 12px;border-radius:8px;font-size:11.5px;font-weight:700;cursor:pointer;">
+                                📈 Open Health Vault
+                            </button>
+                        </div>
+                    </div>
+                `;
+                banner.style.background = 'rgba(46,204,113,0.08)';
+                banner.style.borderColor = 'var(--accent-green)';
+            }
+
+            showToast('🚀 Prescription activated across Cook Mode & Health Vault!', 'success');
+        }
+
+        function dismissRegimenSurvey(rxId) {
+            const banner = document.getElementById(`rx-activation-banner-${rxId}`);
+            if (banner) {
+                banner.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:var(--text-muted);">
+                        <span>Prescription saved in consultation records. You can load it into Cook Mode anytime.</span>
+                        <button onclick="submitRegimenSurvey('${rxId}')" style="background:transparent;border:1px solid var(--accent-green);color:var(--accent-green);padding:4px 10px;border-radius:6px;font-weight:700;cursor:pointer;font-size:10.5px;">
+                            Activate Later
+                        </button>
+                    </div>
+                `;
+                banner.style.padding = '10px 14px';
             }
         }
+
+        window.submitRegimenSurvey = submitRegimenSurvey;
+        window.dismissRegimenSurvey = dismissRegimenSurvey;
 
         /* ══════════════════════════════════════════════════════════════ */
         /* HANDS-FREE KITCHEN COOK MODE HUD JAVASCRIPT ENGINE            */
@@ -6210,33 +6401,73 @@
         }
 
         function initKitchenCookData(data = null) {
-            const rxData = data || activePrescriptionPayload || {};
-            const f = rxData.formulation || {};
+            let rxData = data;
+            if (!rxData && typeof canvasActivePrescription !== 'undefined' && canvasActivePrescription) rxData = canvasActivePrescription;
+            if (!rxData && typeof activePrescriptionPayload !== 'undefined' && activePrescriptionPayload) rxData = activePrescriptionPayload;
+            if (!rxData) {
+                try {
+                    const saved = localStorage.getItem('herbalist_active_cook_rx');
+                    if (saved) rxData = JSON.parse(saved);
+                } catch(e) {}
+            }
+
+            const potBadge = document.getElementById('cook-hud-pot-badge');
+            const timerWidget = document.getElementById('cook-timer-widget');
+            const navControls = document.getElementById('cook-step-nav-controls');
+            const tracker = document.getElementById('cook-step-tracker');
+            const card = document.getElementById('cook-step-card');
+
+            if (!rxData || (!rxData.formulation && !rxData.ingredients && !rxData.primary_diagnosis)) {
+                cookStepsList = [];
+                if (potBadge) potBadge.innerText = 'No Active Prescription Loaded';
+                if (timerWidget) timerWidget.style.display = 'none';
+                if (navControls) navControls.style.display = 'none';
+                if (tracker) tracker.innerText = 'Prescription Needed';
+                if (card) {
+                    card.innerHTML = `
+                        <div style="text-align:center;padding:36px 20px;color:var(--text-muted);">
+                            <div style="font-size:44px;margin-bottom:12px;">🍲</div>
+                            <h4 style="font-family:'Outfit',sans-serif;color:#fff;font-size:16px;font-weight:700;margin:0 0 6px 0;">No Active Prescription Loaded in Cook Mode</h4>
+                            <p style="font-size:12.5px;line-height:1.6;max-width:440px;margin:0 auto 20px auto;color:#c0d5c8;">
+                                Cook Mode automatically creates customized step-by-step pot compounding HUD steps, batch water ratios, and simmering timers directly from your Dr. Herbalist prescriptions.
+                            </p>
+                            <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+                                <button onclick="closePatientCareToolkitModal(); document.getElementById('user-input').focus();" style="background:linear-gradient(135deg, var(--accent-green), #27ae60);color:#000;border:none;padding:9px 18px;border-radius:10px;font-weight:800;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                                    <span>🌿 Consult Dr. Herbalist</span>
+                                </button>
+                                <button onclick="closePatientCareToolkitModal(); openPrescriptionsModal();" style="background:rgba(255,255,255,0.08);border:1px solid var(--pill-border);color:#fff;padding:9px 18px;border-radius:10px;font-weight:700;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                                    <span>📁 Load Saved Prescription</span>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+                return;
+            }
+
+            if (timerWidget) timerWidget.style.display = 'flex';
+            if (navControls) navControls.style.display = 'flex';
+
+            const f = rxData.formulation || rxData;
             const potLiters = (typeof activeCanvasPotLiters !== 'undefined' && activeCanvasPotLiters) ? activeCanvasPotLiters : (f.total_volume_ml ? (f.total_volume_ml / 1000).toFixed(1) : '2.0');
             const totalVolMl = Math.round(parseFloat(potLiters) * 1000);
             const scaleRatio = parseFloat(potLiters) / 2.0;
 
-            const potBadge = document.getElementById('cook-hud-pot-badge');
-            if (potBadge) potBadge.innerText = `${potLiters} L Kitchen Pot Batch (${totalVolMl} mL)`;
+            const rxTitle = f.formulation_name || rxData.primary_diagnosis || 'Prescribed Botanical Formulation';
+            if (potBadge) potBadge.innerText = `${rxTitle} • ${potLiters} L Pot Batch (${totalVolMl} mL)`;
 
-            // Build dynamic high-contrast cooking steps
-            const rawIngredients = f.ingredients || [
-                { name: 'Zingiber officinale (Ginger Root)', mass_g: '30g', role: 'Anti-inflammatory & digestive warmth' },
-                { name: 'Glycyrrhiza glabra (Licorice Root)', mass_g: '20g', role: 'Mucosal cytoprotection & sweet synergy' },
-                { name: 'Matricaria chamomilla (Chamomile Flower)', mass_g: '15g', role: 'Antispasmodic soothing' }
-            ];
-
+            const rawIngredients = f.ingredients || [];
             const scaledIngredients = rawIngredients.map(ing => {
-                const baseMass = parseFloat((ing.mass_g || '20').replace(/[^\d.]/g, '')) || 20;
+                const baseMass = parseFloat((ing.mass_g || ing.weight_grams || ing.amount || '20').toString().replace(/[^\d.]/g, '')) || 20;
                 const scaledMass = (baseMass * scaleRatio).toFixed(1);
                 return {
-                    name: ing.name || ing.herb || 'Medicinal Herb',
+                    name: ing.name || ing.common_name || ing.herb || 'Medicinal Herb',
                     scaledMass: `${scaledMass}g`,
-                    role: ing.role || 'Therapeutic active constituent'
+                    role: ing.role || ing.indication || 'Therapeutic active constituent'
                 };
             });
 
-            const ingChecklistHTML = scaledIngredients.map(ing => `
+            const ingChecklistHTML = scaledIngredients.length > 0 ? scaledIngredients.map(ing => `
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:rgba(255,255,255,0.04);border:1px solid rgba(46,204,113,0.25);border-radius:10px;margin-bottom:4px;">
                     <div style="display:flex;align-items:center;gap:8px;">
                         <div style="width:24px;height:24px;border-radius:7px;background:rgba(46,204,113,0.15);border:1px solid var(--accent-green);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
@@ -6252,7 +6483,11 @@
                     </div>
                     <span style="font-size:13px;font-weight:900;color:var(--accent-green);background:rgba(46,204,113,0.15);border:1px solid rgba(46,204,113,0.3);padding:2px 10px;border-radius:8px;white-space:nowrap;">${ing.scaledMass}</span>
                 </div>
-            `).join('');
+            `).join('') : '<div style="font-size:11.5px;color:rgba(255,255,255,0.7);padding:8px;">Botanical mass scaled according to doctor prescription formula.</div>';
+
+            const customSteps = f.household_kitchen_recipe || f.preparation_recipe_steps || [];
+            const step3Desc = customSteps.length > 2 ? customSteps[2] : "Bring to a rapid boil over medium-high heat. As soon as bubbling begins, reduce heat immediately to low flame. Cover tightly with a lid to trap evaporating aromatic essential oil terpenes and simmer for 20 minutes.";
+            const step5Dose = f.household_dose_schedule || f.dosing_frequency || "Drink 1 teacup (150 mL) 2–3 times daily before meals.";
 
             cookStepsList = [
                 {
@@ -6269,19 +6504,19 @@
                 },
                 {
                     title: "3. Rolling Boil & Slow Covered Simmer (Decoction Extraction)",
-                    desc: "Bring to a rapid boil over medium-high heat. As soon as bubbling begins, reduce heat immediately to low flame. Cover tightly with a lid to trap evaporating aromatic essential oil terpenes and simmer for 20 minutes.",
+                    desc: step3Desc,
                     extraHTML: `<div style="padding:14px;background:rgba(243,156,18,0.12);border:1px solid rgba(243,156,18,0.35);border-radius:14px;font-size:14px;color:#ffeaa7;">🔥 <strong>Thermodynamics:</strong> Simmering at 90°C–95°C breaks down dense secondary xylem lignified cell walls, releasing deep ginsenosides, gingerols, and triterpenoid saponins.</div>`,
                     timerMinutes: 20
                 },
                 {
                     title: "4. Fine Mesh Straining & Airtight Bottling",
-                    desc: "Turn off heat. Pour hot decoction through an ultra-fine stainless mesh or organic cheesecloth into a pre-sterilized glass pitcher or mason jars. Press the spent roots gently with a wooden spoon to express concentrated trapped phytosterols.",
+                    desc: "Turn off heat. Pour hot decoction through an ultra-fine stainless mesh or organic cheesecloth into a pre-sterilized glass pitcher or mason jars. Press spent roots gently to express concentrated trapped bioactives.",
                     extraHTML: `<div style="padding:14px;background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.3);border-radius:14px;font-size:14px;color:#e2efe6;">✨ <strong>Yield:</strong> You will obtain approx. ${(parseFloat(potLiters) * 0.88).toFixed(1)} Liters of clear, deep aromatic phytotherapeutic medicine.</div>`,
                     timerMinutes: 3
                 },
                 {
                     title: "5. Chrono-Dosing & Cold Storage Guidelines",
-                    desc: `Drink <strong>1 teacup (150 mL) 3 times daily</strong> 20 minutes before meals. Allow remaining brew to cool to room temperature, seal tightly, and store in the refrigerator (4°C) for up to 5 days. Warm gently before drinking if desired.`,
+                    desc: `${step5Dose} Allow remaining brew to cool to room temperature, seal tightly, and store in the refrigerator (4°C) for up to 5 days. Warm gently before drinking if desired.`,
                     extraHTML: `<div style="padding:14px;background:rgba(155,89,182,0.12);border:1px solid rgba(155,89,182,0.3);border-radius:14px;font-size:14px;color:#e8d4f7;">❄️ <strong>Storage Law:</strong> Tannins and saponins maintain full therapeutic potency for 120 hours under sealed refrigeration. Discard if cloudiness or sour fermentation aroma develops.</div>`,
                     timerMinutes: 0
                 }
@@ -6785,17 +7020,25 @@
         window.tareSmartScale = tareSmartScale;
 
         /* ── RECOVERY TRAJECTORY & VAULT CONTROLLER ── */
-        let patientSymptomLog = [
-            { day: 1, severity: 8, label: 'Day 1 (Onset)' },
-            { day: 2, severity: 7, label: 'Day 2 (Decoction Started)' },
-            { day: 3, severity: 5, label: 'Day 3 (Inflammation Reduced)' },
-            { day: 4, severity: 3, label: 'Day 4 (Cough Calmed)' },
-            { day: 5, severity: 2, label: 'Day 5 (Mild Tickle)' }
-        ];
+        let patientSymptomLog = [];
+        try {
+            const savedLog = localStorage.getItem('herbalist_symptom_log');
+            if (savedLog) patientSymptomLog = JSON.parse(savedLog);
+        } catch(e) {}
 
         function renderRecoveryTrajectoryChart() {
             const container = document.getElementById('recovery-chart-container');
             if (!container) return;
+
+            if (!patientSymptomLog || patientSymptomLog.length === 0) {
+                container.innerHTML = `
+                    <div style="color:var(--text-muted);text-align:center;padding:24px 10px;font-size:11.5px;line-height:1.5;">
+                        <span style="font-size:22px;display:block;margin-bottom:4px;">📈</span>
+                        No daily check-ins logged yet. Use the slider above or log your daily doses to plot your live recovery trajectory curve.
+                    </div>
+                `;
+                return;
+            }
 
             const w = 560;
             const h = 130;
@@ -6847,58 +7090,35 @@
 
         function submitDailyRecoveryCheckin() {
             const slider = document.getElementById('checkin-sev-slider');
-            const notes = document.getElementById('checkin-notes');
             const sev = slider ? parseInt(slider.value) : 3;
             const nextDay = patientSymptomLog.length + 1;
 
             patientSymptomLog.push({
                 day: nextDay,
                 severity: sev,
-                label: `Day ${nextDay} (${notes && notes.value ? notes.value.slice(0, 20) : 'Check-In'})`
+                label: `Day ${nextDay}`
             });
 
-            // Recalculate velocity
-            const start = patientSymptomLog[0].severity;
-            const curr = sev;
-            const velocity = Math.max(0, Math.min(100, Math.round(((start - curr) / start) * 100)));
-
-            const velStat = document.getElementById('recovery-velocity-stat');
-            const sevStat = document.getElementById('recovery-severity-stat');
-            if (velStat) velStat.innerText = `${velocity}.0%`;
-            if (sevStat) sevStat.innerText = `${curr} / 10`;
+            try {
+                localStorage.setItem('herbalist_symptom_log', JSON.stringify(patientSymptomLog));
+            } catch(e) {}
 
             renderRecoveryTrajectoryChart();
-            showToast(`✓ Day ${nextDay} Check-In logged! Healing velocity: ${velocity}%`, 'success');
-            if (notes) notes.value = '';
+            showToast(`✓ Day ${nextDay} symptom check-in logged (Severity: ${sev}/10)!`, 'success');
         }
 
-        let vaultProfilesData = [
-            { name: 'Mustapha (Active)', relation: 'Self', age: 30, weight: 70.0, clarksRatio: 1.0, activeRx: 'Gastric Mucosal Shield Decoction' },
-            { name: 'Amina', relation: 'Spouse', age: 28, weight: 58.0, clarksRatio: 0.83, activeRx: 'HPA Cortisol Adaptogen Infusion' },
-            { name: 'Zayd', relation: 'Child', age: 7, weight: 23.5, clarksRatio: 0.34, activeRx: 'Pediatric Sambucus Glycyrrhiza Decoction' }
-        ];
-
         function loadVaultPatientProfiles() {
-            const grid = document.getElementById('vault-profiles-grid');
-            if (!grid) return;
+            // Synchronize active profile name
+            let activeName = 'Patient';
+            try {
+                const user = JSON.parse(localStorage.getItem('herbalist_user') || '{}');
+                activeName = user.full_name || user.name || user.username || (user.email ? user.email.split('@')[0] : 'Patient');
+            } catch(e) {}
 
-            grid.innerHTML = vaultProfilesData.map((p, idx) => `
-                <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(46,204,113,0.22);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;">
-                        <strong style="color:#fff;font-size:14px;">${p.name}</strong>
-                        <span style="font-size:10px;font-weight:700;color:var(--accent-green);background:rgba(46,204,113,0.15);padding:2px 8px;border-radius:6px;">${p.relation}</span>
-                    </div>
-                    <div style="font-size:12px;color:rgba(255,255,255,0.7);">
-                        Age: <strong>${p.age} yrs</strong> • Weight: <strong>${p.weight} kg</strong>
-                    </div>
-                    <div style="font-size:11px;color:var(--accent-gold);background:rgba(243,156,18,0.1);padding:4px 8px;border-radius:6px;">
-                        ⚖️ Clark's Rule Multiplier: <strong>${p.clarksRatio}x</strong> standard dose
-                    </div>
-                    <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:2px;">
-                        Active Prescription: <span style="color:#3498db;">${p.activeRx}</span>
-                    </div>
-                </div>
-            `).join('');
+            const patientNameEl = document.getElementById('recovery-active-patient-name');
+            if (patientNameEl) patientNameEl.innerText = activeName;
+
+            updateAdherenceUI();
         }
 
         /* ── BLUETOOTH SMART SCALE CONTROLLER ── */
@@ -7804,14 +8024,15 @@
 
         /* ══════ DAILY DECOCTION ADHERENCE & PUSH REMINDERS JS ══════ */
         let adherenceState = {
-            streak: 1,
+            activated: false, // Hidden from navbar until user pins it
+            streak: 0,
             lastDoseDate: new Date().toISOString().split('T')[0],
             todayMorning: false,
             todayEvening: false,
             pushEnabled: false,
             morningTime: '08:00',
             eveningTime: '20:00',
-            history: { 'Mon': true, 'Tue': true, 'Wed': true, 'Thu': true, 'Fri': true, 'Sat': false, 'Sun': false }
+            history: { 'Mon': false, 'Tue': false, 'Wed': false, 'Thu': false, 'Fri': false, 'Sat': false, 'Sun': false }
         };
 
         function initAdherenceSystem() {
@@ -7829,54 +8050,123 @@
             updateAdherenceUI();
         }
 
+        function toggleMainScreenPin() {
+            adherenceState.activated = !adherenceState.activated;
+            try { localStorage.setItem('herbalist_adherence', JSON.stringify(adherenceState)); } catch(e) {}
+            updateAdherenceUI();
+            if (adherenceState.activated) {
+                showToast('📌 Daily Dose Tracker pinned to top navbar! You can check in directly from the main screen.', 'success');
+            } else {
+                showToast('Dose tracker unpinned from top bar. You can reactivate anytime in Health Vault.', 'info');
+            }
+        }
+
+        function dismissMainScreenAdherence(e) {
+            if (e) e.stopPropagation();
+            adherenceState.activated = false;
+            try { localStorage.setItem('herbalist_adherence', JSON.stringify(adherenceState)); } catch(e) {}
+            updateAdherenceUI();
+            showToast('Dose tracker hidden from top bar. You can reactivate anytime in Recovery & Health Vault.', 'info');
+        }
+
         function updateAdherenceUI() {
-            const streakDaysEl = document.getElementById('adherence-streak-days');
+            // Main screen navbar container visibility
+            const navContainer = document.getElementById('adherence-nav-container');
             const navStreakText = document.getElementById('nav-streak-text');
+            if (navContainer) {
+                navContainer.style.display = adherenceState.activated ? 'flex' : 'none';
+            }
+            if (navStreakText) {
+                navStreakText.innerText = `${adherenceState.streak}-Day Streak`;
+            }
+
+            // Sync pin toggle buttons in Modal and in Health Vault
+            const btnModalPin = document.getElementById('btn-toggle-main-pin');
+            const btnVaultPin = document.getElementById('btn-vault-toggle-pin');
+            [btnModalPin, btnVaultPin].forEach(btn => {
+                if (!btn) return;
+                if (adherenceState.activated) {
+                    btn.innerHTML = '<span style="font-size:13px;">🟢</span><span>Active on Top Bar (Click to Hide)</span>';
+                    btn.style.background = 'linear-gradient(135deg, rgba(46,204,113,0.25), rgba(39,174,96,0.15))';
+                    btn.style.borderColor = 'var(--accent-green)';
+                    btn.style.color = 'var(--accent-green)';
+                    btn.style.boxShadow = '0 0 14px rgba(46,204,113,0.25)';
+                } else {
+                    btn.innerHTML = '<span style="font-size:13px;">📌</span><span>Pin to Main Screen</span>';
+                    btn.style.background = 'linear-gradient(135deg, rgba(243,156,18,0.25), rgba(230,126,34,0.15))';
+                    btn.style.borderColor = 'var(--accent-gold)';
+                    btn.style.color = '#fff';
+                    btn.style.boxShadow = '0 0 12px rgba(243,156,18,0.2)';
+                }
+            });
+
+            // Sync Streak & Compliance in Modal
+            const streakDaysEl = document.getElementById('adherence-streak-days');
             const todayStatusEl = document.getElementById('adherence-today-status');
             const compliancePctEl = document.getElementById('adherence-compliance-pct');
 
             if (streakDaysEl) streakDaysEl.innerText = adherenceState.streak;
-            if (navStreakText) navStreakText.innerText = `${adherenceState.streak}-Day Streak`;
-
             const takenCount = (adherenceState.todayMorning ? 1 : 0) + (adherenceState.todayEvening ? 1 : 0);
             if (todayStatusEl) todayStatusEl.innerText = `${takenCount} / 2 Taken`;
 
-            const pct = Math.min(100, Math.round((adherenceState.streak / (adherenceState.streak + 0.5)) * 100));
-            if (compliancePctEl) compliancePctEl.innerText = `${pct}%`;
+            const compliancePct = adherenceState.streak === 0 ? (takenCount > 0 ? (takenCount === 2 ? 100 : 50) : 0) : Math.min(100, Math.round((adherenceState.streak / (adherenceState.streak + 0.3)) * 100));
+            if (compliancePctEl) compliancePctEl.innerText = `${compliancePct}%`;
 
-            // Update Morning Button
+            // Sync Vault Metrics
+            const vaultStreakStat = document.getElementById('recovery-velocity-stat');
+            const vaultTodayStat = document.getElementById('vault-today-doses-stat');
+            if (vaultStreakStat) vaultStreakStat.innerText = `${adherenceState.streak} Days`;
+            if (vaultTodayStat) vaultTodayStat.innerText = `${takenCount} / 2 Taken`;
+
+            // Update Morning Buttons (in Modal & in Vault)
             const btnMorning = document.getElementById('btn-log-morning');
             const cardMorning = document.getElementById('dose-card-morning');
-            if (btnMorning && cardMorning) {
-                if (adherenceState.todayMorning) {
-                    btnMorning.innerText = '✅ Taken';
-                    btnMorning.style.background = 'rgba(46,204,113,0.3)';
-                    btnMorning.style.color = '#fff';
-                    cardMorning.style.borderColor = 'rgba(46,204,113,0.5)';
-                } else {
-                    btnMorning.innerText = '✓ Log Dose Taken';
-                    btnMorning.style.background = 'rgba(46,204,113,0.15)';
-                    btnMorning.style.color = 'var(--accent-green)';
-                    cardMorning.style.borderColor = 'var(--pill-border)';
-                }
-            }
+            const vaultBtnMorning = document.getElementById('vault-btn-morning');
+            const vaultCardMorning = document.getElementById('vault-dose-card-morning');
 
-            // Update Evening Button
+            [
+                { btn: btnMorning, card: cardMorning, activeLabel: '✅ Taken', inactiveLabel: '✓ Log Dose Taken' },
+                { btn: vaultBtnMorning, card: vaultCardMorning, activeLabel: '✅ Taken', inactiveLabel: '✓ Log' }
+            ].forEach(pair => {
+                if (pair.btn) {
+                    if (adherenceState.todayMorning) {
+                        pair.btn.innerText = pair.activeLabel;
+                        pair.btn.style.background = 'rgba(46,204,113,0.3)';
+                        pair.btn.style.color = '#fff';
+                        if (pair.card) pair.card.style.borderColor = 'rgba(46,204,113,0.5)';
+                    } else {
+                        pair.btn.innerText = pair.inactiveLabel;
+                        pair.btn.style.background = 'rgba(46,204,113,0.15)';
+                        pair.btn.style.color = 'var(--accent-green)';
+                        if (pair.card) pair.card.style.borderColor = 'var(--pill-border)';
+                    }
+                }
+            });
+
+            // Update Evening Buttons (in Modal & in Vault)
             const btnEvening = document.getElementById('btn-log-evening');
             const cardEvening = document.getElementById('dose-card-evening');
-            if (btnEvening && cardEvening) {
-                if (adherenceState.todayEvening) {
-                    btnEvening.innerText = '✅ Taken';
-                    btnEvening.style.background = 'rgba(46,204,113,0.3)';
-                    btnEvening.style.color = '#fff';
-                    cardEvening.style.borderColor = 'rgba(46,204,113,0.5)';
-                } else {
-                    btnEvening.innerText = '✓ Log Dose Taken';
-                    btnEvening.style.background = 'rgba(46,204,113,0.15)';
-                    btnEvening.style.color = 'var(--accent-green)';
-                    cardEvening.style.borderColor = 'var(--pill-border)';
+            const vaultBtnEvening = document.getElementById('vault-btn-evening');
+            const vaultCardEvening = document.getElementById('vault-dose-card-evening');
+
+            [
+                { btn: btnEvening, card: cardEvening, activeLabel: '✅ Taken', inactiveLabel: '✓ Log Dose Taken' },
+                { btn: vaultBtnEvening, card: vaultCardEvening, activeLabel: '✅ Taken', inactiveLabel: '✓ Log' }
+            ].forEach(pair => {
+                if (pair.btn) {
+                    if (adherenceState.todayEvening) {
+                        pair.btn.innerText = pair.activeLabel;
+                        pair.btn.style.background = 'rgba(46,204,113,0.3)';
+                        pair.btn.style.color = '#fff';
+                        if (pair.card) pair.card.style.borderColor = 'rgba(46,204,113,0.5)';
+                    } else {
+                        pair.btn.innerText = pair.inactiveLabel;
+                        pair.btn.style.background = 'rgba(46,204,113,0.15)';
+                        pair.btn.style.color = 'var(--accent-green)';
+                        if (pair.card) pair.card.style.borderColor = 'var(--pill-border)';
+                    }
                 }
-            }
+            });
 
             // Update Push Button
             const btnPush = document.getElementById('btn-enable-push');
@@ -7906,7 +8196,6 @@
         }
 
         function logDoseTaken(doseType) {
-            const today = new Date().toISOString().split('T')[0];
             if (doseType === 'morning') {
                 adherenceState.todayMorning = true;
                 showToast('🌅 Morning 250mL Decoction Logged! Therapeutic Bioactives Absorbed.', 'success');
@@ -7917,7 +8206,7 @@
 
             if (adherenceState.todayMorning && adherenceState.todayEvening) {
                 adherenceState.streak += 1;
-                showToast(`🔥 Fantastic! 100% Daily Adherence Achieved! Streak increased to ${adherenceState.streak} days!`, 'success');
+                showToast(`🔥 100% Daily Adherence Achieved! Streak increased to ${adherenceState.streak} days!`, 'success');
             }
 
             try {
@@ -7991,8 +8280,14 @@
             const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
             const todayIdx = (new Date().getDay() + 6) % 7; // Mon=0, Sun=6
 
+            // Update current day history state
+            if (!adherenceState.history) adherenceState.history = {};
+            if (adherenceState.todayMorning || adherenceState.todayEvening) {
+                adherenceState.history[days[todayIdx]] = true;
+            }
+
             container.innerHTML = days.map((day, idx) => {
-                const isCompleted = idx < todayIdx ? true : (idx === todayIdx ? (adherenceState.todayMorning || adherenceState.todayEvening) : false);
+                const isCompleted = adherenceState.history && adherenceState.history[day] === true;
                 const isToday = idx === todayIdx;
 
                 return `
@@ -8006,15 +8301,110 @@
             }).join('');
         }
 
+        // Global window bindings for adherence system
+        window.toggleMainScreenPin = toggleMainScreenPin;
+        window.dismissMainScreenAdherence = dismissMainScreenAdherence;
+        window.openAdherenceModal = openAdherenceModal;
+        window.closeAdherenceModal = closeAdherenceModal;
+        window.logDoseTaken = logDoseTaken;
+        window.togglePushReminders = togglePushReminders;
+        window.sendTestReminderNotification = sendTestReminderNotification;
+        window.updateAdherenceTimes = updateAdherenceTimes;
+        window.submitDailyRecoveryCheckin = submitDailyRecoveryCheckin;
+
         // Initialize on DOM load
         document.addEventListener('DOMContentLoaded', initAdherenceSystem);
 
-        /* ══════ Saved Prescriptions JS ══════ */
+        /* ══════════════════════════════════════════════════════════════ */
+        /* SAVED CLINICAL PRESCRIPTIONS & CROSS-APP LOADING ENGINE        */
+        /* ══════════════════════════════════════════════════════════════ */
+        let cachedAllSavedPrescriptions = [];
+
+        function saveCurrentPrescription(data = null) {
+            const rxData = data || activePrescriptionPayload || canvasActivePrescription;
+            if (!rxData) {
+                showToast('⚠️ No active prescription found to save.', 'warning');
+                return;
+            }
+
+            const rxId = rxData.rx_id || ('rx_' + Date.now());
+            const f = rxData.formulation || rxData;
+            const rxName = f.formulation_name || rxData.primary_diagnosis || 'Prescribed Botanical Remedy';
+            const timestamp = rxData.created_at || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+            const fullRecord = {
+                id: rxId,
+                rx_id: rxId,
+                title: rxName,
+                primary_diagnosis: rxData.primary_diagnosis || rxName,
+                prescribed_formulation: rxName,
+                formulation: f,
+                ingredients: f.ingredients || rxData.ingredients || [],
+                symptoms: rxData.symptoms || 'Clinical Consultation',
+                pot_liters: f.total_volume_ml ? (f.total_volume_ml / 1000).toFixed(1) : (rxData.pot_liters || '2.0'),
+                dosing_frequency: f.household_dose_schedule || f.dosing_frequency || '1 teacup (150 mL) 3x daily',
+                modality: currentClinicalModality || 'auto',
+                created_at: timestamp,
+                raw_data: rxData
+            };
+
+            let savedList = [];
+            try {
+                const stored = localStorage.getItem('herbalist_saved_prescriptions');
+                if (stored) savedList = JSON.parse(stored);
+            } catch(e) {}
+
+            // Deduplicate: replace existing with same ID or add to top
+            const existingIdx = savedList.findIndex(item => item.id === rxId || item.rx_id === rxId);
+            if (existingIdx >= 0) {
+                savedList[existingIdx] = fullRecord;
+            } else {
+                savedList.unshift(fullRecord);
+            }
+
+            try {
+                localStorage.setItem('herbalist_saved_prescriptions', JSON.stringify(savedList));
+                localStorage.setItem('herbalist_active_cook_rx', JSON.stringify(rxData));
+            } catch(e) {}
+
+            cachedAllSavedPrescriptions = savedList;
+
+            // Also attempt backend persistence
+            try {
+                const token = localStorage.getItem('herbalist_jwt_token');
+                if (token) {
+                    fetch('/api/prescriptions/save', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(fullRecord)
+                    }).catch(() => {});
+                }
+            } catch(e) {}
+
+            showToast(`💾 "${rxName}" saved to your Saved Prescriptions library!`, 'success');
+            
+            // If modal is currently open, refresh list
+            const modal = document.getElementById('prescriptions-modal');
+            if (modal && modal.classList.contains('active')) {
+                renderSavedPrescriptionsList(savedList);
+            }
+        }
+
         async function loadSavedPrescriptions() {
             const container = document.getElementById('prescriptions-list-container');
             if (!container) return;
             container.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:40px;">Loading saved patient clinical prescriptions...</div>';
 
+            let localList = [];
+            try {
+                const stored = localStorage.getItem('herbalist_saved_prescriptions');
+                if (stored) localList = JSON.parse(stored);
+            } catch(e) {}
+
+            let backendList = [];
             try {
                 const token = localStorage.getItem('herbalist_jwt_token');
                 const headers = {};
@@ -8022,38 +8412,262 @@
 
                 const endpoint = token ? '/api/my-prescriptions' : '/api/recents';
                 const res = await fetch(endpoint, { headers });
-
                 if (res.ok) {
                     const data = await res.json();
-                    const list = data.prescriptions || data.recents || [];
-                    if (list.length > 0) {
-                        container.innerHTML = list.map(item => `
-                            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(46,204,113,0.2);border-radius:16px;padding:18px;display:flex;justify-content:space-between;align-items:center;gap:16px;">
-                                <div>
-                                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-                                        <h4 style="font-family:'Outfit',sans-serif;font-size:16px;color:#ffffff;margin:0;">${item.primary_diagnosis || item.diagnosis || item.title}</h4>
-                                        <span style="background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.3);color:var(--accent-green);font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;">SHA-256 Verified</span>
-                                    </div>
-                                    <div style="font-size:12px;color:rgba(255,255,255,0.7);margin-bottom:4px;">
-                                        <strong>Formulation:</strong> ${item.prescribed_formulation || item.formulation || 'Custom Botanical Remedy'}
-                                    </div>
-                                    <div style="font-size:11px;color:var(--text-muted);">
-                                        Symptoms: ${item.symptoms || 'General Wellness Consultation'} • Date: ${item.created_at || item.timestamp || 'Recent'}
-                                    </div>
+                    backendList = data.prescriptions || data.recents || [];
+                }
+            } catch (e) {}
+
+            // Merge local and backend prescriptions (deduplicating by ID or title)
+            const map = new Map();
+            localList.forEach(item => map.set(item.id || item.rx_id || item.title, item));
+            backendList.forEach(item => {
+                const key = item.id || item.rx_id || item.case_id || item.title;
+                if (!map.has(key)) {
+                    map.set(key, {
+                        id: key,
+                        rx_id: key,
+                        title: item.title || item.primary_diagnosis || 'Botanical Prescription',
+                        primary_diagnosis: item.primary_diagnosis || item.diagnosis || item.title,
+                        prescribed_formulation: item.prescribed_formulation || item.formulation || 'Phytotherapy Synergy Formula',
+                        formulation: item.raw_data?.formulation || item.formulation || {},
+                        ingredients: item.ingredients || item.raw_data?.formulation?.ingredients || [],
+                        symptoms: item.symptoms || 'Clinical Consultation',
+                        created_at: item.created_at || item.timestamp || 'Recent',
+                        raw_data: item.raw_data || item
+                    });
+                }
+            });
+
+            cachedAllSavedPrescriptions = Array.from(map.values());
+            renderSavedPrescriptionsList(cachedAllSavedPrescriptions);
+        }
+
+        function renderSavedPrescriptionsList(list) {
+            const container = document.getElementById('prescriptions-list-container');
+            const countBadge = document.getElementById('saved-rx-count-badge');
+            const clearAllBtn = document.getElementById('btn-clear-all-rx');
+
+            if (countBadge) countBadge.innerText = `${list ? list.length : 0} Saved`;
+            if (clearAllBtn) clearAllBtn.style.display = (list && list.length > 0) ? 'inline-block' : 'none';
+
+            if (!container) return;
+
+            if (!list || list.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align:center;padding:48px 20px;color:var(--text-muted);">
+                        <div style="font-size:46px;margin-bottom:14px;">📋</div>
+                        <h4 style="font-family:'Outfit',sans-serif;color:#fff;font-size:17px;font-weight:700;margin:0 0 6px 0;">No Saved Prescriptions Yet</h4>
+                        <p style="font-size:12.5px;line-height:1.6;max-width:440px;margin:0 auto 20px auto;color:#c0d5c8;">
+                            When Dr. Herbalist prescribes botanical remedies during your consultations, you can save them here to easily load into Cook Mode HUD, view on Canvas, or track in your Health Vault anytime.
+                        </p>
+                        <button onclick="closePrescriptionsModal(); document.getElementById('user-input').focus();" style="background:linear-gradient(135deg, var(--accent-green), #27ae60);color:#000;border:none;padding:10px 22px;border-radius:12px;font-weight:800;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;">
+                            <span>🌿 Start Clinical Consultation</span>
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = list.map((item, idx) => {
+                const rxId = item.id || item.rx_id || `rx_${idx}`;
+                const title = item.primary_diagnosis || item.title || 'Botanical Remedy';
+                const f = item.formulation || {};
+                const formulaName = item.prescribed_formulation || f.formulation_name || title;
+                const date = item.created_at || 'Recent';
+                const potVol = item.pot_liters || (f.total_volume_ml ? (f.total_volume_ml / 1000).toFixed(1) : '2.0');
+                const ingredients = item.ingredients || f.ingredients || [];
+                const dosing = item.dosing_frequency || f.household_dose_schedule || '1 teacup 2-3x daily';
+
+                const herbTagsHTML = ingredients.length > 0 ? ingredients.slice(0, 4).map(ing => {
+                    const herbName = ing.common_name || ing.name || ing.herb || 'Botanical';
+                    const herbMass = ing.weight_grams ? `${ing.weight_grams}g` : (ing.mass_g || ing.amount || '');
+                    return `<span style="background:rgba(46,204,113,0.12);border:1px solid rgba(46,204,113,0.3);color:var(--accent-green);font-size:11px;padding:3px 8px;border-radius:8px;font-weight:600;">🌿 ${herbName} ${herbMass}</span>`;
+                }).join('') + (ingredients.length > 4 ? `<span style="color:var(--text-muted);font-size:10.5px;align-self:center;">+${ingredients.length - 4} more</span>` : '') : '<span style="color:var(--text-muted);font-size:11px;font-style:italic;">Standard Compounding Formula</span>';
+
+                return `
+                    <div class="saved-rx-card" id="saved-rx-card-${rxId}" style="background:linear-gradient(135deg, rgba(255,255,255,0.03), rgba(46,204,113,0.03));border:1px solid rgba(46,204,113,0.25);border-radius:18px;padding:18px 20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 6px 20px rgba(0,0,0,0.35);transition:border-color 0.2s ease;">
+                        <!-- Header Row -->
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
+                            <div>
+                                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                                    <h4 style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;color:#ffffff;margin:0;">${formulaName}</h4>
+                                    <span style="background:rgba(46,204,113,0.15);border:1px solid rgba(46,204,113,0.35);color:var(--accent-green);font-size:10px;font-weight:800;padding:2px 8px;border-radius:6px;text-transform:uppercase;">Verified Rx</span>
+                                    <span style="background:rgba(243,156,18,0.12);border:1px solid rgba(243,156,18,0.3);color:var(--accent-gold);font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;">🍲 ${potVol} L Batch</span>
                                 </div>
-                                <button onclick="exportPrescriptionPDF(this)" style="background:rgba(46,204,113,0.15);border:1px solid var(--accent-green);color:var(--accent-green);padding:8px 14px;border-radius:10px;font-weight:600;font-size:12px;cursor:pointer;white-space:nowrap;">
-                                    📥 Export PDF
-                                </button>
+                                <div style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:4px;">
+                                    <strong>Indication:</strong> ${title} • <span style="color:var(--text-muted);">Issued: ${date}</span>
+                                </div>
                             </div>
-                        `).join('');
-                        return;
+                            <button onclick="deleteSavedPrescription('${rxId}')" title="Delete Saved Prescription" style="background:rgba(231,76,60,0.12);border:1px solid rgba(231,76,60,0.3);color:#ff7675;font-size:12px;font-weight:700;cursor:pointer;padding:5px 10px;border-radius:8px;display:flex;align-items:center;gap:4px;" onmouseover="this.style.background='rgba(231,76,60,0.25)'" onmouseout="this.style.background='rgba(231,76,60,0.12)'">
+                                <span>🗑️</span>
+                                <span>Delete</span>
+                            </button>
+                        </div>
+
+                        <!-- Ingredients Tags Pill Bar -->
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;background:rgba(0,0,0,0.25);padding:8px 12px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);">
+                            <span style="font-size:10.5px;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-right:2px;">Formula:</span>
+                            ${herbTagsHTML}
+                        </div>
+
+                        <!-- Dosing Schedule Info -->
+                        <div style="font-size:11.5px;color:#d0e4d7;display:flex;align-items:center;gap:6px;">
+                            <span>☕</span>
+                            <span><strong>Dosing:</strong> ${dosing}</span>
+                        </div>
+
+                        <!-- Multi-Action Button Dock -->
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-top:1px solid rgba(255,255,255,0.06);padding-top:12px;margin-top:2px;">
+                            <button onclick="loadSavedRxToCookMode('${rxId}')" style="background:linear-gradient(135deg, var(--accent-gold), #e67e22);color:#000;border:none;padding:7px 14px;border-radius:10px;font-weight:800;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 2px 10px rgba(243,156,18,0.25);">
+                                <span>🍲</span>
+                                <span>Load in Cook Mode</span>
+                            </button>
+                            <button onclick="loadSavedRxToCanvas('${rxId}')" style="background:rgba(52,152,219,0.18);border:1px solid #3498db;color:#3498db;padding:7px 14px;border-radius:10px;font-weight:700;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                                <span>📄</span>
+                                <span>View in Canvas</span>
+                            </button>
+                            <button onclick="loadSavedRxToVault('${rxId}')" style="background:rgba(46,204,113,0.15);border:1px solid var(--accent-green);color:var(--accent-green);padding:7px 14px;border-radius:10px;font-weight:700;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                                <span>📈</span>
+                                <span>Track in Vault</span>
+                            </button>
+                            <button onclick="exportPrescriptionPDF(this)" style="background:rgba(255,255,255,0.06);border:1px solid var(--pill-border);color:#ffffff;padding:7px 14px;border-radius:10px;font-weight:600;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;margin-left:auto;">
+                                <span>📥</span>
+                                <span>Export PDF</span>
+                            </button>
+                            <button onclick="deleteSavedPrescription('${rxId}')" style="background:rgba(231,76,60,0.12);border:1px solid rgba(231,76,60,0.35);color:#ff7675;padding:7px 12px;border-radius:10px;font-weight:700;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;">
+                                <span>🗑️</span>
+                                <span>Delete</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterSavedPrescriptions() {
+            const query = (document.getElementById('rx-search-input')?.value || '').trim().toLowerCase();
+            if (!query) {
+                renderSavedPrescriptionsList(cachedAllSavedPrescriptions);
+                return;
+            }
+
+            const filtered = cachedAllSavedPrescriptions.filter(item => {
+                const title = (item.title || item.primary_diagnosis || '').toLowerCase();
+                const formulation = (item.prescribed_formulation || '').toLowerCase();
+                const herbs = (item.ingredients || []).map(i => (i.name || i.common_name || i.herb || '').toLowerCase()).join(' ');
+                return title.includes(query) || formulation.includes(query) || herbs.includes(query);
+            });
+
+            renderSavedPrescriptionsList(filtered);
+        }
+
+        function findSavedRxById(rxId) {
+            return cachedAllSavedPrescriptions.find(item => item.id === rxId || item.rx_id === rxId);
+        }
+
+        function loadSavedRxToCookMode(rxId) {
+            const item = findSavedRxById(rxId);
+            if (!item) return;
+            const rxData = item.raw_data || item;
+            activePrescriptionPayload = rxData;
+            canvasActivePrescription = rxData;
+            try {
+                localStorage.setItem('herbalist_active_cook_rx', JSON.stringify(rxData));
+            } catch(e) {}
+
+            closePrescriptionsModal();
+            openKitchenCookMode(rxData);
+            showToast(`🍲 Loaded "${item.title}" into Kitchen Cook Mode HUD!`, 'success');
+        }
+
+        function loadSavedRxToCanvas(rxId) {
+            const item = findSavedRxById(rxId);
+            if (!item) return;
+            const rxData = item.raw_data || item;
+            activePrescriptionPayload = rxData;
+            canvasActivePrescription = rxData;
+
+            closePrescriptionsModal();
+            openArtifactsCanvas(rxData);
+            showToast(`📄 Loaded "${item.title}" into Split-Screen Canvas!`, 'info');
+        }
+
+        function loadSavedRxToVault(rxId) {
+            const item = findSavedRxById(rxId);
+            if (!item) return;
+            const rxData = item.raw_data || item;
+            activePrescriptionPayload = rxData;
+
+            closePrescriptionsModal();
+            openPatientCareToolkitModal('recovery');
+            showToast(`📈 Linked "${item.title}" to Recovery & Health Vault!`, 'success');
+        }
+
+        function deleteSavedPrescription(rxId) {
+            const item = findSavedRxById(rxId);
+            const title = item ? (item.title || item.primary_diagnosis || 'this prescription') : 'this prescription';
+            if (!confirm(`Are you sure you want to permanently delete "${title}" from your saved prescriptions?`)) return;
+
+            cachedAllSavedPrescriptions = cachedAllSavedPrescriptions.filter(p => p.id !== rxId && p.rx_id !== rxId);
+            try {
+                localStorage.setItem('herbalist_saved_prescriptions', JSON.stringify(cachedAllSavedPrescriptions));
+                
+                // If the deleted prescription was active in Cook Mode, reset it
+                const activeCookStr = localStorage.getItem('herbalist_active_cook_rx');
+                if (activeCookStr) {
+                    const activeCook = JSON.parse(activeCookStr);
+                    if (activeCook.id === rxId || activeCook.rx_id === rxId) {
+                        localStorage.removeItem('herbalist_active_cook_rx');
+                        if (activePrescriptionPayload && (activePrescriptionPayload.id === rxId || activePrescriptionPayload.rx_id === rxId)) {
+                            activePrescriptionPayload = null;
+                        }
                     }
                 }
-                container.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:40px;">No saved prescriptions found in database history.</div>';
-            } catch (e) {
-                container.innerHTML = '<div style="color:var(--danger);text-align:center;padding:40px;">Could not connect to prescription server.</div>';
-            }
+            } catch(e) {}
+
+            // Attempt backend sync
+            try {
+                const token = localStorage.getItem('herbalist_jwt_token');
+                if (token) {
+                    fetch('/api/prescriptions/delete', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ id: rxId })
+                    }).catch(() => {});
+                }
+            } catch(e) {}
+
+            renderSavedPrescriptionsList(cachedAllSavedPrescriptions);
+            showToast(`🗑️ "${title}" deleted from saved records.`, 'info');
         }
+
+        function clearAllSavedPrescriptions() {
+            if (!cachedAllSavedPrescriptions || cachedAllSavedPrescriptions.length === 0) return;
+            if (!confirm(`Are you sure you want to delete ALL (${cachedAllSavedPrescriptions.length}) saved prescriptions? This action cannot be undone.`)) return;
+
+            cachedAllSavedPrescriptions = [];
+            try {
+                localStorage.removeItem('herbalist_saved_prescriptions');
+                localStorage.removeItem('herbalist_active_cook_rx');
+                activePrescriptionPayload = null;
+            } catch(e) {}
+
+            renderSavedPrescriptionsList([]);
+            showToast('🗑️ All saved prescriptions cleared.', 'info');
+        }
+
+        window.saveCurrentPrescription = saveCurrentPrescription;
+        window.loadSavedPrescriptions = loadSavedPrescriptions;
+        window.filterSavedPrescriptions = filterSavedPrescriptions;
+        window.loadSavedRxToCookMode = loadSavedRxToCookMode;
+        window.loadSavedRxToCanvas = loadSavedRxToCanvas;
+        window.loadSavedRxToVault = loadSavedRxToVault;
+        window.deleteSavedPrescription = deleteSavedPrescription;
+        window.clearAllSavedPrescriptions = clearAllSavedPrescriptions;
 
         /* ══════ PubMed RAG Library JS ══════ */
         async function executeRagSearch() {
