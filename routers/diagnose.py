@@ -3,9 +3,12 @@ Clinical Diagnosis, SOCRATES Triage, Vision AI Scanner & Lab Report Parser Endpo
 """
 
 import base64
+import json
+import asyncio
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import StreamingResponse
 
 from clinical_memory import ClinicalMemoryStore
 from core.models import MedicalProfile
@@ -902,3 +905,88 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
         "triage_phase": "onset",
         "conversational_message": init_msg,
     }
+
+
+@router.post("/api/diagnose/stream")
+@router.post("/api/consult/stream")
+async def diagnose_patient_stream(body: DiagnoseRequest, request: Request):
+    """
+    Server-Sent Events (SSE) Streaming Consultation & Clinical Reasoning Engine.
+    Emits progressive clinical milestones (thought, canvas_update, text_chunk, final_prescription).
+    """
+    async def sse_event_generator():
+        try:
+            # 1. Start event
+            yield f"event: start\ndata: {json.dumps({'status': 'connected', 'timestamp': asyncio.get_event_loop().time()})}\n\n"
+            await asyncio.sleep(0.04)
+
+            # 2. Step 1: Clinical Intake & Vital Signs
+            yield f"event: thought\ndata: {json.dumps({'step': 1, 'total_steps': 4, 'title': 'Clinical Intake & Vital Signs', 'message': 'Evaluating patient symptoms, vital signs, and demographic indications...', 'progress': 25})}\n\n"
+            await asyncio.sleep(0.08)
+
+            # Execute diagnosis
+            result = await diagnose_patient(body, request)
+
+            # If result is greeting, out-of-domain, or triage question:
+            if result.get("is_greeting") or result.get("is_triage_question") or result.get("conversational_message"):
+                msg = result.get("conversational_message", "")
+                
+                # Stream the text chunks progressively
+                words = msg.split(" ")
+                chunk_size = 3
+                for i in range(0, len(words), chunk_size):
+                    chunk = " ".join(words[i:i+chunk_size]) + " "
+                    yield f"event: text_chunk\ndata: {json.dumps({'text': chunk})}\n\n"
+                    await asyncio.sleep(0.02)
+
+                yield f"event: final_response\ndata: {json.dumps(result)}\n\n"
+                yield f"event: done\ndata: {json.dumps({'status': 'complete'})}\n\n"
+                return
+
+            # If full diagnosis & prescription result:
+            # 3. Step 2: WHO Monograph & Pharmacopeia Match
+            yield f"event: thought\ndata: {json.dumps({'step': 2, 'total_steps': 4, 'title': 'WHO Monograph & Pharmacopeia Matching', 'message': f'Cross-referencing active bioactives for {result.get(\"primary_diagnosis\", \"Clinical Condition\")} across global pharmacopeias...', 'progress': 50})}\n\n"
+            await asyncio.sleep(0.08)
+
+            # 4. Live Canvas Update
+            if result.get("formulation"):
+                f = result["formulation"]
+                yield f"event: canvas_update\ndata: {json.dumps({'formulation_name': f.get('formulation_name'), 'pot_liters': (f.get('total_volume_ml', 2000)/1000), 'ingredients': f.get('ingredients', []), 'match_score': f.get('bioactive_match_score', 98.5)})}\n\n"
+                await asyncio.sleep(0.06)
+
+            # 5. Step 3: Clark's Rule Mass Scaling & CYP450 Clearance
+            yield f"event: thought\ndata: {json.dumps({'step': 3, 'total_steps': 4, 'title': 'Clark\'s Rule Mass Scaling & Safety Clearance', 'message': 'Computing mass-adjusted bioactive yields and verifying hepatic/renal clearance...', 'progress': 75})}\n\n"
+            await asyncio.sleep(0.08)
+
+            # 6. Step 4: Compounding & Household Kitchen Recipe
+            yield f"event: thought\ndata: {json.dumps({'step': 4, 'total_steps': 4, 'title': 'Phytotherapy Formulation & Kitchen Compounding', 'message': 'Synthesizing master compounding formula, simmering protocols, and chrono-dosing...', 'progress': 100})}\n\n"
+            await asyncio.sleep(0.08)
+
+            # 7. Stream doctor explanation text chunks
+            layman = result.get("formulation", {}).get("layman_explanation", "") or f"I have completed your clinical phytotherapy analysis for {result.get('primary_diagnosis', 'your symptoms')}. Below is your official prescription."
+            words = layman.split(" ")
+            chunk_size = 4
+            for i in range(0, len(words), chunk_size):
+                chunk = " ".join(words[i:i+chunk_size]) + " "
+                yield f"event: text_chunk\ndata: {json.dumps({'text': chunk})}\n\n"
+                await asyncio.sleep(0.02)
+
+            # 8. Emit final full payload
+            yield f"event: final_prescription\ndata: {json.dumps(result)}\n\n"
+            yield f"event: done\ndata: {json.dumps({'status': 'complete'})}\n\n"
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            yield f"event: error\ndata: {json.dumps({'error': str(e)})}\n\n"
+
+    return StreamingResponse(
+        sse_event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
+

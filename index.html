@@ -3577,7 +3577,102 @@
 </main>
 
 
+    <!-- GLOBAL TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" style="position:fixed;top:20px;right:20px;z-index:999999;display:flex;flex-direction:column;gap:10px;pointer-events:none;max-width:380px;width:calc(100% - 40px);"></div>
+
     <script>
+        /* ══════════════════════════════════════════════════════════════ */
+        /* GLOBAL TOAST NOTIFICATION SYSTEM                               */
+        /* ══════════════════════════════════════════════════════════════ */
+        function showToast(message, type = 'info', duration = 3800) {
+            if (!message) return;
+
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                container.style.cssText = 'position:fixed;top:20px;right:20px;z-index:999999;display:flex;flex-direction:column;gap:10px;pointer-events:none;max-width:380px;width:calc(100% - 40px);';
+                document.body.appendChild(container);
+            }
+
+            const toast = document.createElement('div');
+            toast.className = `herbalist-toast toast-${type}`;
+            toast.style.cssText = `
+                pointer-events:auto;
+                background: ${type === 'success' ? 'linear-gradient(135deg, rgba(20,35,25,0.95), rgba(15,25,20,0.98))' : (type === 'error' ? 'linear-gradient(135deg, rgba(45,15,15,0.95), rgba(30,10,10,0.98))' : (type === 'warning' ? 'linear-gradient(135deg, rgba(45,35,15,0.95), rgba(30,22,10,0.98))' : 'linear-gradient(135deg, rgba(15,25,40,0.95), rgba(10,18,30,0.98))'))};
+                border: 1px solid ${type === 'success' ? 'rgba(46,204,113,0.5)' : (type === 'error' ? 'rgba(231,76,60,0.5)' : (type === 'warning' ? 'rgba(243,156,18,0.5)' : 'rgba(52,152,219,0.5)'))};
+                box-shadow: 0 10px 30px rgba(0,0,0,0.6), 0 0 15px ${type === 'success' ? 'rgba(46,204,113,0.2)' : (type === 'error' ? 'rgba(231,76,60,0.2)' : (type === 'warning' ? 'rgba(243,156,18,0.2)' : 'rgba(52,152,219,0.2)'))};
+                color: #ffffff;
+                padding: 12px 16px;
+                border-radius: 14px;
+                font-family: 'Inter', sans-serif;
+                font-size: 13px;
+                line-height: 1.5;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                transform: translateX(100px);
+                opacity: 0;
+                transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+                cursor: pointer;
+            `;
+
+            const iconMap = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            };
+
+            const icon = iconMap[type] || '🌿';
+
+            toast.innerHTML = `
+                <span style="font-size: 16px; flex-shrink: 0;">${icon}</span>
+                <div style="flex: 1; word-break: break-word;">${message}</div>
+                <button style="background:transparent;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:14px;padding:0 0 0 6px;" onclick="this.parentElement.remove()">✕</button>
+            `;
+
+            container.appendChild(toast);
+
+            const triggerAnim = () => {
+                toast.style.transform = 'translateX(0)';
+                toast.style.opacity = '1';
+            };
+
+            if (typeof requestAnimationFrame !== 'undefined') {
+                requestAnimationFrame(triggerAnim);
+            } else {
+                setTimeout(triggerAnim, 10);
+            }
+
+            const safeRemove = () => {
+                if (toast.remove) {
+                    toast.remove();
+                } else if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            };
+
+            const timer = setTimeout(() => {
+                toast.style.transform = 'translateX(80px)';
+                toast.style.opacity = '0';
+                setTimeout(safeRemove, 320);
+            }, duration);
+
+            toast.onclick = (e) => {
+                if (e.target.tagName !== 'BUTTON') {
+                    clearTimeout(timer);
+                    toast.style.transform = 'translateX(80px)';
+                    toast.style.opacity = '0';
+                    setTimeout(safeRemove, 320);
+                }
+            };
+        }
+
+        window.showToast = showToast;
+
         let currentSelectedChat = null;
         let currentSessionId = null;
 
@@ -4363,24 +4458,32 @@
             const headers = { 'Content-Type': 'application/json' };
             if (token) headers['Authorization'] = `Bearer ${token}`;
 
+            const msgId = 'stream-' + Date.now();
+            let hasStreamingBubble = false;
+            let streamTextBuffer = '';
+            let sentenceSpeechBuffer = '';
+
+            const requestPayload = {
+                complaint: input,
+                weight_kg: parseFloat(weight),
+                age: parseInt(age),
+                severity: parseInt(severity),
+                session_id: currentSessionId,
+                api_key: apiKey,
+                clinical_modality: currentClinicalModality || 'auto',
+                attachment_base64: currentAttachment ? currentAttachment.base64 : null,
+                attachment_name: currentAttachment ? currentAttachment.name : null,
+                attachment_type: currentAttachment ? currentAttachment.type : null
+            };
+
             try {
-                const response = await fetch('/api/diagnose', {
+                // Attempt SSE Streaming Consultation Endpoint
+                const response = await fetch('/api/diagnose/stream', {
                     method: 'POST',
                     headers: headers,
                     credentials: 'same-origin',
-                    body: JSON.stringify({
-                        complaint: input,
-                        weight_kg: parseFloat(weight),
-                        age: parseInt(age),
-                        severity: parseInt(severity),
-                        session_id: currentSessionId,
-                        api_key: apiKey,
-                        attachment_base64: currentAttachment ? currentAttachment.base64 : null,
-                        attachment_name: currentAttachment ? currentAttachment.name : null,
-                        attachment_type: currentAttachment ? currentAttachment.type : null
-                    })
+                    body: JSON.stringify(requestPayload)
                 });
-
 
                 // Remove typing indicator safely
                 const typingEl = document.getElementById(typingId);
@@ -4389,128 +4492,166 @@
                     if (bubble) bubble.remove();
                 }
 
-
-                if (response.ok) {
-                    const data = await response.json();
-
-                    // Track session across turns
-                    if (data.session_id) {
-                        currentSessionId = data.session_id;
-                    }
-
-                    // ── EMERGENCY RED FLAG ──
-                    if (data.status === 'emergency_red_flag' || data.is_emergency) {
-                        appendBubble('doctor', `
-                            <div style="padding:16px;background:rgba(231,76,60,0.15);border:1px solid #e74c3c;border-radius:14px;color:#f4f9f5;">
-                                <p style="font-size:14px;line-height:1.6;">${renderMarkdown(data.conversational_message)}</p>
-                            </div>
-                        `);
-                        showEmergencyModal(data.conversational_message);
-                        return;
-                    }
-
-                    // ── GREETING ──
-                    if (data.is_greeting) {
-                        appendBubble('doctor', `
-                            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.4 19 2c1 2 2 4.1 2 9 0 4.9-4 9-9 9z"></path></svg>
-                                <h3 style="font-family:'Outfit',sans-serif;font-size:16px;color:var(--accent-green);">Dr. Herbalist</h3>
-                            </div>
-                            <p style="line-height:1.7;font-size:14px;">${renderMarkdown(data.conversational_message)}</p>
-                            ${renderFollowUpChipsHTML(data.follow_up_suggestions || ['I need a natural remedy for fever and body aches.', 'What herbs help with high blood pressure?', 'I want a soothing digestion tea.'])}
-                        `);
-                        speakText(data.conversational_message);
-                        return;
-                    }
-
-                    // ── TRIAGE QUESTION (multi-turn) ──
-                    if (data.is_triage_question) {
-                        showTriageProgress(data.triage_phase);
-                        updateTriageStepper(data.triage_phase);
-
-                        // Show collected data badges
-                        let collectedHTML = '';
-                        const collected = data.collected_so_far || {};
-                        const collectedKeys = Object.keys(collected).filter(k => collected[k]);
-                        if (collectedKeys.length > 0) {
-                            collectedHTML = `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;">${collectedKeys.map(k => 
-                                `<span style="font-size:11px;padding:3px 10px;border-radius:12px;background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.25);color:rgba(255,255,255,0.7);">✓ ${k.charAt(0).toUpperCase() + k.slice(1)}</span>`
-                            ).join('')}</div>`;
-                        }
-
-                        appendBubble('doctor', `
-                            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.4 19 2c1 2 2 4.1 2 9 0 4.9-4 9-9 9z"></path></svg>
-                                <span style="font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;color:var(--accent-green);">Dr. Herbalist — Diagnostic Triage</span>
-                            </div>
-                            <p style="line-height:1.7;font-size:14px;">${formatTextWithCitations(renderMarkdown(data.conversational_message), data.pubmed_citations)}</p>
-                            ${collectedHTML}
-                            ${renderFollowUpChipsHTML(data.follow_up_suggestions || ['The symptoms started 3 days ago.', 'Mild severity (4/10), no other meds.', 'I have a sensitive stomach.'])}
-                        `);
-                        speakText(data.conversational_message);
-                        return;
-                    }
-
-                    // ── KNOWLEDGE / EDUCATIONAL CONSULTATION ANSWER ──
-                    if (data.is_knowledge_answer || (data.conversational_message && !data.triage_complete && !data.primary_diagnosis)) {
-                        let pharmacopeiaHTML = '';
-                        if (data.pharmacopeia_matches && data.pharmacopeia_matches.length > 0) {
-                            pharmacopeiaHTML = `
-                                <div style="margin-top:14px;padding:12px;background:rgba(46,204,113,0.06);border:1px solid rgba(46,204,113,0.2);border-radius:12px;">
-                                    <div style="font-size:11px;font-weight:700;color:var(--accent-green);text-transform:uppercase;margin-bottom:6px;">🌿 Matching Medicinal Herbs from Pharmacopeia:</div>
-                                    <div style="display:flex;flex-wrap:wrap;gap:6px;">
-                                        ${data.pharmacopeia_matches.map(h => 
-                                            `<span style="font-size:11.5px;padding:3px 10px;border-radius:16px;background:rgba(46,204,113,0.12);border:1px solid rgba(46,204,113,0.25);color:#fff;">${h.common_name || h.name} <span style="color:var(--accent-gold);font-style:italic;">(${h.category || 'Phytotherapy'})</span></span>`
-                                        ).join('')}
-                                    </div>
-                                </div>
-                            `;
-                        }
-
-                        appendBubble('doctor', `
-                            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.4 19 2c1 2 2 4.1 2 9 0 4.9-4 9-9 9z"></path></svg>
-                                <span style="font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;color:var(--accent-green);">Dr. Herbalist — Clinical Phytotherapy</span>
-                            </div>
-                            <div style="line-height:1.7;font-size:14px;color:#f4f9f5;">
-                                ${formatTextWithCitations(renderMarkdown(data.conversational_message), data.pubmed_citations)}
-                            </div>
-                            ${pharmacopeiaHTML}
-                            ${renderFollowUpChipsHTML(data.follow_up_suggestions || ['How do I prepare this tea correctly?', 'Which foods or spices should I avoid?', 'Can I take this with other medications?'])}
-                        `);
-                        speakText(data.conversational_message);
-                        return;
-                    }
-
-                    // ── FULL DIAGNOSIS (triage complete) ──
-                    if (data.triage_complete || data.primary_diagnosis) {
-                        // Remove triage progress bar
-                        const triageBar = document.getElementById('triage-progress');
-                        if (triageBar) triageBar.remove();
-                        updateTriageStepper('ready');
-                        currentSessionId = null;
-
-                        renderFullDiagnosis(data, weight);
-                        loadRecentsFromBackend();
-                        return;
-                    }
-                } else {
-                    // Server returned an error (e.g. 500, 422, etc.)
-                    let errorMsg = 'The server encountered an error. Please try again.';
-                    try {
-                        const errData = await response.json();
-                        if (errData.detail) errorMsg = errData.detail;
-                    } catch(e) {}
+                if (response.ok && response.body && response.headers.get('content-type')?.includes('text/event-stream')) {
+                    // Create Live Streaming Bubble
+                    hasStreamingBubble = true;
                     appendBubble('doctor', `
-                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                            <h3 style="font-family:'Outfit',sans-serif;font-size:16px;color:#e74c3c;">Server Error</h3>
+                        <div id="bubble-inner-${msgId}">
+                            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.4 19 2c1 2 2 4.1 2 9 0 4.9-4 9-9 9z"></path></svg>
+                                <span style="font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;color:var(--accent-green);">Dr. Herbalist</span>
+                                <span id="streaming-badge-${msgId}" style="display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:#2ecc71;background:rgba(46,204,113,0.15);border:1px solid rgba(46,204,113,0.3);padding:2px 8px;border-radius:10px;">
+                                    <span class="pulse-anim" style="width:6px;height:6px;border-radius:50%;background:#2ecc71;display:inline-block;"></span>
+                                    LIVE STREAM
+                                </span>
+                            </div>
+
+                            <!-- Real-Time Clinical Reasoning HUD Accordion -->
+                            <div class="clinical-thought-hud" id="thought-hud-${msgId}" style="display:none;background:rgba(0,0,0,0.35);border:1px solid rgba(46,204,113,0.3);border-radius:14px;padding:12px 14px;margin-bottom:12px;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleThoughtHUD('${msgId}')">
+                                    <div style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--accent-green);">
+                                        <span>🧠</span>
+                                        <span>Clinical Reasoning Stream:</span>
+                                        <span id="thought-hud-status-${msgId}" style="color:#fff;font-weight:600;">Intake</span>
+                                    </div>
+                                    <span id="thought-hud-arrow-${msgId}" style="color:var(--text-muted);font-size:11px;">▼</span>
+                                </div>
+                                <div class="thought-steps-list" id="thought-steps-${msgId}" style="margin-top:10px;display:flex;flex-direction:column;gap:6px;"></div>
+                            </div>
+
+                            <!-- Live Streaming Text Body -->
+                            <div id="stream-text-${msgId}" style="line-height:1.7;font-size:14px;color:#f4f9f5;"></div>
+
+                            <!-- Structured Payload Area -->
+                            <div id="stream-payload-${msgId}"></div>
                         </div>
-                        <p style="line-height:1.7;font-size:14px;">${errorMsg}</p>
                     `);
+
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let sseBuffer = '';
+
+                    while (true) {
+                        const { value, done } = await reader.read();
+                        if (done) break;
+
+                        sseBuffer += decoder.decode(value, { stream: true });
+                        const lines = sseBuffer.split('\n\n');
+                        sseBuffer = lines.pop(); // Keep partial trailing line
+
+                        for (const block of lines) {
+                            if (!block.trim()) continue;
+                            const eventMatch = block.match(/^event:\s*(.+)$/m);
+                            const dataMatch = block.match(/^data:\s*(.+)$/m);
+
+                            const eventType = eventMatch ? eventMatch[1].trim() : 'message';
+                            let dataObj = {};
+                            if (dataMatch) {
+                                try { dataObj = JSON.parse(dataMatch[1].trim()); } catch(e) {}
+                            }
+
+                            if (eventType === 'thought') {
+                                updateThoughtHUDStep(msgId, dataObj);
+                            } else if (eventType === 'canvas_update') {
+                                if (dataObj && (dataObj.ingredients || dataObj.formulation_name)) {
+                                    openArtifactsCanvas(dataObj);
+                                }
+                            } else if (eventType === 'text_chunk' && dataObj.text) {
+                                streamTextBuffer += dataObj.text;
+                                sentenceSpeechBuffer += dataObj.text;
+
+                                const textEl = document.getElementById(`stream-text-${msgId}`);
+                                if (textEl) {
+                                    textEl.innerHTML = renderMarkdown(streamTextBuffer);
+                                }
+
+                                // Telehealth Low-Latency Speech Streaming
+                                if (sentenceSpeechBuffer.includes('.') || sentenceSpeechBuffer.includes('!') || sentenceSpeechBuffer.includes('?')) {
+                                    const parts = sentenceSpeechBuffer.split(/([.!?])/);
+                                    if (parts.length >= 3) {
+                                        const completedSentence = parts[0] + parts[1];
+                                        sentenceSpeechBuffer = parts.slice(2).join('');
+                                        enqueueStreamSentence(completedSentence);
+                                    }
+                                }
+                            } else if (eventType === 'final_response' || eventType === 'final_prescription') {
+                                const badge = document.getElementById(`streaming-badge-${msgId}`);
+                                if (badge) badge.style.display = 'none';
+
+                                if (sentenceSpeechBuffer.trim()) {
+                                    enqueueStreamSentence(sentenceSpeechBuffer);
+                                    sentenceSpeechBuffer = '';
+                                }
+
+                                if (dataObj.session_id) currentSessionId = dataObj.session_id;
+
+                                if (dataObj.triage_complete || dataObj.primary_diagnosis) {
+                                    const payloadEl = document.getElementById(`stream-payload-${msgId}`);
+                                    const textEl = document.getElementById(`stream-text-${msgId}`);
+                                    if (textEl) textEl.style.display = 'none';
+
+                                    renderFullDiagnosis(dataObj, weight);
+                                    loadRecentsFromBackend();
+                                    return;
+                                } else if (dataObj.is_triage_question) {
+                                    showTriageProgress(dataObj.triage_phase);
+                                    updateTriageStepper(dataObj.triage_phase);
+                                    const payloadEl = document.getElementById(`stream-payload-${msgId}`);
+                                    if (payloadEl) {
+                                        payloadEl.innerHTML = renderFollowUpChipsHTML(dataObj.follow_up_suggestions || ['The symptoms started 3 days ago.', 'Mild severity (4/10), no other meds.', 'I have a sensitive stomach.']);
+                                    }
+                                } else if (dataObj.is_greeting || dataObj.is_knowledge_answer) {
+                                    const payloadEl = document.getElementById(`stream-payload-${msgId}`);
+                                    if (payloadEl) {
+                                        payloadEl.innerHTML = renderFollowUpChipsHTML(dataObj.follow_up_suggestions || ['I need a natural remedy for fever.', 'What herbs help with digestion?']);
+                                    }
+                                }
+                            } else if (eventType === 'done') {
+                                const badge = document.getElementById(`streaming-badge-${msgId}`);
+                                if (badge) badge.style.display = 'none';
+                            }
+                        }
+                    }
+                    return;
                 }
+
+                // Fallback: Standard JSON HTTP endpoint if non-SSE
+                const data = await response.json();
+                if (data.session_id) currentSessionId = data.session_id;
+
+                if (data.status === 'emergency_red_flag' || data.is_emergency) {
+                    appendBubble('doctor', `<div style="padding:16px;background:rgba(231,76,60,0.15);border:1px solid #e74c3c;border-radius:14px;color:#f4f9f5;"><p style="font-size:14px;line-height:1.6;">${renderMarkdown(data.conversational_message)}</p></div>`);
+                    showEmergencyModal(data.conversational_message);
+                    return;
+                }
+
+                if (data.is_greeting) {
+                    appendBubble('doctor', `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.4 19 2c1 2 2 4.1 2 9 0 4.9-4 9-9 9z"></path></svg><h3 style="font-family:'Outfit',sans-serif;font-size:16px;color:var(--accent-green);">Dr. Herbalist</h3></div><p style="line-height:1.7;font-size:14px;">${renderMarkdown(data.conversational_message)}</p>${renderFollowUpChipsHTML(data.follow_up_suggestions || ['I need a natural remedy for fever and body aches.', 'What herbs help with high blood pressure?', 'I want a soothing digestion tea.'])}`);
+                    speakText(data.conversational_message);
+                    return;
+                }
+
+                if (data.is_triage_question) {
+                    showTriageProgress(data.triage_phase);
+                    updateTriageStepper(data.triage_phase);
+                    appendBubble('doctor', `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.4 19 2c1 2 2 4.1 2 9 0 4.9-4 9-9 9z"></path></svg><span style="font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;color:var(--accent-green);">Dr. Herbalist — Diagnostic Triage</span></div><p style="line-height:1.7;font-size:14px;">${formatTextWithCitations(renderMarkdown(data.conversational_message), data.pubmed_citations)}</p>${renderFollowUpChipsHTML(data.follow_up_suggestions || ['The symptoms started 3 days ago.', 'Mild severity (4/10), no other meds.', 'I have a sensitive stomach.'])}`);
+                    speakText(data.conversational_message);
+                    return;
+                }
+
+                if (data.triage_complete || data.primary_diagnosis) {
+                    const triageBar = document.getElementById('triage-progress');
+                    if (triageBar) triageBar.remove();
+                    updateTriageStepper('ready');
+                    currentSessionId = null;
+
+                    renderFullDiagnosis(data, weight);
+                    loadRecentsFromBackend();
+                    return;
+                }
+
             } catch (err) {
-                console.log("Backend offline, using fallback:", err);
+                console.log("Streaming/backend fallback trigger:", err);
                 const typingEl = document.getElementById(typingId);
                 if (typingEl) {
                     const bubble = typingEl.closest('.chat-bubble') || typingEl.parentElement;
@@ -4519,6 +4660,83 @@
                 renderFallbackResponse(input, weight);
             }
         }
+
+        /* ── Real-Time Clinical Reasoning HUD & Telehealth Streaming Voice Helpers ── */
+        let speechStreamingQueue = [];
+        let isSpeakingStreamQueue = false;
+
+        function enqueueStreamSentence(sentence) {
+            if (!sentence || !sentence.trim() || !('speechSynthesis' in window)) return;
+            const clean = sentence.replace(/<[^>]*>?/gm, '').replace(/[*_#`]/g, '').trim();
+            if (clean.length < 2) return;
+            speechStreamingQueue.push(clean);
+            processNextStreamSentence();
+        }
+
+        function processNextStreamSentence() {
+            if (isSpeakingStreamQueue || speechStreamingQueue.length === 0) return;
+            isSpeakingStreamQueue = true;
+            const nextSentence = speechStreamingQueue.shift();
+            try {
+                const utterance = new SpeechSynthesisUtterance(nextSentence);
+                utterance.rate = 1.0;
+                utterance.pitch = 1.0;
+                utterance.onend = () => {
+                    isSpeakingStreamQueue = false;
+                    processNextStreamSentence();
+                };
+                utterance.onerror = () => {
+                    isSpeakingStreamQueue = false;
+                    processNextStreamSentence();
+                };
+                window.speechSynthesis.speak(utterance);
+            } catch(e) {
+                isSpeakingStreamQueue = false;
+            }
+        }
+
+        function toggleThoughtHUD(msgId) {
+            const stepsList = document.getElementById(`thought-steps-${msgId}`);
+            const arrow = document.getElementById(`thought-hud-arrow-${msgId}`);
+            if (!stepsList) return;
+            if (stepsList.style.display === 'none') {
+                stepsList.style.display = 'flex';
+                if (arrow) arrow.innerText = '▲';
+            } else {
+                stepsList.style.display = 'none';
+                if (arrow) arrow.innerText = '▼';
+            }
+        }
+
+        function updateThoughtHUDStep(msgId, stepData) {
+            const hud = document.getElementById(`thought-hud-${msgId}`);
+            const stepsList = document.getElementById(`thought-steps-${msgId}`);
+            const statusText = document.getElementById(`thought-hud-status-${msgId}`);
+            if (hud) hud.style.display = 'block';
+            if (statusText && stepData.title) statusText.innerText = stepData.title;
+            if (!stepsList) return;
+
+            let stepRow = document.getElementById(`thought-step-${msgId}-${stepData.step}`);
+            if (!stepRow) {
+                stepRow = document.createElement('div');
+                stepRow.id = `thought-step-${msgId}-${stepData.step}`;
+                stepRow.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:4px 0;font-size:11.5px;color:rgba(255,255,255,0.85);';
+                stepsList.appendChild(stepRow);
+            }
+
+            const isComplete = (stepData.progress >= 100) || (stepData.step < 4);
+            const icon = isComplete ? '✅' : '🔍';
+            stepRow.innerHTML = `
+                <span style="font-size:12px;margin-top:1px;">${icon}</span>
+                <div>
+                    <strong style="color:var(--accent-green);">${stepData.title}:</strong>
+                    <span style="color:#d0e4d7;">${stepData.message}</span>
+                </div>
+            `;
+        }
+
+        window.toggleThoughtHUD = toggleThoughtHUD;
+        window.updateThoughtHUDStep = updateThoughtHUDStep;
 
         let activePrescriptionPayload = null;
 
