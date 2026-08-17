@@ -3680,6 +3680,10 @@
 
         let currentSelectedChat = null;
         let currentSessionId = null;
+        let activeClinicalModality = (typeof localStorage !== 'undefined' && localStorage.getItem('herbalist_modality')) || 'auto';
+        let currentClinicalModality = activeClinicalModality;
+        window.activeClinicalModality = activeClinicalModality;
+        window.currentClinicalModality = currentClinicalModality;
 
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('collapsed');
@@ -8225,11 +8229,12 @@
         }
 
         /* ══════ MULTI-TRADITION MODALITY SWITCHER JS ══════ */
-        let activeClinicalModality = localStorage.getItem('herbalist_modality') || 'auto';
-
         function changeClinicalModality(modalityKey) {
             activeClinicalModality = modalityKey;
-            localStorage.setItem('herbalist_modality', modalityKey);
+            currentClinicalModality = modalityKey;
+            window.activeClinicalModality = modalityKey;
+            window.currentClinicalModality = modalityKey;
+            try { localStorage.setItem('herbalist_modality', modalityKey); } catch(e) {}
 
             const modalitySelector = document.getElementById('clinical-modality-selector');
             if (modalitySelector) modalitySelector.value = modalityKey;
