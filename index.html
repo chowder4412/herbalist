@@ -2138,9 +2138,14 @@
                         <label style="margin-bottom: 0;">Password</label>
                         <a href="#" id="forgot-password-link" onclick="openForgotPasswordStep(event)" style="display: none; font-size: 11px; color: var(--accent-gold); text-decoration: none; font-weight: 600;">Forgot Password?</a>
                     </div>
-                    <input type="password" id="auth-password" placeholder="••••••••">
+                    <div style="position: relative; display: flex; align-items: center;">
+                        <input type="password" id="auth-password" placeholder="••••••••" style="width: 100%; padding-right: 40px;">
+                        <button type="button" onclick="toggleAuthPasswordVisibility()" id="btn-toggle-auth-pw" style="position: absolute; right: 10px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 15px; padding: 4px;" title="Toggle Password Visibility">
+                            👁️
+                        </button>
+                    </div>
                 </div>
-                <div id="auth-error-msg" style="color: var(--danger); font-size: 12px; margin-bottom: 12px; display: none;"></div>
+                <div id="auth-error-msg" style="color: var(--danger); font-size: 12px; margin-bottom: 12px; display: none; line-height: 1.45; background: rgba(231,76,60,0.1); border: 1px solid rgba(231,76,60,0.3); padding: 8px 12px; border-radius: 10px;"></div>
                 <button onclick="handleAuthSubmit()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, var(--accent-green), #27ae60); color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px;" id="auth-submit-btn">
                     Sign In to Account
                 </button>
@@ -9301,20 +9306,27 @@
         }
 
         function formatFirebaseError(err) {
-            if (!err || !err.code) return err.message || 'Authentication error. Please try again.';
-            switch (err.code) {
-                case 'auth/invalid-email':
-                    return '⚠️ Please enter a valid email address.';
-                case 'auth/user-disabled':
-                    return '⚠️ This account has been disabled. Please contact support.';
-                case 'auth/user-not-found':
-                    return '⚠️ No account found with this email. Please click Create Account.';
+            if (!err) return 'Authentication error. Please try again.';
+            const code = err.code || '';
+            const msg = err.message || '';
+
+            switch (code) {
+                case 'auth/invalid-credential':
                 case 'auth/wrong-password':
-                    return '⚠️ Incorrect password. Please try again or click Forgot Password.';
+                case 'auth/user-not-found':
+                    return currentAuthTab === 'login'
+                        ? '⚠️ Incorrect email or password. If you do not have an account yet, click "Create Account" above.'
+                        : '⚠️ Invalid credentials. Please check your email and password.';
                 case 'auth/email-already-in-use':
-                    return '⚠️ An account with this email already exists. Please Sign In.';
+                    return '⚠️ An account with this email already exists. Click "Sign In" above to log in.';
                 case 'auth/weak-password':
                     return '⚠️ Password should be at least 6 characters long.';
+                case 'auth/invalid-email':
+                    return '⚠️ Please enter a valid email address.';
+                case 'auth/too-many-requests':
+                    return '⚠️ Too many unsuccessful attempts. Please wait a moment or click "Forgot Password".';
+                case 'auth/user-disabled':
+                    return '⚠️ This account has been disabled. Please contact support.';
                 case 'auth/popup-closed-by-user':
                     return '⚠️ Google sign-in window was closed before completion.';
                 case 'auth/network-request-failed':
@@ -9323,9 +9335,28 @@
                 case 'auth/api-key-not-valid.':
                     return '⚠️ Firebase API Key needs to be configured in your project settings.';
                 default:
-                    return err.message || 'Authentication error. Please try again.';
+                    if (msg.includes('auth/invalid-credential') || msg.includes('invalid-credential')) {
+                        return currentAuthTab === 'login'
+                            ? '⚠️ Incorrect email or password. If you do not have an account yet, click "Create Account" above.'
+                            : '⚠️ Invalid credentials. Please check your email and password.';
+                    }
+                    return msg || 'Authentication error. Please try again.';
             }
         }
+
+        function toggleAuthPasswordVisibility() {
+            const pwInput = document.getElementById('auth-password');
+            const btn = document.getElementById('btn-toggle-auth-pw');
+            if (!pwInput) return;
+            if (pwInput.type === 'password') {
+                pwInput.type = 'text';
+                if (btn) btn.innerText = '🔒';
+            } else {
+                pwInput.type = 'password';
+                if (btn) btn.innerText = '👁️';
+            }
+        }
+        window.toggleAuthPasswordVisibility = toggleAuthPasswordVisibility;
 
         /* ══════ Show Email Verification Screen ══════ */
         function showEmailVerificationPrompt(email, fromLogin = false) {
