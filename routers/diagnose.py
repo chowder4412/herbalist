@@ -919,24 +919,13 @@ async def diagnose_patient_stream(body: DiagnoseRequest, request: Request):
             # 1. Start event
             start_payload = json.dumps({'status': 'connected', 'timestamp': asyncio.get_event_loop().time()})
             yield f"event: start\ndata: {start_payload}\n\n"
-            await asyncio.sleep(0.04)
+            await asyncio.sleep(0.02)
 
-            # 2. Step 1: Clinical Intake & Vital Signs
-            step1_payload = json.dumps({
-                'step': 1,
-                'total_steps': 4,
-                'title': 'Clinical Intake & Vital Signs',
-                'message': 'Evaluating patient symptoms, vital signs, and demographic indications...',
-                'progress': 25
-            })
-            yield f"event: thought\ndata: {step1_payload}\n\n"
-            await asyncio.sleep(0.08)
-
-            # Execute diagnosis
+            # Execute diagnosis / triage
             result = await diagnose_patient(body, request)
 
-            # If result is greeting, out-of-domain, or triage question:
-            if result.get("is_greeting") or result.get("is_triage_question") or result.get("conversational_message"):
+            # If result is greeting, out-of-domain, triage question, or knowledge answer:
+            if result.get("is_greeting") or result.get("is_triage_question") or result.get("is_knowledge_answer") or result.get("conversational_message"):
                 msg = result.get("conversational_message", "")
                 
                 # Stream the text chunks progressively
@@ -946,7 +935,7 @@ async def diagnose_patient_stream(body: DiagnoseRequest, request: Request):
                     chunk = " ".join(words[i:i+chunk_size]) + " "
                     chunk_payload = json.dumps({'text': chunk})
                     yield f"event: text_chunk\ndata: {chunk_payload}\n\n"
-                    await asyncio.sleep(0.02)
+                    await asyncio.sleep(0.015)
 
                 final_resp_payload = json.dumps(result)
                 yield f"event: final_response\ndata: {final_resp_payload}\n\n"
@@ -957,7 +946,18 @@ async def diagnose_patient_stream(body: DiagnoseRequest, request: Request):
             # If full diagnosis & prescription result:
             diag_name = result.get("primary_diagnosis", "Clinical Condition")
             
-            # 3. Step 2: WHO Monograph & Pharmacopeia Match
+            # Step 1: Clinical Intake & Vital Signs
+            step1_payload = json.dumps({
+                'step': 1,
+                'total_steps': 4,
+                'title': 'Clinical Intake & Vital Signs',
+                'message': 'Evaluating patient symptoms, vital signs, and demographic indications...',
+                'progress': 25
+            })
+            yield f"event: thought\ndata: {step1_payload}\n\n"
+            await asyncio.sleep(0.08)
+
+            # Step 2: WHO Monograph & Pharmacopeia Match
             step2_payload = json.dumps({
                 'step': 2,
                 'total_steps': 4,
@@ -968,7 +968,7 @@ async def diagnose_patient_stream(body: DiagnoseRequest, request: Request):
             yield f"event: thought\ndata: {step2_payload}\n\n"
             await asyncio.sleep(0.08)
 
-            # 4. Live Canvas Update
+            # Live Canvas Update
             if result.get("formulation"):
                 f = result["formulation"]
                 canvas_payload = json.dumps({
@@ -980,7 +980,7 @@ async def diagnose_patient_stream(body: DiagnoseRequest, request: Request):
                 yield f"event: canvas_update\ndata: {canvas_payload}\n\n"
                 await asyncio.sleep(0.06)
 
-            # 5. Step 3: Clark's Rule Mass Scaling & CYP450 Clearance
+            # Step 3: Clark's Rule Mass Scaling & CYP450 Clearance
             step3_payload = json.dumps({
                 'step': 3,
                 'total_steps': 4,
@@ -991,7 +991,7 @@ async def diagnose_patient_stream(body: DiagnoseRequest, request: Request):
             yield f"event: thought\ndata: {step3_payload}\n\n"
             await asyncio.sleep(0.08)
 
-            # 6. Step 4: Compounding & Household Kitchen Recipe
+            # Step 4: Compounding & Household Kitchen Recipe
             step4_payload = json.dumps({
                 'step': 4,
                 'total_steps': 4,
@@ -1002,7 +1002,7 @@ async def diagnose_patient_stream(body: DiagnoseRequest, request: Request):
             yield f"event: thought\ndata: {step4_payload}\n\n"
             await asyncio.sleep(0.08)
 
-            # 7. Stream doctor explanation text chunks
+            # Stream doctor explanation text chunks
             layman = result.get("formulation", {}).get("layman_explanation", "") or f"I have completed your clinical phytotherapy analysis for {diag_name}. Below is your official prescription."
             words = layman.split(" ")
             chunk_size = 4
@@ -1012,7 +1012,7 @@ async def diagnose_patient_stream(body: DiagnoseRequest, request: Request):
                 yield f"event: text_chunk\ndata: {chunk_payload}\n\n"
                 await asyncio.sleep(0.02)
 
-            # 8. Emit final full payload
+            # Emit final full payload
             final_rx_payload = json.dumps(result)
             yield f"event: final_prescription\ndata: {final_rx_payload}\n\n"
             done_payload = json.dumps({'status': 'complete'})

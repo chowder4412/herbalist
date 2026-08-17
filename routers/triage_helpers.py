@@ -193,6 +193,13 @@ class ComplaintClassifier:
         "since yesterday", "since last", "for days", "for weeks", "for months",
     ]
 
+    GREETING_PATTERNS = [
+        "hello", "hi", "hey", "good morning", "good afternoon", "good evening",
+        "greetings", "howdy", "who are you", "what can you do", "help", "start",
+        "hi doctor", "hello doctor", "hi dr", "hello dr", "doc", "doctor",
+        "good day", "yo", "wassup", "sup"
+    ]
+
     @classmethod
     def extract_condition_topic(cls, text: str) -> str:
         t = text.strip().lower().rstrip("?").rstrip(".").strip()
@@ -214,6 +221,11 @@ class ComplaintClassifier:
     @classmethod
     def classify(cls, complaint: str, gemini_engine=None, memory_store=None) -> dict:
         extracted_topic = cls.extract_condition_topic(complaint)
+        c_clean = complaint.strip().lower().rstrip("!.?,")
+
+        # Fast Check: Greetings
+        if c_clean in cls.GREETING_PATTERNS or any(c_clean == g or (c_clean.startswith(g + " ") and len(c_clean.split()) <= 3) for g in cls.GREETING_PATTERNS):
+            return {"category": "greeting", "condition_topic": "", "source": "greeting_rule"}
 
         # Layer 1: Primary Cognitive Reasoning Engine (Gemini 2.0 Flash + Groq Llama 3.3 70B failover)
         if gemini_engine:
@@ -251,7 +263,6 @@ class ComplaintClassifier:
                 print(f"[ComplaintClassifier] Memory lookup error: {e}")
 
         # Layer 3: Offline Heuristic Pattern Matcher
-        c_clean = complaint.strip().lower()
         is_knowledge = any(c_clean.startswith(p) or p in c_clean for p in cls.KNOWLEDGE_PATTERNS)
         is_symptom = any(p in c_clean for p in cls.SYMPTOM_PATTERNS)
 
@@ -652,5 +663,17 @@ def generate_conversational_doctor_response(
         except Exception as ge:
             print(f"[Herbalist AI] Conversational AI reasoning notice: {ge}")
 
-    clean_goal = target_goal if not target_goal.startswith("Welcome") else "How can I assist you with your health or herbal remedies today?"
-    return f"{emergency_prefix}🩺 **Dr. Herbalist**: Thank you for sharing that. {clean_goal}"
+    # If target_goal is a welcome or greeting
+    is_greeting_goal = target_goal.startswith("Welcome") or "greeting" in target_goal.lower() or patient_message.strip().lower() in ComplaintClassifier.GREETING_PATTERNS
+    doctor_title = "Dr. Aisha" if "nigerian" in modality.lower() else "Dr. Herbalist"
+    user_greet = f" {patient_username}" if patient_username else ""
+
+    if is_greeting_goal:
+        return (
+            f"{emergency_prefix}🩺 **{doctor_title}**: Hello{user_greet}! Welcome to Herbalist AI. 🌿\n\n"
+            f"I am your Integrative Medical Doctor and Botanical Phytotherapy Specialist. "
+            f"How can I assist you today? Please feel free to describe any symptoms, health goals, or questions about natural herbal remedies."
+        )
+
+    clean_goal = target_goal.strip()
+    return f"{emergency_prefix}🩺 **{doctor_title}**: Thank you for that detail. {clean_goal}"
