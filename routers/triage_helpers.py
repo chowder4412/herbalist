@@ -555,13 +555,13 @@ def generate_knowledge_medical_answer(
     doctor=None
 ) -> str:
     """
-    Generates a profound, accurate, and empathetic medical & botanical response
-    anchored in clinical pathophysiology, pharmacological mechanisms, and phytotherapy.
+    Generates a clear, warm, relatable, and crystal-clear medical & botanical response
+    in plain everyday language so that anyone who knows how to read can easily understand.
     """
     herbs_summary = ""
     if matching_herbs:
         herbs_summary = "\n".join([
-            f"- **{h.get('common_name', '')}** (*{h.get('botanical_name', '')}*): Part used: {h.get('part_used', '')}. Bioactives: {', '.join(h.get('active_bioactives', [])[:4])}. Actions: {h.get('therapeutic_properties', '')}."
+            f"- **{h.get('common_name', '')}** (*{h.get('botanical_name', '')}*): Used part: {h.get('part_used', 'Leaves/Roots')}. Common benefits: {h.get('therapeutic_properties', 'Soothes inflammation & supports healing')}."
             for h in matching_herbs[:5] if isinstance(h, dict)
         ])
 
@@ -571,44 +571,156 @@ def generate_knowledge_medical_answer(
         history_str = "\n".join([f"[{t.get('role', 'user').title()}]: {t.get('text', '')}" for t in recent_turns])
 
     prompt = (
-        f"You are Dr. Herbalist, an authoritative, compassionate Senior Integrative Medical Doctor & Botanical Phytotherapy Specialist.\n"
-        f"You are consulting with '{patient_username}'.\n\n"
-        f"RECENT CONVERSATION CONTEXT:\n{history_str if history_str else 'New consultation'}\n\n"
-        f"PATIENT'S CURRENT QUESTION / INQUIRY:\n\"{query}\"\n\n"
-        f"CORE TOPIC IDENTIFIED:\n{condition_topic.title()}\n\n"
-        f"RELEVANT PHARMACOPEIA MONOGRAPHS IN KNOWLEDGE BASE:\n{herbs_summary if herbs_summary else 'General Botanical Pharmacopeia'}\n\n"
-        f"CLINICAL INSTRUCTIONS FOR DR. HERBALIST:\n"
-        f"1. DIRECT & ACCURATE MEDICAL ANSWER: Immediately, clearly, and thoroughly answer the patient's specific question regarding {condition_topic}. If they asked for symptoms (e.g. malaria, fever, diabetes), detail the exact clinical stages, hallmark signs, pathophysiology, and distinguishing features.\n"
-        f"2. BOTANICAL PHYTOTHERAPY & MECHANISMS: Detail 3 to 5 top evidence-based medicinal plants/herbs indicated for this condition (including active bioactives, mechanisms of action like enzymatic inhibition or cytokine modulation, and traditional preparation methods like teas or decoctions).\n"
-        f"3. CLINICAL WISDOM & DIAGNOSTIC GUIDANCE: Highlight critical safety warnings, essential diagnostic laboratory tests (such as Rapid Diagnostic Tests / Blood Smears for malaria, or metabolic bloodwork), red-flag symptoms requiring emergency hospital care, and herb-drug precautions.\n"
-        f"4. CONTEXT CONTINUITY: If the patient shifted or compared topics from a previous turn (e.g., from general fever to malaria), acknowledge the relationship intelligently without repeating outdated answers.\n"
-        f"5. COMPASSIONATE NEXT STEP: Conclude by warmly asking if they or a loved one are currently experiencing these symptoms, and invite them to share onset/duration if they desire a personalized formulation with precise dosing.\n\n"
-        f"Format your response with clean Markdown headers (##), bold text, bullet points, and clinical clarity."
+        f"You are Dr. Herbalist, a friendly, warm, and highly skilled Senior Integrative Medical Doctor & Botanical Specialist.\n"
+        f"You are speaking directly with patient '{patient_username or 'there'}'.\n\n"
+        f"PATIENT'S QUESTION:\n\"{query}\"\n\n"
+        f"TOPIC:\n{condition_topic.title()}\n\n"
+        f"RELEVANT HERBS IN KNOWLEDGE BASE:\n{herbs_summary if herbs_summary else 'General Botanical Herbs'}\n\n"
+        f"CRITICAL COMMUNICATION GUIDELINES:\n"
+        f"1. RELATABLE & SIMPLE LANGUAGE: Write in plain, everyday English that is crystal clear, empathetic, and easy to understand for any ordinary reader. Strictly avoid heavy, intimidating medical jargon (e.g. write 'soothes swelling and fights germs' instead of 'downregulates inflammatory cascades', write 'balances body temperature' instead of 'thermal dysregulation').\n"
+        f"2. CLEAR, FRIENDLY STRUCTURE:\n"
+        f"   - 🌿 **What is happening in the body**: Explain what causes this and what is happening in 2-3 simple, comforting sentences.\n"
+        f"   - 🍃 **Best Natural & Herbal Remedies**: Mention 3-4 top proven herbs with their common names and explain in plain words how each one helps (e.g. soothing the skin, stopping itching, cooling fever, easing digestion, fighting bacteria).\n"
+        f"   - 💡 **Simple Home Care Tips**: Practical, everyday things the person can do right now at home (e.g. food to eat or avoid, cool water, rest, gentle hygiene).\n"
+        f"   - ⚠️ **When to Seek Medical Help**: Simple, clear warning signs that mean they should visit a hospital or clinic.\n"
+        f"3. WARM NEXT STEP: Conclude with an open, caring question asking if they or a family member are experiencing this right now, inviting them to share more details if they want a step-by-step personalized home recipe with exact measurements.\n\n"
+        f"Format with clean Markdown headers (##), bold text, and bullet points."
     )
 
     if doctor and getattr(doctor, 'gemini_engine', None):
         try:
-            ai_msg = doctor.gemini_engine.generate_text(prompt, max_tokens=950, temperature=0.45)
+            ai_msg = doctor.gemini_engine.generate_text(prompt, max_tokens=900, temperature=0.5)
             if ai_msg and len(ai_msg.strip()) > 50:
                 return f"{emergency_prefix}{ai_msg.strip()}"
         except Exception as ge:
             print(f"[Herbalist AI] Knowledge reasoning error: {ge}")
 
-    # High-quality deterministic fallback
-    herb_list = ", ".join([h.get("common_name", "Traditional Botanical") for h in (matching_herbs or [])[:4]])
-    fallback_text = (
-        f"## Clinical Overview & Botanical Insights for {condition_topic.title()}\n\n"
-        f"Regarding your inquiry: **\"{query}\"**\n\n"
-        f"### Clinical Pathophysiology & Hallmark Symptoms\n"
-        f"**{condition_topic.title()}** involves physiological immune defense and systemic response. Key clinical indicators include thermal dysregulation, bodily fatigue, inflammatory signaling, and localized discomfort.\n\n"
-        f"### Evidence-Based Botanical Phytotherapy\n"
-        f"Monographed botanical medicine utilizes verified botanicals: **{herb_list or 'Artemisia annua, Willow Bark, Neem, and Ginger'}**.\n"
-        f"These herbs contain active phytochemicals that downregulate inflammatory cascades and support physiological equilibrium.\n\n"
-        f"### Clinical Diagnostic & Safety Guidance\n"
-        f"• If experiencing persistent or severe symptoms, accurate diagnostic testing (such as laboratory bloodwork or diagnostic blood smears) is essential.\n"
-        f"• Inform your healthcare clinician of any botanical preparations you are taking to prevent herb-drug interactions.\n\n"
-        f"🌿 *Are you or someone you are caring for currently experiencing these symptoms? If so, tell me how long it has been going on, and I can initiate a personalized clinical assessment for you.*"
-    )
+    # High-quality relatable plain-English deterministic fallbacks
+    topic_lower = condition_topic.lower()
+    
+    # 1. Skin Rashes, Eczema, Itching, Skin Allergies
+    if any(w in topic_lower for w in ["skin", "rash", "itch", "eczema", "dermatitis", "pimple", "acne", "boil", "ringworm", "hives"]):
+        fallback_text = (
+            f"## 🌿 Natural Remedies & Doctor's Advice for Skin Rashes\n\n"
+            f"You asked: **\"{query}\"**\n\n"
+            f"### 🔍 What is Happening to the Skin?\n"
+            f"Skin rashes happen when your skin gets irritated, swollen, or reacts to something like heat, an allergic reaction, harsh soaps, or a mild infection. Common signs include redness, itching, small bumps, burning, or dry peeling skin.\n\n"
+            f"### 🍃 Best Natural & Herbal Remedies for Skin Rashes\n"
+            f"Here are top proven botanicals that gently soothe and heal the skin:\n\n"
+            f"• **Aloe Vera Gel**: Immediately cools burning, reduces redness, and hydrates dry, peeling skin.\n"
+            f"• **Neem Leaves (Dogonyaro)**: A powerful natural cleanser that fights bacteria and clears up itchy fungal or bacterial rashes.\n"
+            f"• **Turmeric & Virgin Coconut Oil**: Mix a pinch of pure turmeric powder with warm coconut oil to form a paste; it relieves swelling and repairs damaged skin.\n"
+            f"• **Chamomile or Oatmeal Wash**: Rinsing with cool chamomile tea or an oatmeal soak calms intense itching and stops irritation.\n\n"
+            f"### 💡 Simple Home Care & Daily Tips\n"
+            f"• **Do not scratch**: Scratching tears the skin and can introduce germs.\n"
+            f"• **Keep it clean and cool**: Wash the area gently with mild, fragrance-free soap and pat dry with a clean towel.\n"
+            f"• **Wear loose, breathable cotton clothes**: Avoid tight or synthetic fabrics that trap sweat.\n\n"
+            f"### ⚠️ When to See a Doctor at a Clinic\n"
+            f"Please visit a hospital or clinic right away if:\n"
+            f"• The rash spreads very quickly all over your body.\n"
+            f"• It is accompanied by high fever, trouble breathing, or swelling of the face and lips.\n"
+            f"• You see yellowish pus or open blisters.\n\n"
+            f"🌿 *Are you or someone you are caring for dealing with a skin rash right now? If yes, tell me where it is and how long you've had it, and I can give you a step-by-step personalized home recipe!*"
+        )
+    # 2. Malaria, Fever, Typhoid, Chills
+    elif any(w in topic_lower for w in ["malaria", "fever", "typhoid", "chill", "cold", "flu", "cough", "catarrh"]):
+        fallback_text = (
+            f"## 🌿 Doctor's Guide & Herbal Remedies for Fever & Malaria\n\n"
+            f"You asked: **\"{query}\"**\n\n"
+            f"### 🔍 What is Happening in the Body?\n"
+            f"When your body is fighting off an infection like malaria, a virus, or the flu, your immune system raises your body temperature to help kill the germs. This causes fever, body weakness, headache, shivering chills, and loss of appetite.\n\n"
+            f"### 🍃 Best Natural & Herbal Remedies\n"
+            f"• **Sweet Annie (Artemisia annua)**: Contains natural *artemisinin*, the world-recognized compound that attacks and clears malaria parasites in the bloodstream.\n"
+            f"• **Neem Bark & Leaves (Dogonyaro)**: Traditionally boiled into a cleansing tea that helps lower high fever and purge toxins.\n"
+            f"• **Lemongrass & Ginger Tea**: Boiled lemongrass with crushed ginger brings down fever by promoting gentle sweating and relieving headache and body aches.\n"
+            f"• **Pawpaw (Papaya) Leaf Extract**: Rich in enzymes that boost platelet levels and strengthen the immune system during severe viral fevers.\n\n"
+            f"### 💡 Simple Home Care Tips\n"
+            f"• **Drink plenty of fluids**: Drink lots of clean water, coconut water, or warm herbal teas to replace fluids lost from sweating.\n"
+            f"• **Rest adequately**: Give your body enough sleep so your white blood cells can fight the infection.\n"
+            f"• **Eat light, nourishing foods**: Warm vegetable soups, ripe fruits, and porridge.\n\n"
+            f"### ⚠️ Essential Safety & Red Flags\n"
+            f"• **Get tested**: If you suspect malaria or typhoid, do a rapid blood test (RDT) or blood smear at a local clinic or pharmacy to be 100% sure.\n"
+            f"• **Emergency signs**: Seek immediate emergency hospital care if there is continuous vomiting, confusion, severe yellow eyes (jaundice), or difficulty breathing.\n\n"
+            f"🌿 *Are you currently feeling feverish or experiencing body aches? Tell me how many days you've felt this way, and I can prepare a custom natural recovery recipe for you!*"
+        )
+    # 3. Stomach, Digestion, Ulcer, Acid Reflux, Bloating
+    elif any(w in topic_lower for w in ["stomach", "ulcer", "gastric", "gerd", "acid", "bloat", "digestion", "constipat", "diarrhea", "heartburn"]):
+        fallback_text = (
+            f"## 🌿 Natural Relief & Doctor's Advice for Stomach & Digestive Issues\n\n"
+            f"You asked: **\"{query}\"**\n\n"
+            f"### 🔍 What is Happening in the Stomach?\n"
+            f"Stomach discomfort, bloating, or burning usually happens when the protective stomach lining gets irritated, when stomach acid flows upward into the chest, or when food doesn't digest smoothly in the intestines.\n\n"
+            f"### 🍃 Best Natural & Herbal Remedies for Stomach Care\n"
+            f"• **Fresh Ginger Root**: A gentle powerhouse that calms nausea, eases stomach cramps, and speeds up healthy digestion.\n"
+            f"• **Unripe Plantain Flour / Mash**: Rich in natural compounds that help coat and heal painful stomach ulcers.\n"
+            f"• **Peppermint or Spearmint Infusion**: Relaxes tight stomach muscles and helps release trapped gas and bloating.\n"
+            f"• **Chamomile Tea**: Soothes inflamed stomach linings and reduces stress-related tummy aches.\n\n"
+            f"### 💡 Everyday Habits to Protect Your Stomach\n"
+            f"• Eat smaller, frequent meals rather than large heavy plates.\n"
+            f"• Avoid overly oily, deeply fried, very spicy foods, and late-night heavy dinners before bed.\n"
+            f"• Drink water between meals rather than gulping huge amounts while eating.\n\n"
+            f"### ⚠️ When to See a Doctor Immediately\n"
+            f"• Severe, sharp stomach pain that doesn't go away.\n"
+            f"• Vomiting blood or passing very dark, tar-like stools.\n\n"
+            f"🌿 *Are you having stomach pain, gas, or acid reflux right now? Tell me what symptoms you have and when they happen (e.g. before or after food), and I will create a tailored soothing tea recipe!*"
+        )
+    # 4. Blood Pressure, Hypertension, Heart
+    elif any(w in topic_lower for w in ["hypertension", "blood pressure", "bp", "heart", "cardio"]):
+        fallback_text = (
+            f"## 🌿 Managing Blood Pressure with Natural Herbs & Healthy Habits\n\n"
+            f"You asked: **\"{query}\"**\n\n"
+            f"### 🔍 Understanding Blood Pressure in Simple Words\n"
+            f"Blood pressure is the force of blood pushing against the walls of your blood vessels. When your blood vessels get tight or stiff, your heart has to work much harder to pump blood through your body.\n\n"
+            f"### 🍃 Proven Natural Botanicals for Healthy Blood Pressure\n"
+            f"• **Hibiscus Flower (Zobo / Sorrel)**: Drinking unsweetened hibiscus tea naturally relaxes blood vessels and helps gently lower high systolic pressure.\n"
+            f"• **Fresh Raw Garlic**: Contains *allicin*, which helps keep blood vessels flexible and improves smooth blood circulation.\n"
+            f"• **Moringa Oleifera Leaves**: Packed with potassium and antioxidants that support healthy vascular tone and kidney filtration.\n"
+            f"• **Hawthorn Berry**: A time-honored botanical that strengthens heart muscle contractions and supports steady heart rhythm.\n\n"
+            f"### 💡 Simple Daily Steps to Protect Your Heart\n"
+            f"• **Cut back on table salt (sodium)** and processed seasoning cubes.\n"
+            f"• Take a brisk 20-minute daily walk to keep blood flowing.\n"
+            f"• Practice deep breathing or meditation to keep everyday stress low.\n\n"
+            f"### ⚠️ Critical Safety Advice\n"
+            f"• Never stop taking prescribed blood pressure medication abruptly without speaking to your doctor.\n"
+            f"• Check your blood pressure regularly using a standard home arm cuff.\n\n"
+            f"🌿 *Do you know your current blood pressure numbers? Share them with me, and I can suggest a daily natural herbal tea schedule to support your health!*"
+        )
+    # 5. Joint Pain, Arthritis, Knee, Back, Inflammation
+    elif any(w in topic_lower for w in ["joint", "arthritis", "knee", "back", "rheumatism", "gout", "swelling"]):
+        fallback_text = (
+            f"## 🌿 Natural Relief for Joint Pain, Stiffness & Inflammation\n\n"
+            f"You asked: **\"{query}\"**\n\n"
+            f"### 🔍 What Causes Joint Pain?\n"
+            f"Joint pain and morning stiffness happen when the cushioning cartilage between your bones wears down or when the joint tissues become inflamed and swollen from wear-and-tear, age, or uric acid buildup.\n\n"
+            f"### 🍃 Top Natural Herbs for Joint Comfort\n"
+            f"• **Turmeric (Curcumin) with Black Pepper**: One of nature's strongest anti-inflammatories; it eases stiffness and reduces joint swelling.\n"
+            f"• **White Willow Bark**: Nature's original source of salicin (the plant origin of aspirin) which gently relieves joint aches.\n"
+            f"• **Ginger Root**: Blocks inflammatory signals and improves joint flexibility.\n"
+            f"• **Frankincense (Boswellia)**: Helps preserve joint cartilage and reduces morning joint tightness.\n\n"
+            f"### 💡 Simple Everyday Joint Care\n"
+            f"• Apply warm compresses or a warm ginger-infused towel to stiff joints for 15 minutes.\n"
+            f"• Engage in low-impact movement like swimming, cycling, or gentle walking to keep joints lubricated.\n"
+            f"• Drink plenty of clean water to help flush out inflammatory crystals.\n\n"
+            f"🌿 *Which joint is hurting you and how long has it bothered you? Let me know, and I'll prescribe a custom warm herbal decoction and massage oil blend!*"
+        )
+    # 6. General / Universal Relatable Fallback
+    else:
+        herb_str = ", ".join([h.get("common_name", "Traditional Botanical") for h in (matching_herbs or [])[:4]]) or "Ginger, Turmeric, Moringa, and Aloe Vera"
+        fallback_text = (
+            f"## 🌿 Doctor's Guide & Botanical Insights for {condition_topic.title()}\n\n"
+            f"You asked: **\"{query}\"**\n\n"
+            f"### 🔍 What You Need to Know\n"
+            f"**{condition_topic.title()}** is a common health topic. When your body is dealing with this, it is important to support your natural immune defenses and use proven, gentle remedies that help your body heal from within.\n\n"
+            f"### 🍃 Helpful Natural Botanicals\n"
+            f"Verified medicinal plants often used for this include: **{herb_str}**.\n"
+            f"These plants contain natural antioxidants and soothing compounds that calm inflammation, boost vitality, and support total body wellness.\n\n"
+            f"### 💡 Everyday Health & Safety Tips\n"
+            f"• Stay well-hydrated with clean water and nutrient-rich, unrefined foods.\n"
+            f"• If you are experiencing persistent or worsening symptoms, getting a proper checkup at a medical laboratory or clinic is always recommended.\n"
+            f"• Always let your doctor know about any herbs you are taking alongside prescription drugs.\n\n"
+            f"🌿 *Are you or a family member currently experiencing this? If you'd like, tell me your specific symptoms and I will prepare a personalized herbal recipe with exact brewing instructions for you!*"
+        )
+
     return f"{emergency_prefix}{fallback_text}"
 
 
