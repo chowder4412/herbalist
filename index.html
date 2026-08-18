@@ -1366,14 +1366,65 @@
         }
 
         .cook-step-card {
-            background: rgba(18, 30, 23, 0.85);
-            border: 2px solid var(--accent-green);
-            border-radius: 16px;
-            padding: 14px 18px;
-            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6), 0 0 20px rgba(46, 204, 113, 0.1);
+            background: linear-gradient(145deg, rgba(14, 26, 19, 0.95), rgba(8, 16, 12, 0.98));
+            border: 1.5px solid rgba(46, 204, 113, 0.4);
+            border-radius: 20px;
+            padding: 18px 22px;
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7), 0 0 25px rgba(46, 204, 113, 0.12);
             display: flex;
             flex-direction: column;
+            gap: 12px;
+            position: relative;
+        }
+
+        /* ── COOK MODE STEPPER RIBBON ── */
+        .cook-stepper-ribbon {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             gap: 6px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 6px 10px;
+            margin-bottom: 2px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .cook-stepper-step {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .cook-stepper-step:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+        }
+
+        .cook-stepper-step.active {
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.25), rgba(39, 174, 96, 0.15));
+            border-color: var(--accent-green);
+            color: #ffffff;
+            box-shadow: 0 0 14px rgba(46, 204, 113, 0.3);
+        }
+
+        .cook-stepper-step.completed {
+            background: rgba(46, 204, 113, 0.1);
+            border-color: rgba(46, 204, 113, 0.4);
+            color: var(--accent-green);
         }
 
         .cook-step-num {
@@ -1384,58 +1435,230 @@
             letter-spacing: 1.5px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
         }
 
         .cook-step-title {
             font-family: 'Outfit', sans-serif;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 800;
             color: #ffffff;
-            line-height: 1.25;
+            line-height: 1.3;
+            letter-spacing: -0.2px;
         }
 
         .cook-step-desc {
-            font-size: 12.5px;
+            font-size: 13.5px;
             color: #dbebe0;
-            line-height: 1.45;
+            line-height: 1.55;
+        }
+
+        /* ── HERB INFOGRAPHIC CARDS GRID ── */
+        .cook-herb-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 10px;
+            margin-top: 6px;
+        }
+
+        .cook-herb-infographic-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(46, 204, 113, 0.25);
+            border-radius: 14px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+            transition: all 0.25s ease;
+        }
+
+        .cook-herb-infographic-card:hover {
+            background: rgba(46, 204, 113, 0.06);
+            border-color: var(--accent-green);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 16px rgba(46, 204, 113, 0.2);
+        }
+
+        .cook-herb-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .cook-herb-icon-circle {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.2), rgba(39, 174, 96, 0.05));
+            border: 1.5px solid rgba(46, 204, 113, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+            box-shadow: 0 0 12px rgba(46, 204, 113, 0.2);
+        }
+
+        .cook-herb-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            min-width: 0;
+        }
+
+        .cook-herb-common-name {
+            font-size: 14px;
+            font-weight: 800;
+            color: #ffffff;
+            line-height: 1.2;
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .cook-herb-botanical-tag {
+            font-size: 11px;
+            color: #a8e6cf;
+            font-style: italic;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .cook-herb-badges-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 3px;
+        }
+
+        .cook-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10.5px;
+            padding: 2px 8px;
+            border-radius: 6px;
+            line-height: 1.3;
+        }
+
+        .cook-chip.active-bio {
+            background: rgba(52, 152, 219, 0.15);
+            border: 1px solid rgba(52, 152, 219, 0.35);
+            color: #90caf9;
+        }
+
+        .cook-chip.action-role {
+            background: rgba(243, 156, 18, 0.15);
+            border: 1px solid rgba(243, 156, 18, 0.35);
+            color: #ffe082;
+        }
+
+        .cook-herb-mass-pill {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 2px;
+            flex-shrink: 0;
+        }
+
+        .cook-herb-mass-pill .mass-val {
+            font-size: 16px;
+            font-weight: 900;
+            color: var(--accent-green);
+            background: rgba(46, 204, 113, 0.15);
+            border: 1.5px solid rgba(46, 204, 113, 0.4);
+            padding: 4px 12px;
+            border-radius: 10px;
+            white-space: nowrap;
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.15);
+        }
+
+        .cook-herb-mass-pill .mass-label {
+            font-size: 9.5px;
+            font-weight: 800;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ── INFOGRAPHIC CALLOUT BANNERS (STEPS 2-5) ── */
+        .cook-infographic-banner {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 18px;
+            border-radius: 14px;
+            margin-top: 4px;
+        }
+
+        .cook-infographic-banner.water {
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.12), rgba(41, 128, 185, 0.05));
+            border: 1px solid rgba(52, 152, 219, 0.35);
+            color: #e3f2fd;
+        }
+
+        .cook-infographic-banner.heat {
+            background: linear-gradient(135deg, rgba(243, 156, 18, 0.14), rgba(211, 84, 0, 0.06));
+            border: 1px solid rgba(243, 156, 18, 0.4);
+            color: #fff8e1;
+        }
+
+        .cook-infographic-banner.yield {
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.12), rgba(39, 174, 96, 0.05));
+            border: 1px solid rgba(46, 204, 113, 0.35);
+            color: #e8f5e9;
+        }
+
+        .cook-infographic-banner.storage {
+            background: linear-gradient(135deg, rgba(155, 89, 182, 0.14), rgba(142, 68, 173, 0.06));
+            border: 1px solid rgba(155, 89, 182, 0.35);
+            color: #f3e5f5;
         }
 
         .cook-timer-widget {
-            background: rgba(0, 0, 0, 0.45);
-            border: 1px solid rgba(243, 156, 18, 0.35);
-            border-radius: 14px;
-            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.55);
+            border: 1.5px solid rgba(243, 156, 18, 0.4);
+            border-radius: 16px;
+            padding: 12px 18px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6), 0 0 20px rgba(243, 156, 18, 0.15);
         }
 
         .cook-timer-display {
             font-family: 'Outfit', monospace;
-            font-size: 28px;
+            font-size: 32px;
             font-weight: 900;
             color: var(--accent-gold);
             letter-spacing: 2px;
-            text-shadow: 0 0 16px rgba(243, 156, 18, 0.4);
+            text-shadow: 0 0 20px rgba(243, 156, 18, 0.5);
         }
 
         .kitchen-hud-btn {
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.2);
             color: #ffffff;
-            padding: 16px 28px;
-            border-radius: 16px;
-            font-size: 16px;
+            padding: 10px 18px;
+            border-radius: 12px;
+            font-size: 13px;
             font-weight: 700;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            transition: all 0.2s ease;
+            gap: 8px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .kitchen-hud-btn.primary {
@@ -1448,6 +1671,7 @@
 
         .kitchen-hud-btn:hover {
             transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
         }
 
         /* ══════════════════════════════════════════════════════════════ */
@@ -6733,6 +6957,109 @@ ${recipeText}
             closePatientCareToolkitModal();
         }
 
+        function parseHerbIngredient(ing, scaleRatio = 1.0) {
+            let commonName = "Medicinal Herb";
+            let botanicalName = "";
+            let activeBioactives = "Active phytocompounds";
+            let primaryRole = "Therapeutic active";
+            let baseMass = 25.0;
+            let icon = "🌿";
+
+            if (typeof ing === 'string') {
+                const str = ing;
+                if (str.includes("HerbalRemedy(") || str.includes("common_name=")) {
+                    const cnMatch = str.match(/common_name=['"]([^'"]+)['"]/);
+                    if (cnMatch) commonName = cnMatch[1];
+
+                    const bnMatch = str.match(/botanical_name=['"]([^'"]+)['"]/);
+                    if (bnMatch) botanicalName = bnMatch[1];
+
+                    const acMatch = str.match(/active_compounds=\[([^\]]+)\]/);
+                    if (acMatch) {
+                        activeBioactives = acMatch[1].replace(/['"]/g, '').split(',').slice(0, 2).map(s => s.trim()).join(', ');
+                    }
+
+                    const actMatch = str.match(/therapeutic_actions=\[([^\]]+)\]/);
+                    if (actMatch) {
+                        primaryRole = actMatch[1].replace(/['"]/g, '').split(',').slice(0, 2).map(s => s.trim()).join(', ');
+                    }
+                } else {
+                    commonName = str.split('(')[0].trim();
+                    if (str.includes('(')) {
+                        botanicalName = str.substring(str.indexOf('(') + 1, str.indexOf(')')).trim();
+                    }
+                }
+            } else if (typeof ing === 'object' && ing !== null) {
+                let rawName = ing.name || ing.common_name || ing.herb || "";
+                if (typeof rawName === 'string' && (rawName.includes("HerbalRemedy(") || rawName.includes("common_name="))) {
+                    const parsed = parseHerbIngredient(rawName, scaleRatio);
+                    commonName = parsed.commonName;
+                    botanicalName = parsed.botanicalName || ing.botanical_name || "";
+                    activeBioactives = parsed.activeBioactives;
+                    primaryRole = parsed.primaryRole;
+                } else {
+                    commonName = rawName || "Medicinal Herb";
+                    botanicalName = ing.botanical_name || ing.scientific_name || "";
+                    
+                    if (Array.isArray(ing.active_compounds) && ing.active_compounds.length > 0) {
+                        activeBioactives = ing.active_compounds.slice(0, 2).join(', ');
+                    } else if (Array.isArray(ing.active_bioactives) && ing.active_bioactives.length > 0) {
+                        activeBioactives = ing.active_bioactives.slice(0, 2).join(', ');
+                    } else if (ing.primary_bioactive) {
+                        activeBioactives = ing.primary_bioactive;
+                    }
+
+                    if (Array.isArray(ing.therapeutic_actions) && ing.therapeutic_actions.length > 0) {
+                        primaryRole = ing.therapeutic_actions.slice(0, 2).join(', ');
+                    } else if (ing.role || ing.indication || ing.therapeutic_properties) {
+                        primaryRole = ing.role || ing.indication || ing.therapeutic_properties;
+                    }
+                }
+
+                const massRaw = ing.mass_g || ing.weight_grams || ing.amount || ing.dosage_g || '25';
+                baseMass = parseFloat(massRaw.toString().replace(/[^\d.]/g, '')) || 25.0;
+            }
+
+            // Clean up commonName
+            commonName = commonName.replace(/HerbalRemedy\(/g, '').replace(/common_name=/g, '').replace(/['"]/g, '').trim();
+            if (commonName.includes(',')) commonName = commonName.split(',')[0].trim();
+
+            // Select emoji icon based on botanical name or common name
+            const lower = (commonName + " " + botanicalName).toLowerCase();
+            if (lower.includes('root') || lower.includes('ginger') || lower.includes('rhizome') || lower.includes('ginseng') || lower.includes('turmeric')) {
+                icon = '🫚';
+            } else if (lower.includes('leaf') || lower.includes('neem') || lower.includes('bitter') || lower.includes('tea') || lower.includes('basil')) {
+                icon = '🍃';
+            } else if (lower.includes('bark') || lower.includes('kola') || lower.includes('cinnamon') || lower.includes('elm')) {
+                icon = '🌰';
+            } else if (lower.includes('berry') || lower.includes('citrus') || lower.includes('orange') || lower.includes('fruit') || lower.includes('papaya')) {
+                icon = '🍋';
+            } else if (lower.includes('flower') || lower.includes('hibiscus') || lower.includes('chamomile') || lower.includes('zobo')) {
+                icon = '🌺';
+            } else {
+                icon = '🌿';
+            }
+
+            const scaledMass = (baseMass * scaleRatio).toFixed(1);
+
+            return {
+                commonName,
+                botanicalName,
+                activeBioactives,
+                primaryRole,
+                scaledMass: `${scaledMass}g`,
+                icon
+            };
+        }
+
+        function jumpToCookStep(index) {
+            if (index >= 0 && index < cookStepsList.length) {
+                currentCookStepIndex = index;
+                renderCookStep();
+                speakActiveCookStep();
+            }
+        }
+
         function initKitchenCookData(data = null) {
             let rxData = data;
             if (!rxData && typeof canvasActivePrescription !== 'undefined' && canvasActivePrescription) rxData = canvasActivePrescription;
@@ -6790,33 +7117,37 @@ ${recipeText}
             if (potBadge) potBadge.innerText = `${rxTitle} • ${potLiters} L Pot Batch (${totalVolMl} mL)`;
 
             const rawIngredients = f.ingredients || [];
-            const scaledIngredients = rawIngredients.map(ing => {
-                const baseMass = parseFloat((ing.mass_g || ing.weight_grams || ing.amount || '20').toString().replace(/[^\d.]/g, '')) || 20;
-                const scaledMass = (baseMass * scaleRatio).toFixed(1);
-                return {
-                    name: ing.name || ing.common_name || ing.herb || 'Medicinal Herb',
-                    scaledMass: `${scaledMass}g`,
-                    role: ing.role || ing.indication || 'Therapeutic active constituent'
-                };
-            });
+            const scaledIngredients = rawIngredients.map(ing => parseHerbIngredient(ing, scaleRatio));
 
-            const ingChecklistHTML = scaledIngredients.length > 0 ? scaledIngredients.map(ing => `
-                <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:rgba(255,255,255,0.04);border:1px solid rgba(46,204,113,0.25);border-radius:10px;margin-bottom:4px;">
-                    <div style="display:flex;align-items:center;gap:8px;">
-                        <div style="width:24px;height:24px;border-radius:7px;background:rgba(46,204,113,0.15);border:1px solid var(--accent-green);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.4 19 2c1 2 2 4.1 2 9 0 4.9-4 9-9 9z"></path>
-                                <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
-                            </svg>
+            const ingChecklistHTML = scaledIngredients.length > 0 ? `
+                <div class="cook-herb-grid">
+                    ${scaledIngredients.map(ing => `
+                        <div class="cook-herb-infographic-card">
+                            <div class="cook-herb-left">
+                                <div class="cook-herb-icon-circle">${ing.icon}</div>
+                                <div class="cook-herb-meta">
+                                    <h4 class="cook-herb-common-name">${ing.commonName}</h4>
+                                    ${ing.botanicalName ? `<span class="cook-herb-botanical-tag">${ing.botanicalName}</span>` : ''}
+                                    <div class="cook-herb-badges-row">
+                                        <span class="cook-chip active-bio">
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/></svg>
+                                            <strong>Active:</strong> ${ing.activeBioactives}
+                                        </span>
+                                        <span class="cook-chip action-role">
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                            <strong>Target:</strong> ${ing.primaryRole}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="cook-herb-mass-pill">
+                                <span class="mass-label">Batch Mass</span>
+                                <span class="mass-val">${ing.scaledMass}</span>
+                            </div>
                         </div>
-                        <div>
-                            <strong style="font-size:12px;color:#ffffff;display:block;line-height:1.3;">${ing.name}</strong>
-                            <div style="font-size:10.5px;color:rgba(255,255,255,0.6);line-height:1.2;">${ing.role}</div>
-                        </div>
-                    </div>
-                    <span style="font-size:13px;font-weight:900;color:var(--accent-green);background:rgba(46,204,113,0.15);border:1px solid rgba(46,204,113,0.3);padding:2px 10px;border-radius:8px;white-space:nowrap;">${ing.scaledMass}</span>
+                    `).join('')}
                 </div>
-            `).join('') : '<div style="font-size:11.5px;color:rgba(255,255,255,0.7);padding:8px;">Botanical mass scaled according to doctor prescription formula.</div>';
+            ` : '<div style="font-size:12px;color:rgba(255,255,255,0.7);padding:10px;background:rgba(255,255,255,0.03);border-radius:10px;">Botanical mass scaled according to doctor prescription formula.</div>';
 
             const customSteps = f.household_kitchen_recipe || f.preparation_recipe_steps || [];
             const step3Desc = customSteps.length > 2 ? customSteps[2] : "Bring to a rapid boil over medium-high heat. As soon as bubbling begins, reduce heat immediately to low flame. Cover tightly with a lid to trap evaporating aromatic essential oil terpenes and simmer for 20 minutes.";
@@ -6824,33 +7155,78 @@ ${recipeText}
 
             cookStepsList = [
                 {
+                    shortName: "⚖️ 1. Weigh & Rinse",
                     title: "1. Precise Herb Weighing & Cold Rinse",
-                    desc: "Measure exact dry root mass on your Bluetooth scale. Gently rinse roots in cold filtered water to remove soil particles without stripping surface trichome glands.",
-                    extraHTML: `<div style="margin-top:4px;">${ingChecklistHTML}</div>`,
+                    desc: "Measure exact dry root/leaf mass on your Bluetooth scale or kitchen gram scale. Gently rinse botanicals in cold filtered water to remove microscopic dust particles without stripping surface glandular trichomes.",
+                    extraHTML: `<div style="margin-top:8px;">${ingChecklistHTML}</div>`,
                     timerMinutes: 2
                 },
                 {
-                    title: "2. Cold Water Inoculation in Stainless/Glass Pot",
-                    desc: `Place the measured herbs into a non-reactive stainless steel or borosilicate glass pot. Pour exactly <strong>${potLiters} Liters (${totalVolMl} mL)</strong> of fresh filtered water. Let sit cold for 5 minutes to begin hydrophilic cellular swelling.`,
-                    extraHTML: `<div style="padding:14px;background:rgba(52,152,219,0.1);border:1px solid rgba(52,152,219,0.3);border-radius:14px;font-size:14px;color:#d5eaff;">💡 <strong>Physics Rule:</strong> Avoid aluminum cookware which can react with phenolic tannins and oxidize active flavonoids.</div>`,
+                    shortName: "💧 2. Pot Water Prep",
+                    title: "2. Cold Water Inoculation in Stainless / Glass Pot",
+                    desc: `Place the measured botanicals into a clean stainless steel or borosilicate glass pot. Pour exactly <strong>${potLiters} Liters (${totalVolMl} mL)</strong> of fresh filtered water. Let sit cold for 5 minutes to begin hydrophilic cellular swelling and pre-extraction hydration.`,
+                    extraHTML: `
+                        <div class="cook-infographic-banner water">
+                            <div style="font-size: 28px; flex-shrink: 0;">💧</div>
+                            <div>
+                                <strong style="font-size: 13px; color: #90caf9; display: block; margin-bottom: 2px;">Hydro-Extraction Cookware Guideline:</strong>
+                                <span style="font-size: 12px; line-height: 1.4; color: #e3f2fd;">
+                                    Use <strong>Stainless Steel 304/316</strong> or <strong>Borosilicate Glass</strong> cookware. Avoid aluminum pots, which react with polyphenol tannins and oxidize volatile flavonoids.
+                                </span>
+                            </div>
+                        </div>
+                    `,
                     timerMinutes: 5
                 },
                 {
+                    shortName: "🔥 3. Covered Simmer",
                     title: "3. Rolling Boil & Slow Covered Simmer (Decoction Extraction)",
                     desc: step3Desc,
-                    extraHTML: `<div style="padding:14px;background:rgba(243,156,18,0.12);border:1px solid rgba(243,156,18,0.35);border-radius:14px;font-size:14px;color:#ffeaa7;">🔥 <strong>Thermodynamics:</strong> Simmering at 90°C–95°C breaks down dense secondary xylem lignified cell walls, releasing deep ginsenosides, gingerols, and triterpenoid saponins.</div>`,
+                    extraHTML: `
+                        <div class="cook-infographic-banner heat">
+                            <div style="font-size: 28px; flex-shrink: 0;">🔥</div>
+                            <div>
+                                <strong style="font-size: 13px; color: #ffe082; display: block; margin-bottom: 2px;">Thermodynamics (90°C–95°C Low Boil):</strong>
+                                <span style="font-size: 12px; line-height: 1.4; color: #fff8e1;">
+                                    Simmering with a tightly closed lid traps evaporating aromatic essential oil terpenes while breaking down dense secondary xylem cell walls to release deep ginsenosides, gingerols, and triterpenoid saponins.
+                                </span>
+                            </div>
+                        </div>
+                    `,
                     timerMinutes: 20
                 },
                 {
+                    shortName: "🍶 4. Filter & Bottle",
                     title: "4. Fine Mesh Straining & Airtight Bottling",
-                    desc: "Turn off heat. Pour hot decoction through an ultra-fine stainless mesh or organic cheesecloth into a pre-sterilized glass pitcher or mason jars. Press spent roots gently to express concentrated trapped bioactives.",
-                    extraHTML: `<div style="padding:14px;background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.3);border-radius:14px;font-size:14px;color:#e2efe6;">✨ <strong>Yield:</strong> You will obtain approx. ${(parseFloat(potLiters) * 0.88).toFixed(1)} Liters of clear, deep aromatic phytotherapeutic medicine.</div>`,
+                    desc: "Turn off heat. Pour the hot decoction through an ultra-fine stainless mesh strainer or organic cheesecloth into a pre-sterilized glass pitcher or mason jars. Press spent roots gently with a wooden spoon to express concentrated trapped bioactives.",
+                    extraHTML: `
+                        <div class="cook-infographic-banner yield">
+                            <div style="font-size: 28px; flex-shrink: 0;">✨</div>
+                            <div>
+                                <strong style="font-size: 13px; color: var(--accent-green); display: block; margin-bottom: 2px;">Batch Yield & Purity Target:</strong>
+                                <span style="font-size: 12px; line-height: 1.4; color: #e8f5e9;">
+                                    You will obtain approx. <strong>${(parseFloat(potLiters) * 0.88).toFixed(1)} Liters</strong> of crystal-clear, deep aromatic phytotherapeutic medicine ready for daily administration.
+                                </span>
+                            </div>
+                        </div>
+                    `,
                     timerMinutes: 3
                 },
                 {
+                    shortName: "🍵 5. Dose & Store",
                     title: "5. Chrono-Dosing & Cold Storage Guidelines",
-                    desc: `${step5Dose} Allow remaining brew to cool to room temperature, seal tightly, and store in the refrigerator (4°C) for up to 5 days. Warm gently before drinking if desired.`,
-                    extraHTML: `<div style="padding:14px;background:rgba(155,89,182,0.12);border:1px solid rgba(155,89,182,0.3);border-radius:14px;font-size:14px;color:#e8d4f7;">❄️ <strong>Storage Law:</strong> Tannins and saponins maintain full therapeutic potency for 120 hours under sealed refrigeration. Discard if cloudiness or sour fermentation aroma develops.</div>`,
+                    desc: `${step5Dose} Allow remaining brew to cool to room temperature, seal airtight, and store in the refrigerator (4°C) for up to 5 days. Warm gently before drinking.`,
+                    extraHTML: `
+                        <div class="cook-infographic-banner storage">
+                            <div style="font-size: 28px; flex-shrink: 0;">❄️</div>
+                            <div>
+                                <strong style="font-size: 13px; color: #ce93d8; display: block; margin-bottom: 2px;">120-Hour Bioactive Preservation Rule:</strong>
+                                <span style="font-size: 12px; line-height: 1.4; color: #f3e5f5;">
+                                    Tannins, alkaloids, and saponins maintain full therapeutic potency for 120 hours under sealed refrigeration (4°C). Discard if sour fermentation aroma or excessive cloudiness appears.
+                                </span>
+                            </div>
+                        </div>
+                    `,
                     timerMinutes: 0
                 }
             ];
@@ -6870,20 +7246,39 @@ ${recipeText}
 
             if (tracker) tracker.innerText = `Step ${currentCookStepIndex + 1} of ${cookStepsList.length}`;
 
+            // Build Stepper Ribbon HTML
+            const stepperRibbonHTML = `
+                <div class="cook-stepper-ribbon">
+                    ${cookStepsList.map((s, idx) => {
+                        let stateClass = '';
+                        if (idx === currentCookStepIndex) stateClass = 'active';
+                        else if (idx < currentCookStepIndex) stateClass = 'completed';
+                        return `
+                            <div class="cook-stepper-step ${stateClass}" onclick="jumpToCookStep(${idx})">
+                                <span>${s.shortName || ('Step ' + (idx + 1))}</span>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+
             if (card) {
                 card.innerHTML = `
+                    ${stepperRibbonHTML}
                     <div class="cook-step-num">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M12 2v20"></path>
                             <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
                         </svg>
-                        <span>STEP ${currentCookStepIndex + 1} OF ${cookStepsList.length}</span>
+                        <span>STEP ${currentCookStepIndex + 1} OF ${cookStepsList.length} • CLINICAL HUD</span>
                     </div>
                     <div class="cook-step-title">${step.title}</div>
                     <div class="cook-step-desc">${step.desc}</div>
                     ${step.extraHTML || ''}
                 `;
             }
+
+
 
             // Update navigation button states
             if (prevBtn) prevBtn.disabled = currentCookStepIndex === 0;

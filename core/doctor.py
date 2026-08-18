@@ -251,11 +251,44 @@ Let's begin with your comprehensive evaluation. What brings you to see me today?
             weight = getattr(patient, 'weight_kg', 72.0)
             calc_vol = float(dosing_calc["water_volume_liters"] * 1000.0)
             
+            parsed_ingredients = []
+            for h in recommended_herbs:
+                if hasattr(h, 'common_name'):
+                    c_name = h.common_name
+                    b_name = getattr(h, 'botanical_name', '')
+                    compounds = getattr(h, 'active_compounds', ["Standardized Phytochemicals", "Polyphenols"])
+                    actions = getattr(h, 'therapeutic_actions', ["Therapeutic Active"])
+                elif isinstance(h, dict):
+                    c_name = h.get('common_name') or h.get('name', 'Medicinal Herb')
+                    b_name = h.get('botanical_name', '')
+                    compounds = h.get('active_compounds') or h.get('active_bioactives', ["Standardized Phytochemicals"])
+                    actions = h.get('therapeutic_actions') or [h.get('role', 'Therapeutic Active')]
+                else:
+                    c_name = str(h)
+                    b_name = ""
+                    compounds = ["Standardized Phytochemicals"]
+                    actions = ["Therapeutic Active"]
+
+                parsed_ingredients.append({
+                    "common_name": c_name,
+                    "botanical_name": b_name,
+                    "name": c_name,
+                    "part_used": "Medicinal Leaf / Rhizome",
+                    "weight_grams": 25,
+                    "mass_g": 25,
+                    "percentage_composition": round(100.0 / max(1, len(recommended_herbs)), 1),
+                    "yielded_bioactive_mg": 450,
+                    "active_bioactives": compounds if isinstance(compounds, list) else [compounds],
+                    "active_compounds": compounds if isinstance(compounds, list) else [compounds],
+                    "therapeutic_actions": actions if isinstance(actions, list) else [actions],
+                    "role": actions[0] if isinstance(actions, list) and actions else "Therapeutic Active"
+                })
+
             natural_formulation = NaturalFormulation(
                 formulation_id=f"FORM-{int(time.time())}",
                 formulation_name=f"WHO-Grade Botanical Synergy ({', '.join(gemini_data.get('target_plants', ['Medicinal Herbs'])[:2])} - Severity {extracted_severity}/10)",
                 target_condition=primary_diagnosis,
-                ingredients=[{"common_name": str(h), "botanical_name": str(h), "part_used": "Whole Plant", "weight_grams": 25, "percentage_composition": round(100.0 / max(1, len(recommended_herbs)), 1), "yielded_bioactive_mg": 450, "active_bioactives": ["Standardized Phytochemicals", "Polyphenols"]} for h in recommended_herbs],
+                ingredients=parsed_ingredients,
                 preparation_method=kitchen_recipe,
                 total_volume_ml=calc_vol,
                 total_active_bioactives_mg=daily_mg,
