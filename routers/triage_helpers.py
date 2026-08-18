@@ -221,7 +221,9 @@ class ComplaintClassifier:
         "tea", "tincture", "decoction", "bitter leaf", "vernonia", "moringa", "neem", "turmeric",
         "curcumin", "ginger", "garlic", "hibiscus", "zobo", "ashwagandha", "ginseng", "tulsi",
         "aloe", "guava", "papaya", "pawpaw", "eucalyptus", "feverfew", "ginkgo", "milk thistle",
-        "valerian", "chamomile", "peppermint", "clove", "cinnamon", "cymbopogon", "lemongrass"
+        "valerian", "chamomile", "peppermint", "clove", "cinnamon", "cymbopogon", "lemongrass",
+        "orange", "citrus", "lemon", "lime", "vitamin", "vitamin c", "supplement", "diet", "nutrition",
+        "food", "fruit", "honey", "honeycomb", "apple cider", "baobab", "shea butter"
     ]
 
     @classmethod
@@ -308,7 +310,11 @@ class ComplaintClassifier:
 
         # Fast Check: Botanical Knowledge & Remedy Inquiries
         has_botanical = any(b in c_clean for b in cls.BOTANICAL_TERMS)
-        has_knowledge_pattern = any(p in c_clean for p in cls.KNOWLEDGE_PATTERNS) or any(c_clean.startswith(p) for p in ["tell me", "what", "how", "can i", "is it safe"])
+        has_knowledge_pattern = (
+            any(p in c_clean for p in cls.KNOWLEDGE_PATTERNS) or
+            any(c_clean.startswith(p) for p in ["tell me", "what", "how", "can i", "can ", "is it", "which", "should i", "why", "does ", "will "]) or
+            "?" in complaint
+        )
 
         if (has_botanical or has_knowledge_pattern) and not any(p in c_clean for p in cls.SYMPTOM_PATTERNS):
             return {

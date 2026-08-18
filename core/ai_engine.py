@@ -13,11 +13,11 @@ class GeminiClinicalEngine:
     """Live Google Gemini Clinical Reasoning Engine with multi-model fallback & WHO/PubMed RAG"""
     
     def __init__(self, api_key: str = None):
-        self.api_key = api_key or os.environ.get("GEMINI_API_KEY", "")
-        self.groq_api_key = os.environ.get("GROQ_API_KEY", "")
-        self.models = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
-        self.groq_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
-        self.gemini_disabled = False if (self.api_key and self.api_key.startswith("AIza")) else True
+        self.api_key = (api_key or os.environ.get("GEMINI_API_KEY", "")).strip()
+        self.groq_api_key = os.environ.get("GROQ_API_KEY", "").strip()
+        self.models = ["gemini-3.5-flash", "gemini-flash-latest"]
+        self.groq_models = ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.6-27b", "groq/compound"]
+        self.gemini_disabled = False if (self.api_key and len(self.api_key) > 15) else True
 
     def _call_groq_fallback(self, prompt: str, is_json: bool = False, max_tokens: int = 1024, temperature: float = 0.2) -> Optional[Any]:
         """
@@ -115,7 +115,7 @@ class GeminiClinicalEngine:
                 except Exception as e:
                     print(f"[Gemini Clinical Engine] Exception on model {model}: {e}")
 
-        return self._call_groq_fallback("System instruction", is_json=True, max_tokens=1024, temperature=0.2)
+        return self._call_groq_fallback(system_instruction, is_json=True, max_tokens=1024, temperature=0.2)
 
     def generate_text(self, prompt: str, max_tokens: int = 800, temperature: float = 0.4) -> Optional[str]:
         """
