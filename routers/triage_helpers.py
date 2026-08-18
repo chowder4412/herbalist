@@ -200,6 +200,50 @@ class ComplaintClassifier:
         "good day", "yo", "wassup", "sup"
     ]
 
+    SYMPTOM_TERMS = [
+        "pain", "ache", "fever", "malaria", "typhoid", "ulcer", "cough", "vomit", "nausea",
+        "headache", "rash", "dizzy", "fatigue", "weakness", "diarrhea", "stool", "bleed",
+        "burn", "itch", "swelling", "infection", "pressure", "hypertension", "diabetes",
+        "sugar", "asthma", "cold", "flu", "sore", "throat", "cramps", "insomnia", "sleepless",
+        "constipation", "bloating", "indigestion", "heartburn", "migraine", "arthritis", "stiffness"
+    ]
+
+    @classmethod
+    def extract_demographics(cls, text: str) -> dict:
+        import re
+        demographics = {}
+        t = text.strip()
+
+        # Extract Age
+        m_age = re.search(r"\b(?:i am|i'm|im|age|am)\s*(\d{1,2})\s*(?:years|yrs|yr)?\s*(?:old)?\b", t, re.I)
+        if not m_age:
+            m_age = re.search(r"^\s*(\d{1,2})\s*(?:years|yrs|yr)?\s*(?:old)?\s*$", t, re.I)
+        if m_age:
+            try:
+                age_val = int(m_age.group(1))
+                if 1 <= age_val <= 120:
+                    demographics["age"] = age_val
+            except Exception:
+                pass
+
+        # Extract Gender
+        m_gen = re.search(r"\b(?:i am|i'm|im)\s*(?:a\s*)?(male|female|man|woman|boy|girl)\b", t, re.I)
+        if m_gen:
+            g = m_gen.group(1).lower()
+            demographics["gender"] = "Female" if g in ("female", "woman", "girl") else "Male"
+
+        # Extract Name
+        m_name = re.search(r"\b(?:my name is|i am called|call me)\s+([a-zA-Z]+)\b", t, re.I)
+        if m_name:
+            demographics["name"] = m_name.group(1).title()
+
+        # Extract Location
+        m_loc = re.search(r"\b(?:i am from|i live in|i'm in|living in)\s+([a-zA-Z\s]+)\b", t, re.I)
+        if m_loc:
+            demographics["location"] = m_loc.group(1).strip().title()
+
+        return demographics
+
     @classmethod
     def extract_condition_topic(cls, text: str) -> str:
         t = text.strip().lower().rstrip("?").rstrip(".").strip()
@@ -227,6 +271,18 @@ class ComplaintClassifier:
         if c_clean in cls.GREETING_PATTERNS or any(c_clean == g or (c_clean.startswith(g + " ") and len(c_clean.split()) <= 3) for g in cls.GREETING_PATTERNS):
             return {"category": "greeting", "condition_topic": "", "source": "greeting_rule"}
 
+        # Fast Check: Demographics & Profile Introductions (e.g. "I am 18 years old", "I am a male")
+        demographics = cls.extract_demographics(complaint)
+        has_symptom_kw = any(w in c_clean for w in cls.SYMPTOM_TERMS)
+
+        if demographics and not has_symptom_kw:
+            return {
+                "category": "demographics",
+                "condition_topic": "",
+                "demographics": demographics,
+                "source": "demographics_rule"
+            }
+
         # Layer 1: Primary Cognitive Reasoning Engine (Gemini 2.0 Flash + Groq Llama 3.3 70B failover)
         if gemini_engine:
             try:
@@ -249,7 +305,7 @@ class ComplaintClassifier:
                         print(f"[ComplaintClassifier] Memory save notice: {se}")
 
                 if cat != "unclear":
-                    return {"category": cat, "condition_topic": topic, "source": "gemini_groq"}
+                    return {"category": cat, "condition_topic": topic, "demographics": demographics, "source": "gemini_groq"}
             except Exception as ge:
                 print(f"[ComplaintClassifier] AI engine classification notice: {ge}")
 
@@ -258,20 +314,20 @@ class ComplaintClassifier:
             try:
                 learned_cat = memory_store.lookup_learned_intent(complaint)
                 if learned_cat and learned_cat in ("knowledge", "symptom", "greeting", "out_of_domain"):
-                    return {"category": learned_cat, "condition_topic": extracted_topic, "source": "memory"}
+                    return {"category": learned_cat, "condition_topic": extracted_topic, "demographics": demographics, "source": "memory"}
             except Exception as e:
                 print(f"[ComplaintClassifier] Memory lookup error: {e}")
 
         # Layer 3: Offline Heuristic Pattern Matcher
         is_knowledge = any(c_clean.startswith(p) or p in c_clean for p in cls.KNOWLEDGE_PATTERNS)
-        is_symptom = any(p in c_clean for p in cls.SYMPTOM_PATTERNS)
+        is_symptom = any(p in c_clean for p in cls.SYMPTOM_PATTERNS) or has_symptom_kw
 
         if is_knowledge and not is_symptom:
-            return {"category": "knowledge", "condition_topic": extracted_topic, "source": "keyword"}
+            return {"category": "knowledge", "condition_topic": extracted_topic, "demographics": demographics, "source": "keyword"}
         if is_symptom and not is_knowledge:
-            return {"category": "symptom", "condition_topic": "", "source": "keyword"}
+            return {"category": "symptom", "condition_topic": "", "demographics": demographics, "source": "keyword"}
 
-        return {"category": "unclear", "condition_topic": extracted_topic, "source": "fallback"}
+        return {"category": "unclear", "condition_topic": extracted_topic, "demographics": demographics, "source": "fallback"}
 
 
 class DynamicResponseGenerator:
@@ -778,13 +834,24 @@ def generate_conversational_doctor_response(
     # If target_goal is a welcome or greeting
     is_greeting_goal = target_goal.startswith("Welcome") or "greeting" in target_goal.lower() or patient_message.strip().lower() in ComplaintClassifier.GREETING_PATTERNS
     doctor_title = "Dr. Aisha" if "nigerian" in modality.lower() else "Dr. Herbalist"
-    user_greet = f" {patient_username}" if patient_username else ""
+    user_greet = f" {patient_username}" if (patient_username and patient_username not in ("PATIENT_GUEST", "PATIENT_ACTIVE")) else ""
 
     if is_greeting_goal:
         return (
             f"{emergency_prefix}🩺 **{doctor_title}**: Hello{user_greet}! Welcome to Herbalist AI. 🌿\n\n"
             f"I am your Integrative Medical Doctor and Botanical Phytotherapy Specialist. "
             f"How can I assist you today? Please feel free to describe any symptoms, health goals, or questions about natural herbal remedies."
+        )
+
+    if "introduced their profile details" in target_goal or "Acknowledge their profile" in target_goal:
+        # Extract demographic mention if available
+        import re
+        m_age = re.search(r"(\d{1,2})\s*years old", target_goal)
+        age_str = f"that you are {m_age.group(1)} years old" if m_age else "your details"
+        return (
+            f"{emergency_prefix}🩺 **{doctor_title}**: Thank you{user_greet}! I have noted {age_str}. 🌿\n\n"
+            f"What health symptoms, discomfort, or wellness goals bring you in today? "
+            f"Please feel free to describe how you are feeling (e.g. fever, headaches, stomach pain) or ask any herbal medicine question."
         )
 
     clean_goal = target_goal.strip()

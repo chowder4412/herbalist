@@ -763,6 +763,52 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
             "follow_up_suggestions": generate_follow_up_suggestions("greeting", complaint)
         }
 
+    # Demographics & Profile Introductions (e.g. "I am 18 years old", "I am a male", "My name is...")
+    if query_category == "demographics":
+        demographics = classification.get("demographics") or ComplaintClassifier.extract_demographics(complaint)
+        age_val = demographics.get("age") or body.age
+        gender_val = demographics.get("gender") or body.gender
+        name_val = demographics.get("name") or patient_username
+
+        demo_desc_parts = []
+        if age_val: demo_desc_parts.append(f"{age_val} years old")
+        if gender_val and gender_val not in ("Not specified", "other"): demo_desc_parts.append(gender_val.lower())
+        if demographics.get("location"): demo_desc_parts.append(f"from {demographics['location']}")
+
+        demo_desc = " (" + ", ".join(demo_desc_parts) + ")" if demo_desc_parts else ""
+
+        target_goal = (
+            f"The patient introduced their profile details: {demo_desc}. "
+            f"Acknowledge their profile warmly, confirm that you noted it, and invite them to share their primary symptom, health concern, or herbal question."
+        )
+
+        demo_msg = generate_conversational_doctor_response(
+            patient_message=complaint,
+            patient_username=name_val or patient_username,
+            target_goal=target_goal,
+            emergency_prefix=emergency_prefix,
+            doctor=doctor,
+            modality=body.clinical_modality or "auto"
+        )
+
+        doctor_title = "Dr. Aisha" if "nigerian" in (body.clinical_modality or "").lower() else "Dr. Herbalist"
+        if "When did you first notice" in demo_msg or demo_msg.strip().endswith("How long have you been experiencing it?"):
+            name_greet = f", {name_val}" if name_val else ""
+            age_phrase = f"that you are {age_val} years old" if age_val else "your profile details"
+            demo_msg = (
+                f"🩺 **{doctor_title}**: Thank you{name_greet}! I have noted {age_phrase}. 🌿\n\n"
+                f"What health symptoms, discomfort, or wellness goals brings you in today? "
+                f"Please feel free to describe how you are feeling (e.g., fever, stomach pain, headaches, fatigue) or ask about any herbal remedy."
+            )
+
+        return {
+            "status": "success",
+            "is_greeting": True,
+            "extracted_demographics": demographics,
+            "conversational_message": demo_msg,
+            "follow_up_suggestions": ["I have a fever and body weakness", "Stomach ulcer and indigestion", "Herbs for energy and sleep", "High blood pressure support"]
+        }
+
     # Knowledge / Educational Query
     if query_category == "knowledge":
         condition_topic = extracted_topic or ComplaintClassifier.extract_condition_topic(complaint) or complaint_clean
