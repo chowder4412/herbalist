@@ -4480,6 +4480,8 @@
                 session_id: currentSessionId,
                 api_key: apiKey,
                 clinical_modality: currentClinicalModality || 'auto',
+                country_code: (window.userLocationData && window.userLocationData.country_code) || 'GLOBAL',
+                country_name: (window.userLocationData && window.userLocationData.country) || 'Global',
                 attachment_base64: currentAttachment ? currentAttachment.base64 : null,
                 attachment_name: currentAttachment ? currentAttachment.name : null,
                 attachment_type: currentAttachment ? currentAttachment.type : null
@@ -8231,7 +8233,7 @@
         }
 
         /* ══════ MULTI-TRADITION MODALITY SWITCHER JS ══════ */
-        function changeClinicalModality(modalityKey) {
+        function changeClinicalModality(modalityKey, showNotification = true) {
             activeClinicalModality = modalityKey;
             currentClinicalModality = modalityKey;
             window.activeClinicalModality = modalityKey;
@@ -8249,7 +8251,110 @@
                 'western': '🌿 Western: Clinical Pharmacology & Active Bioactives active'
             };
 
-            showToast(descriptions[modalityKey] || '🌐 Clinical Modality Updated', 'success');
+            if (showNotification) {
+                showToast(descriptions[modalityKey] || '🌐 Clinical Modality Updated', 'success');
+            }
+        }
+
+        /* ══════ AUTOMATIC GEOLOCATION & REGIONAL MODALITY DETECTOR ══════ */
+        let userLocationData = {
+            country: 'Global',
+            country_code: 'GL',
+            region: 'Global',
+            timezone: '',
+            detected_tradition: 'auto'
+        };
+        window.userLocationData = userLocationData;
+
+        async function detectUserLocationAndModality() {
+            try {
+                let savedModality = null;
+                try { savedModality = localStorage.getItem('herbalist_modality'); } catch(e) {}
+
+                // Priority Layer 1: Native Server-Side Network Header Detection (/api/geo/detect)
+                // Detects physical cellular/Wi-Fi connection country (even if phone was bought in UK or has UK timezone)
+                try {
+                    const geoRes = await fetch('/api/geo/detect');
+                    if (geoRes.ok) {
+                        const geoData = await geoRes.json();
+                        if (geoData && geoData.country_code && geoData.country_code !== 'GL') {
+                            userLocationData.country = geoData.country_name;
+                            userLocationData.country_code = geoData.country_code;
+                            userLocationData.detected_tradition = geoData.suggested_modality;
+
+                            if (!savedModality && geoData.suggested_modality !== 'auto') {
+                                changeClinicalModality(geoData.suggested_modality, false);
+                            }
+                            updateModalityDropdownLabels(geoData.suggested_modality, geoData.country_name);
+                            return;
+                        }
+                    }
+                } catch(netErr) {}
+
+                // Priority Layer 2: Device / Browser Timezone Fallback
+                const tz = (typeof Intl !== 'undefined' && Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
+                userLocationData.timezone = tz;
+
+                let detectedModality = 'auto';
+                let countryName = 'Global';
+
+                if (tz.includes('Kolkata') || tz.includes('Calcutta') || tz.includes('India') || tz.includes('Colombo') || tz.includes('Kathmandu') || tz.includes('Dhaka')) {
+                    detectedModality = 'ayurveda';
+                    countryName = 'India & South Asia';
+                    userLocationData.country_code = 'IN';
+                } else if (tz.includes('Lagos') || tz.includes('Accra') || tz.includes('Johannesburg') || tz.includes('Nairobi') || tz.includes('Cairo') || tz.includes('Africa')) {
+                    detectedModality = 'african';
+                    countryName = 'African Region';
+                    userLocationData.country_code = 'AF';
+                } else if (tz.includes('Shanghai') || tz.includes('Hong_Kong') || tz.includes('Taipei') || tz.includes('Tokyo') || tz.includes('Seoul') || tz.includes('Asia')) {
+                    detectedModality = 'tcm';
+                    countryName = 'East Asia';
+                    userLocationData.country_code = 'EA';
+                } else if (tz.includes('New_York') || tz.includes('London') || tz.includes('Berlin') || tz.includes('Paris') || tz.includes('Chicago') || tz.includes('Los_Angeles') || tz.includes('Toronto') || tz.includes('Sydney')) {
+                    detectedModality = 'western';
+                    countryName = 'Western Clinical Region';
+                    userLocationData.country_code = 'WEST';
+                }
+
+                userLocationData.country = countryName;
+                userLocationData.detected_tradition = detectedModality;
+
+                if (!savedModality && detectedModality !== 'auto') {
+                    changeClinicalModality(detectedModality, false);
+                }
+
+                updateModalityDropdownLabels(detectedModality, countryName);
+
+            } catch (err) {
+                console.log("[Geolocation Notice]:", err);
+            }
+        }
+        window.detectUserLocationAndModality = detectUserLocationAndModality;
+
+        function updateModalityDropdownLabels(detectedModality, countryName) {
+            const modalitySelector = document.getElementById('clinical-modality-selector');
+            if (modalitySelector) {
+                if (detectedModality === 'ayurveda') {
+                    const opt = modalitySelector.querySelector('option[value="ayurveda"]');
+                    if (opt) opt.innerText = '🕉️ Ayurveda (India 🇮🇳 Active)';
+                } else if (detectedModality === 'african') {
+                    const opt = modalitySelector.querySelector('option[value="african"]');
+                    if (opt) opt.innerText = '🌍 African Ethnomedicine (Africa 🌍 Active)';
+                } else if (detectedModality === 'tcm') {
+                    const opt = modalitySelector.querySelector('option[value="tcm"]');
+                    if (opt) opt.innerText = '☯️ TCM (East Asia 🇨🇳 Active)';
+                }
+                modalitySelector.value = activeClinicalModality;
+            }
+        }
+
+        // Auto-run location detection on boot
+        if (typeof document !== 'undefined') {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', detectUserLocationAndModality);
+            } else {
+                detectUserLocationAndModality();
+            }
         }
 
         /* ══════ DAILY DECOCTION ADHERENCE & PUSH REMINDERS JS ══════ */

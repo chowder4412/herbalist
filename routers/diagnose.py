@@ -98,6 +98,8 @@ class DiagnoseRequest(BaseModel):
     api_key: Optional[str] = None
     patient_id: Optional[str] = None
     clinical_modality: Optional[str] = "auto"
+    country_code: Optional[str] = "GLOBAL"
+    country_name: Optional[str] = "Global"
     attachment_base64: Optional[str] = None
     attachment_name: Optional[str] = None
     attachment_type: Optional[str] = None
@@ -183,6 +185,65 @@ async def get_my_prescriptions(request: Request):
         raise HTTPException(status_code=401, detail="Unauthorized or invalid token")
     prescriptions = memory_store.get_user_prescriptions(user["user_id"])
     return {"status": "success", "prescriptions": prescriptions}
+
+
+@router.get("/api/geo/detect")
+async def detect_client_geography(request: Request):
+    """
+    Precision Geolocation & Regional Modality Detector.
+    Extracts real-time country from network headers (Cloudflare cf-ipcountry, Render proxy, ISP headers)
+    and maps to appropriate traditional medical modality (Ayurveda, African Ethnomedicine, TCM, Western).
+    """
+    headers = request.headers
+    country_code = (
+        headers.get("cf-ipcountry") or
+        headers.get("x-country-code") or
+        headers.get("x-vercel-ip-country") or
+        headers.get("x-appengine-country") or
+        headers.get("geoip-country-code") or
+        ""
+    ).upper().strip()
+
+    client_ip = (
+        headers.get("cf-connecting-ip") or
+        headers.get("x-forwarded-for", "").split(",")[0].strip() or
+        headers.get("x-real-ip") or
+        (request.client.host if request.client else "127.0.0.1")
+    )
+
+    country_names = {
+        "NG": "Nigeria", "GH": "Ghana", "KE": "Kenya", "ZA": "South Africa", "EG": "Egypt", "ET": "Ethiopia", "TZ": "Tanzania", "UG": "Uganda",
+        "IN": "India", "PK": "Pakistan", "BD": "Bangladesh", "LK": "Sri Lanka", "NP": "Nepal",
+        "CN": "China", "HK": "Hong Kong", "TW": "Taiwan", "JP": "Japan", "KR": "South Korea",
+        "GB": "United Kingdom", "US": "United States", "CA": "Canada", "DE": "Germany", "FR": "France", "AU": "Australia"
+    }
+
+    country_name = country_names.get(country_code, "Global")
+
+    if country_code in ("IN", "LK", "NP", "BD", "PK"):
+        modality = "ayurveda"
+        region_label = "India & South Asia 🇮🇳"
+    elif country_code in ("NG", "GH", "KE", "ZA", "EG", "ET", "TZ", "UG", "RW", "CM", "CI", "SN", "ZW"):
+        modality = "african"
+        region_label = "African Region 🌍"
+    elif country_code in ("CN", "HK", "TW", "JP", "KR", "SG", "MY", "VN"):
+        modality = "tcm"
+        region_label = "East Asia 🇨🇳"
+    elif country_code in ("GB", "US", "CA", "DE", "FR", "AU", "IT", "ES", "NL", "SE", "NO", "NZ"):
+        modality = "western"
+        region_label = "Western Region 🌿"
+    else:
+        modality = "auto"
+        region_label = "Global WHO Synthesis 🌐"
+
+    return {
+        "status": "success",
+        "country_code": country_code or "GL",
+        "country_name": country_name,
+        "client_ip": client_ip,
+        "suggested_modality": modality,
+        "region_label": region_label
+    }
 
 
 @router.get("/api/rag/search")
