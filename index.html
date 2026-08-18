@@ -19,9 +19,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <!-- Firebase Authentication SDKs -->
+    <!-- Firebase Authentication & Cloud Firestore SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <style>
         :root {
             --bg-dark: #0b130f;
@@ -4032,6 +4033,7 @@
                 saveLocalChatSessions(sessions);
                 localStorage.setItem('herbalist_active_session_id', currentSessionId);
                 renderRecentsList();
+                syncSessionToFirestore(currentSessionId, sessions[currentSessionId]);
             } catch(e) {
                 console.warn("[Persist Chat Session Notice]", e);
             }
@@ -4193,6 +4195,124 @@
                 return true;
             }
             return false;
+        }
+
+        /* ══════ RECENT CONSULTATIONS CONTEXT MENU & MANAGEMENT ══════ */
+        let contextMenuSessionId = null;
+
+        function openContextMenu(e, sessionId, currentTitle) {
+            e.stopPropagation();
+            contextMenuSessionId = sessionId;
+
+            let menu = document.getElementById('recent-context-menu');
+            if (!menu) {
+                menu = document.createElement('div');
+                menu.id = 'recent-context-menu';
+                menu.style.cssText = `
+                    position: fixed;
+                    z-index: 99999;
+                    background: #142219;
+                    border: 1px solid rgba(46,204,113,0.3);
+                    border-radius: 12px;
+                    padding: 6px;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2px;
+                    min-width: 140px;
+                    backdrop-filter: blur(10px);
+                `;
+                document.body.appendChild(menu);
+            }
+
+            const sessions = getLocalChatSessions();
+            const session = sessions[sessionId] || {};
+            const isPinned = session.isPinned || false;
+
+            menu.innerHTML = `
+                <button onclick="pinConversation('${sessionId}')" style="background:transparent;border:none;color:#fff;padding:8px 12px;text-align:left;font-size:12.5px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='rgba(46,204,113,0.15)'" onmouseout="this.style.background='transparent'">
+                    <span>${isPinned ? '📌' : '📍'}</span>
+                    <span>${isPinned ? 'Unpin' : 'Pin'}</span>
+                </button>
+                <button onclick="renameConversation('${sessionId}')" style="background:transparent;border:none;color:#fff;padding:8px 12px;text-align:left;font-size:12.5px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='rgba(46,204,113,0.15)'" onmouseout="this.style.background='transparent'">
+                    <span>✏️</span>
+                    <span>Rename</span>
+                </button>
+                <button onclick="shareConversation('${sessionId}')" style="background:transparent;border:none;color:#fff;padding:8px 12px;text-align:left;font-size:12.5px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='rgba(46,204,113,0.15)'" onmouseout="this.style.background='transparent'">
+                    <span>🔗</span>
+                    <span>Share</span>
+                </button>
+                <button onclick="deleteConversation('${sessionId}')" style="background:transparent;border:none;color:#ff7675;padding:8px 12px;text-align:left;font-size:12.5px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='rgba(231,76,60,0.15)'" onmouseout="this.style.background='transparent'">
+                    <span>🗑️</span>
+                    <span>Delete</span>
+                </button>
+            `;
+
+            menu.style.top = `${Math.min(window.innerHeight - 180, e.clientY + 5)}px`;
+            menu.style.left = `${Math.min(window.innerWidth - 160, e.clientX + 5)}px`;
+            menu.style.display = 'flex';
+        }
+
+        window.addEventListener('click', () => {
+            const menu = document.getElementById('recent-context-menu');
+            if (menu) menu.style.display = 'none';
+        });
+
+        async function pinConversation(sessionId) {
+            const sessions = getLocalChatSessions();
+            if (sessions[sessionId]) {
+                sessions[sessionId].isPinned = !sessions[sessionId].isPinned;
+                sessions[sessionId].updatedAt = Date.now();
+                saveLocalChatSessions(sessions);
+                renderRecentsList();
+                await pinFirestoreSession(sessionId, sessions[sessionId].isPinned);
+                showToast(sessions[sessionId].isPinned ? '📌 Consultation pinned' : 'Consultation unpinned', 'info', 2000);
+            }
+        }
+
+        async function renameConversation(sessionId) {
+            const sessions = getLocalChatSessions();
+            if (sessions[sessionId]) {
+                const newTitle = prompt('Enter a new title for this consultation:', sessions[sessionId].title || '');
+                if (newTitle && newTitle.trim()) {
+                    sessions[sessionId].title = newTitle.trim();
+                    sessions[sessionId].isRenamed = true;
+                    sessions[sessionId].updatedAt = Date.now();
+                    saveLocalChatSessions(sessions);
+                    renderRecentsList();
+                    await renameFirestoreSession(sessionId, newTitle.trim());
+                    showToast('✏️ Consultation renamed', 'success', 2000);
+                }
+            }
+        }
+
+        async function deleteConversation(sessionId) {
+            if (!confirm('Are you sure you want to delete this consultation?')) return;
+            const sessions = getLocalChatSessions();
+            if (sessions[sessionId]) {
+                delete sessions[sessionId];
+                saveLocalChatSessions(sessions);
+                if (currentSessionId === sessionId) {
+                    startNewChat();
+                } else {
+                    renderRecentsList();
+                }
+                await deleteFirestoreSession(sessionId);
+                showToast('🗑️ Consultation deleted', 'info', 2000);
+            }
+        }
+
+        function shareConversation(sessionId) {
+            const shareUrl = window.location.origin + '?consultation=' + encodeURIComponent(sessionId);
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                    showToast('🔗 Consultation share link copied to clipboard!', 'success', 2500);
+                }).catch(() => {
+                    showToast('🔗 Link: ' + shareUrl, 'info', 4000);
+                });
+            } else {
+                showToast('🔗 Link: ' + shareUrl, 'info', 4000);
+            }
         }
 
         function toggleSidebar() {
@@ -10257,33 +10377,162 @@ ${recipeText}
         };
 
         let isFirebaseInitialized = false;
+        let firestoreDb = null;
+        let firestoreSessionsUnsubscribe = null;
+
         try {
             if (typeof firebase !== 'undefined' && !firebase.apps.length) {
                 firebase.initializeApp(firebaseConfig);
                 isFirebaseInitialized = true;
+                if (firebase.firestore) {
+                    firestoreDb = firebase.firestore();
+                }
                 
                 // Auth state observer
                 firebase.auth().onAuthStateChanged((user) => {
                     if (user && user.emailVerified) {
                         const userData = {
                             id: user.uid,
+                            uid: user.uid,
                             email: user.email,
                             full_name: user.displayName || user.email.split('@')[0],
                             photoURL: user.photoURL || null
                         };
                         localStorage.setItem('herbalist_user', JSON.stringify(userData));
                         updateAuthUI(userData);
+                        listenToUserFirestoreSessions(user.uid);
                     } else if (user && !user.emailVerified) {
                         // User is signed in but email is unverified
                         updateAuthUI(null);
+                        detachFirestoreListener();
                     } else {
                         localStorage.removeItem('herbalist_user');
                         updateAuthUI(null);
+                        detachFirestoreListener();
                     }
                 });
             }
         } catch (fbErr) {
             console.warn("Firebase Auth initialization notice:", fbErr.message);
+        }
+
+        /* ══════════════════════════════════════════════════════════════ */
+        /* FIREBASE CLOUD FIRESTORE REAL-TIME SYNC ENGINE                 */
+        /* ══════════════════════════════════════════════════════════════ */
+        function getActiveFirebaseUid() {
+            try {
+                if (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) {
+                    return firebase.auth().currentUser.uid;
+                }
+                const cached = JSON.parse(localStorage.getItem('herbalist_user') || 'null');
+                if (cached && (cached.uid || cached.id)) return cached.uid || cached.id;
+            } catch(e) {}
+            return null;
+        }
+
+        async function syncSessionToFirestore(sessionId, sessionData) {
+            const uid = getActiveFirebaseUid();
+            if (!uid || !firestoreDb || !sessionId || !sessionData) return;
+            try {
+                const sessionRef = firestoreDb.collection('users').doc(uid).collection('consultations').doc(sessionId);
+                await sessionRef.set({
+                    id: sessionId,
+                    title: sessionData.title || "Botanical Consultation",
+                    isRenamed: sessionData.isRenamed || false,
+                    isPinned: sessionData.isPinned || false,
+                    messages: sessionData.messages || [],
+                    prescription: sessionData.prescription || null,
+                    updatedAt: sessionData.updatedAt || Date.now()
+                }, { merge: true });
+                console.log("[Firestore Sync] Consultation synced to cloud:", sessionId);
+            } catch(err) {
+                console.warn("[Firestore Sync Notice]", err.message);
+            }
+        }
+
+        function listenToUserFirestoreSessions(uid) {
+            if (!uid || !firestoreDb) return;
+            detachFirestoreListener();
+            try {
+                const consultsRef = firestoreDb.collection('users').doc(uid).collection('consultations').orderBy('updatedAt', 'desc');
+                firestoreSessionsUnsubscribe = consultsRef.onSnapshot((snapshot) => {
+                    const cloudSessions = {};
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        if (data && data.id) {
+                            cloudSessions[data.id] = data;
+                        }
+                    });
+
+                    // Merge cloud sessions with local session storage
+                    const localSessions = getLocalChatSessions();
+                    let updated = false;
+
+                    for (const [id, cSess] of Object.entries(cloudSessions)) {
+                        const lSess = localSessions[id];
+                        if (!lSess || (cSess.updatedAt && (!lSess.updatedAt || cSess.updatedAt > lSess.updatedAt))) {
+                            localSessions[id] = cSess;
+                            updated = true;
+                        }
+                    }
+
+                    if (updated || Object.keys(cloudSessions).length > 0) {
+                        saveLocalChatSessions(localSessions);
+                        renderRecentsList();
+                    }
+                }, (err) => {
+                    console.warn("[Firestore Realtime Listener Notice]", err.message);
+                });
+            } catch(e) {
+                console.warn("[Firestore Listener Init Notice]", e);
+            }
+        }
+
+        function detachFirestoreListener() {
+            if (typeof firestoreSessionsUnsubscribe === 'function') {
+                try {
+                    firestoreSessionsUnsubscribe();
+                } catch(e) {}
+                firestoreSessionsUnsubscribe = null;
+            }
+        }
+
+        async function deleteFirestoreSession(sessionId) {
+            const uid = getActiveFirebaseUid();
+            if (!uid || !firestoreDb || !sessionId) return;
+            try {
+                await firestoreDb.collection('users').doc(uid).collection('consultations').doc(sessionId).delete();
+                console.log("[Firestore Delete] Removed consultation from cloud:", sessionId);
+            } catch(e) {
+                console.warn("[Firestore Delete Notice]", e.message);
+            }
+        }
+
+        async function renameFirestoreSession(sessionId, newTitle) {
+            const uid = getActiveFirebaseUid();
+            if (!uid || !firestoreDb || !sessionId) return;
+            try {
+                await firestoreDb.collection('users').doc(uid).collection('consultations').doc(sessionId).update({
+                    title: newTitle,
+                    isRenamed: true,
+                    updatedAt: Date.now()
+                });
+            } catch(e) {
+                console.warn("[Firestore Rename Notice]", e.message);
+            }
+        }
+
+        async function pinFirestoreSession(sessionId, isPinned) {
+            const uid = getActiveFirebaseUid();
+            if (!uid || !firestoreDb || !sessionId) return;
+            try {
+                await firestoreDb.collection('users').doc(uid).collection('consultations').doc(sessionId).update({
+                    isPinned: isPinned,
+                    updatedAt: Date.now()
+                });
+            } catch(e) {
+                console.warn("[Firestore Pin Notice]", e.message);
+            }
         }
 
         let currentAuthTab = 'login';
@@ -10670,6 +10919,7 @@ ${recipeText}
 
         /* ══════ Sign Out Handler ══════ */
         async function handleSignOut() {
+            detachFirestoreListener();
             try {
                 if (typeof firebase !== 'undefined' && firebase.auth) {
                     await firebase.auth().signOut();
