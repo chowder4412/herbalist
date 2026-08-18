@@ -214,6 +214,8 @@ def get_botanical_substitute(synthetic_drug_name: str):
             return data
     return None
 
+get_synthetic_botanical_substitute = get_botanical_substitute
+
 def check_herb_drug_interaction(drug_name: str, herb_name: str):
     """Simulates clinical safety interaction between a drug and an herb"""
     d_clean = drug_name.strip().lower()

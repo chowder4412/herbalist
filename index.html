@@ -3169,12 +3169,12 @@
             <!-- Voice Persona & Audio Settings Selector -->
             <div style="display: flex; align-items: center; gap: 10px;">
                 <select id="telehealth-voice-selector" onchange="changeTelehealthVoicePersona(this.value)" style="background: rgba(0,0,0,0.5); border: 1px solid var(--pill-border); color: #fff; padding: 8px 12px; border-radius: 12px; font-size: 12px; cursor: pointer; font-family: 'Inter', sans-serif;">
-                    <option value="female_ng" selected>🇳🇬 Dr. Aisha (Female - Fluent Nigerian English)</option>
+                    <option value="male_uk" selected>🩺 Dr. Herbalist (Senior Integrative MD - British/Global)</option>
+                    <option value="female_ng">🇳🇬 Dr. Aisha (Female - Fluent Nigerian English)</option>
                     <option value="male_pidgin">🇳🇬 Dr. Bovi (Male - Nigerian Pidgin English)</option>
                     <option value="hindi_in">🇮🇳 Vaidya Rajesh (Hindi & Hinglish)</option>
                     <option value="male_sw">🌴 Dkt. Amani (Swahili / Kiswahili)</option>
                     <option value="female_fr">🇫🇷 Dr. Sophie (Français / French)</option>
-                    <option value="male_uk">🩺 Dr. Herbalist (British / Global English)</option>
                     <option value="female_us">🌿 Dr. Maya (Empathetic US English)</option>
                 </select>
                 <button class="icon-btn" onclick="closeLiveVoiceConsultationModal()" title="Minimize to Chat" style="background: rgba(255,255,255,0.08); border-radius: 12px; width: 40px; height: 40px;">
@@ -8193,24 +8193,122 @@ ${recipeText}
             }
         }
 
-        let activeVoicePersona = 'female_ng'; // Default to Dr. Aisha (Female - Fluent Nigerian English)
+        let activeVoicePersona = 'male_uk'; // Default to Dr. Herbalist (Senior Integrative MD)
 
         const telehealthPersonas = {
-            'female_ng': { name: 'Dr. Aisha', title: '🩺 Dr. Aisha (Female - Fluent Nigerian English)', flag: '🇳🇬', lang: 'en-NG', langFallback: 'en-GB', voiceCode: 'en-NG', pitch: 1.15, rate: 0.98, gender: 'female' },
-            'male_pidgin': { name: 'Dr. Bovi', title: '🎤 Dr. Bovi (Male - Nigerian Pidgin English)', flag: '🇳🇬', lang: 'pcm-NG', langFallback: 'en-NG', voiceCode: 'en-NG', pitch: 0.92, rate: 1.02, gender: 'male' },
+            'male_uk': { name: 'Dr. Herbalist', title: '🩺 Dr. Herbalist (Senior Integrative MD - British/Global)', flag: '🇬🇧', lang: 'en-GB', langFallback: 'en-GB', voiceCode: 'en-GB', pitch: 0.96, rate: 0.94, gender: 'male' },
+            'female_ng': { name: 'Dr. Aisha', title: '🩺 Dr. Aisha (Female - Fluent Nigerian English)', flag: '🇳🇬', lang: 'en-NG', langFallback: 'en-GB', voiceCode: 'en-NG', pitch: 1.12, rate: 0.96, gender: 'female' },
+            'male_pidgin': { name: 'Dr. Bovi', title: '🎤 Dr. Bovi (Male - Nigerian Pidgin English)', flag: '🇳🇬', lang: 'pcm-NG', langFallback: 'en-NG', voiceCode: 'en-NG', pitch: 0.92, rate: 1.0, gender: 'male' },
             'hindi_in': { name: 'Vaidya Rajesh', title: '🕉️ Vaidya Dr. Rajesh (Ayurvedic Specialist - Hindi/Hinglish)', flag: '🇮🇳', lang: 'hi-IN', langFallback: 'en-IN', voiceCode: 'hi-IN', pitch: 1.0, rate: 0.95, gender: 'male' },
             'male_sw': { name: 'Dkt. Amani', title: '🌴 Dkt. Amani (Swahili Ethnomedicine)', flag: '🇰🇪', lang: 'sw-KE', langFallback: 'sw', voiceCode: 'sw', pitch: 0.95, rate: 1.0, gender: 'male' },
             'female_fr': { name: 'Dr. Sophie', title: '🇫🇷 Dr. Sophie (Phytothérapie Clinique)', flag: '🇫🇷', lang: 'fr-FR', langFallback: 'fr', voiceCode: 'fr-FR', pitch: 1.05, rate: 1.0, gender: 'female' },
-            'male_uk': { name: 'Dr. Herbalist', title: '🩺 Dr. Herbalist (Senior Integrative MD - British/Global)', flag: '🇬🇧', lang: 'en-GB', langFallback: 'en-GB', voiceCode: 'en-GB', pitch: 0.9, rate: 1.0, gender: 'male' },
-            'female_us': { name: 'Dr. Maya', title: '🌿 Dr. Maya (Empathetic US Clinical Herbalist)', flag: '🇺🇸', lang: 'en-US', langFallback: 'en-US', voiceCode: 'en-US', pitch: 1.1, rate: 1.05, gender: 'female' }
+            'female_us': { name: 'Dr. Maya', title: '🌿 Dr. Maya (Empathetic US Clinical Herbalist)', flag: '🇺🇸', lang: 'en-US', langFallback: 'en-US', voiceCode: 'en-US', pitch: 1.08, rate: 0.98, gender: 'female' }
         };
+
+        // Cache and warm up browser speech synthesis voices
+        let availableSpeechVoices = [];
+        function populateSpeechVoices() {
+            if (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis && typeof window.speechSynthesis.getVoices === 'function') {
+                try {
+                    availableSpeechVoices = window.speechSynthesis.getVoices() || [];
+                } catch(e) {
+                    availableSpeechVoices = [];
+                }
+            }
+        }
+        if (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis) {
+            populateSpeechVoices();
+            if ('onvoiceschanged' in window.speechSynthesis || window.speechSynthesis.onvoiceschanged !== undefined) {
+                window.speechSynthesis.onvoiceschanged = populateSpeechVoices;
+            }
+        }
+
+        function getBestNaturalVoice(persona) {
+            if (!('speechSynthesis' in window)) return null;
+            if (!availableSpeechVoices || availableSpeechVoices.length === 0) {
+                populateSpeechVoices();
+            }
+            const voices = availableSpeechVoices;
+            if (!voices || voices.length === 0) return null;
+
+            const isFemale = persona.gender === 'female';
+            const targetCode = (persona.voiceCode || 'en-GB').toLowerCase();
+            const langPrefix = targetCode.split('-')[0];
+
+            // 1. First Tier: Search for Neural / Natural / Online / Enhanced voices
+            const naturalKeywords = ['natural', 'neural', 'online', 'enhanced', 'premium', 'high quality'];
+            for (const v of voices) {
+                const nameLower = v.name.toLowerCase();
+                const langLower = v.lang.toLowerCase();
+                const isNatural = naturalKeywords.some(k => nameLower.includes(k));
+                const matchesLang = langLower.includes(targetCode) || langLower.startsWith(langPrefix);
+
+                if (isNatural && matchesLang) {
+                    if (isFemale && (nameLower.includes('female') || nameLower.includes('samantha') || nameLower.includes('victoria') || nameLower.includes('jenny') || nameLower.includes('aria') || nameLower.includes('sonia') || nameLower.includes('aisha'))) {
+                        return v;
+                    }
+                    if (!isFemale && (nameLower.includes('male') || nameLower.includes('ryan') || nameLower.includes('christopher') || nameLower.includes('guy') || nameLower.includes('daniel') || nameLower.includes('george') || nameLower.includes('david') || nameLower.includes('steffan') || nameLower.includes('oliver') || nameLower.includes('arthur'))) {
+                        return v;
+                    }
+                }
+            }
+
+            // 2. Second Tier: Google or Microsoft Cloud voices (e.g. "Google UK English Male", "Microsoft Ryan Online")
+            for (const v of voices) {
+                const nameLower = v.name.toLowerCase();
+                const langLower = v.lang.toLowerCase();
+                const matchesLang = langLower.includes(targetCode) || langLower.startsWith(langPrefix);
+                if (matchesLang && (nameLower.includes('google') || nameLower.includes('natural') || nameLower.includes('online'))) {
+                    if (isFemale && (nameLower.includes('female') || !nameLower.includes('male'))) return v;
+                    if (!isFemale && (nameLower.includes('male') || !nameLower.includes('female'))) return v;
+                }
+            }
+
+            // 3. Third Tier: Standard gender & language match
+            for (const v of voices) {
+                const nameLower = v.name.toLowerCase();
+                const langLower = v.lang.toLowerCase();
+                if (langLower.includes(targetCode) || langLower.startsWith(langPrefix)) {
+                    if (isFemale && (nameLower.includes('female') || nameLower.includes('zira') || nameLower.includes('samantha') || nameLower.includes('karen'))) return v;
+                    if (!isFemale && (nameLower.includes('male') || nameLower.includes('david') || nameLower.includes('george') || nameLower.includes('james') || nameLower.includes('richard'))) return v;
+                }
+            }
+
+            // 4. Fourth Tier: Any voice matching the language prefix
+            const prefixMatch = voices.find(v => v.lang.toLowerCase().startsWith(langPrefix));
+            if (prefixMatch) return prefixMatch;
+
+            return voices[0];
+        }
+
+        function preprocessTextForNaturalSpeech(text) {
+            if (!text) return '';
+            return text
+                .replace(/\*\*Dr\.\s*[A-Za-z]+\*\*:\s*/gi, '')
+                .replace(/[*#_`~>\[\]]/g, '')
+                .replace(/PATIENT_GUEST/g, 'there')
+                .replace(/(\d+)\s*mg\b/gi, '$1 milligrams')
+                .replace(/(\d+)\s*ml\b/gi, '$1 milliliters')
+                .replace(/(\d+)\s*g\b/gi, '$1 grams')
+                .replace(/(\d+)\s*kg\b/gi, '$1 kilograms')
+                .replace(/\bbid\b/gi, 'twice daily')
+                .replace(/\btid\b/gi, 'three times daily')
+                .replace(/\bqd\b/gi, 'once daily')
+                .replace(/\be\.g\.,?/gi, 'for example,')
+                .replace(/\bi\.e\.,?/gi, 'that is,')
+                .replace(/\bRx\b/g, 'prescription')
+                .replace(/\bvs\b\.?/gi, 'versus')
+                .replace(/\s+/g, ' ')
+                .slice(0, 350)
+                .trim();
+        }
 
         function changeTelehealthVoicePersona(personaKey) {
             activeVoicePersona = personaKey;
             const personaLabel = document.getElementById('telehealth-persona-label');
             const captionsSpeaker = document.getElementById('caption-speaker-label');
 
-            const selected = telehealthPersonas[personaKey] || telehealthPersonas['female_ng'];
+            const selected = telehealthPersonas[personaKey] || telehealthPersonas['male_uk'];
             if (personaLabel) personaLabel.innerText = selected.title;
             if (captionsSpeaker) captionsSpeaker.innerText = `${selected.name} (Live Voice)`;
             
@@ -8227,7 +8325,7 @@ ${recipeText}
             const captionBody = document.getElementById('caption-text-body');
             const captionSpeaker = document.getElementById('caption-speaker-label');
 
-            const selectedPersona = telehealthPersonas[activeVoicePersona] || telehealthPersonas['female_ng'];
+            const selectedPersona = telehealthPersonas[activeVoicePersona] || telehealthPersonas['male_uk'];
             const doctorName = selectedPersona.name;
             if (statusBadge) statusBadge.innerText = `🧠 ${doctorName} is analyzing phytomedicinal protocols...`;
 
@@ -8281,35 +8379,19 @@ ${recipeText}
             if (!('speechSynthesis' in window)) return;
             window.speechSynthesis.cancel();
 
-            const cleanText = text
-                .replace(/\*\*Dr\.\s*[A-Za-z]+\*\*:\s*/gi, '')
-                .replace(/[*#_`]/g, '')
-                .replace(/PATIENT_GUEST/g, '')
-                .slice(0, 320);
+            const cleanText = preprocessTextForNaturalSpeech(text);
+            if (!cleanText) return;
 
             const utter = new SpeechSynthesisUtterance(cleanText);
-            const selectedPersona = telehealthPersonas[activeVoicePersona] || telehealthPersonas['female_ng'];
+            const selectedPersona = telehealthPersonas[activeVoicePersona] || telehealthPersonas['male_uk'];
             
-            utter.pitch = selectedPersona.pitch || 1.0;
-            utter.rate = selectedPersona.rate || 1.0;
+            // Ultra-natural human pacing & pitch
+            utter.pitch = selectedPersona.pitch || 0.96;
+            utter.rate = selectedPersona.rate || 0.94;
 
-            const voices = window.speechSynthesis.getVoices() || [];
-            if (voices.length > 0) {
-                const targetLang = (selectedPersona.voiceCode || 'en').toLowerCase();
-                const isFemale = selectedPersona.gender === 'female';
-                
-                // Prioritize matching language + gender
-                let matchedVoice = voices.find(v => {
-                    const langMatch = v.lang.toLowerCase().includes(targetLang) || v.lang.toLowerCase().startsWith(targetLang.split('-')[0]);
-                    if (!langMatch) return false;
-                    const vName = v.name.toLowerCase();
-                    return isFemale ? (vName.includes('female') || vName.includes('zira') || vName.includes('samantha') || vName.includes('victoria') || vName.includes('aisha')) : (vName.includes('male') || vName.includes('david') || vName.includes('george') || vName.includes('bovi'));
-                });
-
-                if (!matchedVoice) {
-                    matchedVoice = voices.find(v => v.lang.toLowerCase().includes(targetLang) || v.lang.toLowerCase().startsWith(targetLang.split('-')[0])) || voices[0];
-                }
-                if (matchedVoice) utter.voice = matchedVoice;
+            const naturalVoice = getBestNaturalVoice(selectedPersona);
+            if (naturalVoice) {
+                utter.voice = naturalVoice;
             }
 
             utter.onend = () => {
