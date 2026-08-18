@@ -168,6 +168,24 @@ SYNTHETIC_SUBSTITUTES_DATABASE = {
 
 # ── HERB-DRUG INTERACTION KNOWLEDGE MATRIX & SIMULATOR ──
 INTERACTION_KNOWLEDGE_MATRIX = {
+    ("warfarin", "st. john"): {
+        "risk_level": "CRITICAL",
+        "risk_score": 98,
+        "color_code": "#e74c3c",
+        "badge_icon": "🔴",
+        "headline": "Potent CYP450 Induction & Anticoagulant Failure",
+        "pharmacokinetic_mechanism": "Hyperforin in St. John's Wort is a potent inducer of hepatic CYP2C9 and CYP3A4 enzymes, dramatically accelerating Warfarin metabolic clearance, leading to sub-therapeutic INR levels and catastrophic thrombosis or stroke.",
+        "clinical_guidance": "STRICTLY CONTRAINDICATED. Do NOT combine St. John's Wort with oral anticoagulants."
+    },
+    ("warfarin", "st. john's wort"): {
+        "risk_level": "CRITICAL",
+        "risk_score": 98,
+        "color_code": "#e74c3c",
+        "badge_icon": "🔴",
+        "headline": "Potent CYP450 Induction & Anticoagulant Failure",
+        "pharmacokinetic_mechanism": "Hyperforin in St. John's Wort is a potent inducer of hepatic CYP2C9 and CYP3A4 enzymes, dramatically accelerating Warfarin metabolic clearance, leading to sub-therapeutic INR levels and catastrophic thrombosis or stroke.",
+        "clinical_guidance": "STRICTLY CONTRAINDICATED. Do NOT combine St. John's Wort with oral anticoagulants."
+    },
     ("warfarin", "ginkgo"): {
         "risk_level": "CRITICAL",
         "risk_score": 95,
