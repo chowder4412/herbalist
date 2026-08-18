@@ -540,7 +540,7 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
                                     "- Use markdown formatting. Sign off as Dr. Herbalist with 🌿.\n"
                                 )
                                 followup_response = doctor.gemini_engine.generate_text(
-                                    followup_prompt, max_tokens=350, temperature=0.6
+                                    followup_prompt, max_tokens=1500, temperature=0.6
                                 )
                             except Exception as fe:
                                 print(f"[Herbalist AI] Follow-up AI generation notice: {fe}")
@@ -806,7 +806,7 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
                     "not on this off-topic subject. Invite them to ask a health concern, symptom, or herbal medicine question instead. "
                     "Keep it concise (2-3 sentences max). Format with markdown."
                 )
-                out_msg = doctor.gemini_engine.generate_text(prompt, max_tokens=160, temperature=0.6)
+                out_msg = doctor.gemini_engine.generate_text(prompt, max_tokens=1500, temperature=0.6)
             except Exception:
                 out_msg = None
 
@@ -934,13 +934,10 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
                     "You are Dr. Herbalist, a warm and knowledgeable integrative medical doctor "
                     "specializing in botanical phytotherapy. A user sent you the following message:\n\n"
                     f"\"{complaint}\"\n\n"
-                    "Respond helpfully and naturally as Dr. Herbalist. If this seems like a health concern "
-                    "or question about herbal medicine, address it warmly. If it's a greeting or casual "
-                    "message, respond in a friendly, inviting way that encourages them to share their "
-                    "health concern. Keep the response concise (3-5 sentences max). Use markdown formatting. "
-                    "Do NOT ask multiple questions — end with ONE gentle invitation to share their concern."
+                    "Respond helpfully, completely, and naturally as Dr. Herbalist. Address their question or concern thoroughly. "
+                    "Use markdown formatting. Always finish your thoughts with complete, well-formed sentences."
                 )
-                fallback_response = doctor.gemini_engine.generate_text(fallback_prompt, max_tokens=300, temperature=0.5)
+                fallback_response = doctor.gemini_engine.generate_text(fallback_prompt, max_tokens=1500, temperature=0.5)
             except Exception as fe:
                 print(f"[Herbalist AI] Conversational fallback notice: {fe}")
 

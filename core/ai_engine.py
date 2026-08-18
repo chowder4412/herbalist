@@ -19,14 +19,16 @@ class GeminiClinicalEngine:
         self.groq_models = ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.6-27b", "groq/compound"]
         self.gemini_disabled = False if (self.api_key and len(self.api_key) > 15) else True
 
-    def _call_groq_fallback(self, prompt: str, is_json: bool = False, max_tokens: int = 1024, temperature: float = 0.2) -> Optional[Any]:
+    def _call_groq_fallback(self, prompt: str, is_json: bool = False, max_tokens: int = 1500, temperature: float = 0.2) -> Optional[Any]:
         """
-        Automatic Failover Engine using Groq Cloud (Llama 3.3 70B / Llama 3.1 8B).
-        Triggers automatically if Gemini API key is missing or hits HTTP 429 rate limit.
+        Automatic Failover Engine using Groq Cloud (openai/gpt-oss-120b, openai/gpt-oss-20b, qwen/qwen3.6-27b).
+        Triggers automatically if Gemini API key is missing or hits rate limits.
         """
         groq_key = self.groq_api_key or os.environ.get("GROQ_API_KEY", "")
         if not groq_key:
             return None
+
+        actual_max_tokens = max(max_tokens, 1200)
 
         for model in self.groq_models:
             url = "https://api.groq.com/openai/v1/chat/completions"
@@ -34,7 +36,7 @@ class GeminiClinicalEngine:
                 "model": model,
                 "messages": [{"role": "user", "content": prompt}],
                 "temperature": temperature,
-                "max_tokens": max_tokens
+                "max_tokens": actual_max_tokens
             }
             if is_json:
                 payload["response_format"] = {"type": "json_object"}
@@ -86,7 +88,7 @@ class GeminiClinicalEngine:
 
             payload = {
                 "contents": [{"role": "user", "parts": [{"text": system_instruction}]}],
-                "generationConfig": {"temperature": 0.2, "topP": 0.95, "maxOutputTokens": 1024}
+                "generationConfig": {"temperature": 0.2, "topP": 0.95, "maxOutputTokens": 1500}
             }
             data_bytes = json.dumps(payload).encode('utf-8')
 
@@ -94,7 +96,7 @@ class GeminiClinicalEngine:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.api_key}"
                 req = urllib.request.Request(url, data=data_bytes, headers={'Content-Type': 'application/json'})
                 try:
-                    with urllib.request.urlopen(req, timeout=5) as resp:
+                    with urllib.request.urlopen(req, timeout=8) as resp:
                         result = json.loads(resp.read().decode('utf-8'))
                         text_content = result['candidates'][0]['content']['parts'][0]['text']
                         clean_json = text_content.strip()
@@ -115,17 +117,18 @@ class GeminiClinicalEngine:
                 except Exception as e:
                     print(f"[Gemini Clinical Engine] Exception on model {model}: {e}")
 
-        return self._call_groq_fallback(system_instruction, is_json=True, max_tokens=1024, temperature=0.2)
+        return self._call_groq_fallback(system_instruction, is_json=True, max_tokens=1500, temperature=0.2)
 
-    def generate_text(self, prompt: str, max_tokens: int = 800, temperature: float = 0.4) -> Optional[str]:
+    def generate_text(self, prompt: str, max_tokens: int = 1500, temperature: float = 0.4) -> Optional[str]:
         """
         Plain conversational text generation.
         Triggers Groq failover if Gemini is rate-limited or unavailable.
         """
+        actual_max_tokens = max(max_tokens, 1200)
         if self.api_key and not self.gemini_disabled:
             payload = {
                 "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-                "generationConfig": {"temperature": temperature, "topP": 0.95, "maxOutputTokens": max_tokens}
+                "generationConfig": {"temperature": temperature, "topP": 0.95, "maxOutputTokens": actual_max_tokens}
             }
             data_bytes = json.dumps(payload).encode('utf-8')
 
@@ -133,7 +136,7 @@ class GeminiClinicalEngine:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.api_key}"
                 req = urllib.request.Request(url, data=data_bytes, headers={'Content-Type': 'application/json'})
                 try:
-                    with urllib.request.urlopen(req, timeout=10) as resp:
+                    with urllib.request.urlopen(req, timeout=8) as resp:
                         result = json.loads(resp.read().decode('utf-8'))
                         return result['candidates'][0]['content']['parts'][0]['text'].strip()
                 except urllib.error.HTTPError as he:
@@ -149,9 +152,9 @@ class GeminiClinicalEngine:
                 except Exception as e:
                     print(f"[Gemini Text Engine] Exception on {model}: {e}")
 
-        return self._call_groq_fallback(prompt, is_json=False, max_tokens=max_tokens, temperature=temperature)
+        return self._call_groq_fallback(prompt, is_json=False, max_tokens=actual_max_tokens, temperature=temperature)
 
-    def stream_generate_text(self, prompt: str, max_tokens: int = 800, temperature: float = 0.4):
+    def stream_generate_text(self, prompt: str, max_tokens: int = 1500, temperature: float = 0.4):
         """
         Yields text tokens in real-time for live typewriter streaming.
         Supports Groq streaming API and Gemini streamGenerateContent API.

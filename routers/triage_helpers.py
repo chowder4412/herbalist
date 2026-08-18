@@ -702,13 +702,14 @@ def generate_knowledge_medical_answer(
         f"   - 🍃 **Best Natural & Herbal Remedies**: Mention 3-4 top proven herbs with their common names and explain in plain words how each one helps (e.g. soothing the skin, stopping itching, cooling fever, easing digestion, fighting bacteria).\n"
         f"   - 💡 **Simple Home Care Tips**: Practical, everyday things the person can do right now at home (e.g. food to eat or avoid, cool water, rest, gentle hygiene).\n"
         f"   - ⚠️ **When to Seek Medical Help**: Simple, clear warning signs that mean they should visit a hospital or clinic.\n"
-        f"3. WARM NEXT STEP: Conclude with an open, caring question asking if they or a family member are experiencing this right now, inviting them to share more details if they want a step-by-step personalized home recipe with exact measurements.\n\n"
+        f"3. WARM NEXT STEP: Conclude with an open, caring question asking if they or a family member are experiencing this right now, inviting them to share more details if they want a step-by-step personalized home recipe with exact measurements.\n"
+        f"4. COMPLETE THOUGHTS: Always complete all paragraphs and sentences fully. Never stop in the middle of a sentence.\n\n"
         f"Format with clean Markdown headers (##), bold text, and bullet points."
     )
 
     if doctor and getattr(doctor, 'gemini_engine', None):
         try:
-            ai_msg = doctor.gemini_engine.generate_text(prompt, max_tokens=900, temperature=0.5)
+            ai_msg = doctor.gemini_engine.generate_text(prompt, max_tokens=1500, temperature=0.5)
             if ai_msg and len(ai_msg.strip()) > 50:
                 return f"{emergency_prefix}{ai_msg.strip()}"
         except Exception as ge:
@@ -882,13 +883,13 @@ def generate_conversational_doctor_response(
         f"1. Respond with genuine clinical warmth, empathy, and logical medical reasoning reflecting the chosen modality.\n"
         f"2. Validate what the patient stated, connecting their symptoms or answers to physiological mechanisms when appropriate.\n"
         f"3. Seamlessly ask the next clinical question ('{target_goal}') in a natural, fluid, conversational way without sounding like a static form.\n"
-        f"4. Keep the response concise (2 to 4 sentences max). Use markdown formatting.\n"
+        f"4. Always complete all sentences and thoughts fully. Never stop in the middle of a sentence. Use markdown formatting.\n"
         f"5. Start directly with your doctor response (e.g. '🩺 **Dr. Aisha**: ...', '🎤 **Dr. Bovi**: ...', or '🩺 **Dr. Herbalist**: ...'). Do NOT include meta text, labels, or technical IDs."
     )
     
     if doctor and getattr(doctor, 'gemini_engine', None):
         try:
-            ai_msg = doctor.gemini_engine.generate_text(prompt, max_tokens=350, temperature=0.6)
+            ai_msg = doctor.gemini_engine.generate_text(prompt, max_tokens=1500, temperature=0.6)
             if ai_msg and len(ai_msg.strip()) > 10:
                 return f"{emergency_prefix}{ai_msg.strip()}"
         except Exception as ge:
