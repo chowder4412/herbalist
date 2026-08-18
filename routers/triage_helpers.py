@@ -208,6 +208,22 @@ class ComplaintClassifier:
         "constipation", "bloating", "indigestion", "heartburn", "migraine", "arthritis", "stiffness"
     ]
 
+    OUT_OF_DOMAIN_PATTERNS = [
+        "crypto", "bitcoin", "trading", "bot", "stock", "forex", "python", "javascript",
+        "code", "coding", "software", "football", "soccer", "champions league", "premier league",
+        "ronaldo", "messi", "politics", "president", "election", "weather", "forecast",
+        "cake", "movie", "song", "lyrics", "car repair", "engine", "homework", "math",
+        "calculate", "who is the richest", "joke", "tell me a joke"
+    ]
+
+    BOTANICAL_TERMS = [
+        "herb", "herbal", "plant", "plants", "leaf", "leaves", "root", "roots", "bark", "seed", "seeds",
+        "tea", "tincture", "decoction", "bitter leaf", "vernonia", "moringa", "neem", "turmeric",
+        "curcumin", "ginger", "garlic", "hibiscus", "zobo", "ashwagandha", "ginseng", "tulsi",
+        "aloe", "guava", "papaya", "pawpaw", "eucalyptus", "feverfew", "ginkgo", "milk thistle",
+        "valerian", "chamomile", "peppermint", "clove", "cinnamon", "cymbopogon", "lemongrass"
+    ]
+
     @classmethod
     def extract_demographics(cls, text: str) -> dict:
         import re
@@ -254,8 +270,10 @@ class ComplaintClassifier:
             "what are the herbal remedies for", "what is the herbal remedy for", "what are the herbal treatments for",
             "what are the herbs to treat", "what is the best herb for", "what is the best medicine for",
             "what is", "what are", "what's", "whats", "how to treat", "how to cure", "how to manage", "how do you treat",
-            "medication for", "medicine for", "remedy for", "treatment for", "cure for", "symptoms of", "symptom of",
-            "herb for", "herbs for", "plant for", "plants for", "tell me about", "explain", "describe", "what causes"
+            "how should i prepare", "how do i prepare", "how to prepare", "how to take", "can i take", "is it safe to",
+            "is it safe", "tell me about", "tell me", "what about", "medication for", "medicine for", "remedy for",
+            "treatment for", "cure for", "symptoms of", "symptom of", "herb for", "herbs for", "plant for", "plants for",
+            "explain", "describe", "what causes"
         ]:
             if t.startswith(prefix):
                 t = t[len(prefix):].strip()
@@ -271,6 +289,11 @@ class ComplaintClassifier:
         if c_clean in cls.GREETING_PATTERNS or any(c_clean == g or (c_clean.startswith(g + " ") and len(c_clean.split()) <= 3) for g in cls.GREETING_PATTERNS):
             return {"category": "greeting", "condition_topic": "", "source": "greeting_rule"}
 
+        # Fast Check: Out of Domain / Non-Medical
+        has_health_kw = any(w in c_clean for w in cls.SYMPTOM_TERMS) or any(b in c_clean for b in cls.BOTANICAL_TERMS)
+        if any(ood in c_clean for ood in cls.OUT_OF_DOMAIN_PATTERNS) and not has_health_kw:
+            return {"category": "out_of_domain", "condition_topic": "", "source": "out_of_domain_rule"}
+
         # Fast Check: Demographics & Profile Introductions (e.g. "I am 18 years old", "I am a male")
         demographics = cls.extract_demographics(complaint)
         has_symptom_kw = any(w in c_clean for w in cls.SYMPTOM_TERMS)
@@ -281,6 +304,18 @@ class ComplaintClassifier:
                 "condition_topic": "",
                 "demographics": demographics,
                 "source": "demographics_rule"
+            }
+
+        # Fast Check: Botanical Knowledge & Remedy Inquiries
+        has_botanical = any(b in c_clean for b in cls.BOTANICAL_TERMS)
+        has_knowledge_pattern = any(p in c_clean for p in cls.KNOWLEDGE_PATTERNS) or any(c_clean.startswith(p) for p in ["tell me", "what", "how", "can i", "is it safe"])
+
+        if (has_botanical or has_knowledge_pattern) and not any(p in c_clean for p in cls.SYMPTOM_PATTERNS):
+            return {
+                "category": "knowledge",
+                "condition_topic": extracted_topic or complaint.strip(),
+                "demographics": demographics,
+                "source": "botanical_knowledge_rule"
             }
 
         # Layer 1: Primary Cognitive Reasoning Engine (Gemini 2.0 Flash + Groq Llama 3.3 70B failover)
@@ -832,27 +867,54 @@ def generate_conversational_doctor_response(
             print(f"[Herbalist AI] Conversational AI reasoning notice: {ge}")
 
     # If target_goal is a welcome or greeting
+    # Resolve doctor title and icon based on modality / persona
+    mod_low = modality.lower()
+    if "pidgin" in mod_low or "bovi" in mod_low or "pcm" in mod_low:
+        doctor_title = "Dr. Bovi"
+        doctor_icon = "🎤"
+    elif "nigerian" in mod_low or "aisha" in mod_low:
+        doctor_title = "Dr. Aisha"
+        doctor_icon = "🩺"
+    elif "ayurveda" in mod_low or "rajesh" in mod_low or "india" in mod_low:
+        doctor_title = "Vaidya Dr. Rajesh"
+        doctor_icon = "🕉️"
+    elif "swahili" in mod_low or "amani" in mod_low:
+        doctor_title = "Dkt. Amani"
+        doctor_icon = "🌴"
+    else:
+        doctor_title = "Dr. Herbalist"
+        doctor_icon = "🩺"
+
     is_greeting_goal = target_goal.startswith("Welcome") or "greeting" in target_goal.lower() or patient_message.strip().lower() in ComplaintClassifier.GREETING_PATTERNS
-    doctor_title = "Dr. Aisha" if "nigerian" in modality.lower() else "Dr. Herbalist"
     user_greet = f" {patient_username}" if (patient_username and patient_username not in ("PATIENT_GUEST", "PATIENT_ACTIVE")) else ""
 
     if is_greeting_goal:
+        if doctor_title == "Dr. Bovi":
+            return (
+                f"{emergency_prefix}🎤 **Dr. Bovi**: How body{user_greet}? Welcome to Herbalist AI! 🌿\n\n"
+                f"I be your herbal medical doctor wey sabi correct natural roots and herbs well well. "
+                f"Wetin dey do your body today? Tell me how you dey feel or any herbal remedy wey you wan ask about."
+            )
         return (
-            f"{emergency_prefix}🩺 **{doctor_title}**: Hello{user_greet}! Welcome to Herbalist AI. 🌿\n\n"
+            f"{emergency_prefix}{doctor_icon} **{doctor_title}**: Hello{user_greet}! Welcome to Herbalist AI. 🌿\n\n"
             f"I am your Integrative Medical Doctor and Botanical Phytotherapy Specialist. "
             f"How can I assist you today? Please feel free to describe any symptoms, health goals, or questions about natural herbal remedies."
         )
 
     if "introduced their profile details" in target_goal or "Acknowledge their profile" in target_goal:
-        # Extract demographic mention if available
         import re
         m_age = re.search(r"(\d{1,2})\s*years old", target_goal)
         age_str = f"that you are {m_age.group(1)} years old" if m_age else "your details"
+        if doctor_title == "Dr. Bovi":
+            return (
+                f"{emergency_prefix}🎤 **Dr. Bovi**: I hear you{user_greet}! I don take note say you be {m_age.group(1) if m_age else ''} years. 🌿\n\n"
+                f"Wetin dey worry your body today? Feel free to tell me wetin you dey experience (like fever, stomach pain, headache) or any leaf/root wey you wan know about."
+            )
         return (
-            f"{emergency_prefix}🩺 **{doctor_title}**: Thank you{user_greet}! I have noted {age_str}. 🌿\n\n"
+            f"{emergency_prefix}{doctor_icon} **{doctor_title}**: Thank you{user_greet}! I have noted {age_str}. 🌿\n\n"
             f"What health symptoms, discomfort, or wellness goals bring you in today? "
             f"Please feel free to describe how you are feeling (e.g. fever, headaches, stomach pain) or ask any herbal medicine question."
         )
 
     clean_goal = target_goal.strip()
-    return f"{emergency_prefix}🩺 **{doctor_title}**: Thank you for that detail. {clean_goal}"
+    return f"{emergency_prefix}{doctor_icon} **{doctor_title}**: Thank you for that detail. {clean_goal}"

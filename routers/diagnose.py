@@ -853,27 +853,39 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
         }
 
     # Unclear Fallback
-    if query_category == "unclear" and doctor.gemini_engine.api_key:
-        try:
-            fallback_prompt = (
-                "You are Dr. Herbalist, a warm and knowledgeable integrative medical doctor "
-                "specializing in botanical phytotherapy. A user sent you the following message:\n\n"
-                f"\"{complaint}\"\n\n"
-                "Respond helpfully and naturally as Dr. Herbalist. If this seems like a health concern "
-                "or question about herbal medicine, address it warmly. If it's a greeting or casual "
-                "message, respond in a friendly, inviting way that encourages them to share their "
-                "health concern. Keep the response concise (3-5 sentences max). Use markdown formatting. "
-                "Do NOT ask multiple questions — end with ONE gentle invitation to share their concern."
+    if query_category == "unclear":
+        fallback_response = None
+        if doctor and getattr(doctor, 'gemini_engine', None) and doctor.gemini_engine.api_key:
+            try:
+                fallback_prompt = (
+                    "You are Dr. Herbalist, a warm and knowledgeable integrative medical doctor "
+                    "specializing in botanical phytotherapy. A user sent you the following message:\n\n"
+                    f"\"{complaint}\"\n\n"
+                    "Respond helpfully and naturally as Dr. Herbalist. If this seems like a health concern "
+                    "or question about herbal medicine, address it warmly. If it's a greeting or casual "
+                    "message, respond in a friendly, inviting way that encourages them to share their "
+                    "health concern. Keep the response concise (3-5 sentences max). Use markdown formatting. "
+                    "Do NOT ask multiple questions — end with ONE gentle invitation to share their concern."
+                )
+                fallback_response = doctor.gemini_engine.generate_text(fallback_prompt, max_tokens=300, temperature=0.5)
+            except Exception as fe:
+                print(f"[Herbalist AI] Conversational fallback notice: {fe}")
+
+        has_symptoms = any(w in complaint_clean for w in ComplaintClassifier.SYMPTOM_TERMS) or any(p in complaint_clean for p in ComplaintClassifier.SYMPTOM_PATTERNS)
+        if not fallback_response and not has_symptoms:
+            doctor_title = "Dr. Aisha" if "nigerian" in (body.clinical_modality or "").lower() else "Dr. Herbalist"
+            fallback_response = (
+                f"{emergency_prefix}🩺 **{doctor_title}**: Hello! I am here to assist you with medical consultations, natural herbal remedies, and plant pharmacopeia guidance. 🌿\n\n"
+                f"Could you please share what symptoms or health questions you would like to explore today? For example, feel free to describe how your body is feeling or ask about any medicinal herb."
             )
-            fallback_response = doctor.gemini_engine.generate_text(fallback_prompt, max_tokens=300, temperature=0.5)
-            if fallback_response:
-                return {
-                    "status": "success",
-                    "is_greeting": True,
-                    "conversational_message": fallback_response
-                }
-        except Exception as fe:
-            print(f"[Herbalist AI] Conversational fallback notice: {fe}")
+
+        if fallback_response and not has_symptoms:
+            return {
+                "status": "success",
+                "is_greeting": True,
+                "conversational_message": fallback_response,
+                "follow_up_suggestions": ["I have a fever and body weakness", "Stomach ulcer and indigestion", "Herbs for energy and sleep", "High blood pressure support"]
+            }
 
     # Detailed clinical story
     complaint_words = complaint.strip().split()
