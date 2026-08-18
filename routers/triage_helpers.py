@@ -688,22 +688,45 @@ def generate_knowledge_medical_answer(
             f"patient's latest message directly.\n\n"
         )
 
+    # Check if query involves synthetic drug substitution or drug interactions
+    substitute_context = ""
+    try:
+        from synthetic_substitutes_engine import get_botanical_substitute, check_herb_drug_interaction
+        q_lower = query.lower()
+        for drug_k in ["vitamin c", "ascorbic acid", "metformin", "lisinopril", "aspirin", "amoxicillin", "paracetamol", "metronidazole", "omeprazole", "atorvastatin", "tylenol", "flagyl"]:
+            if drug_k in q_lower or drug_k in condition_topic.lower():
+                sub = get_botanical_substitute(drug_k)
+                if sub:
+                    sub_herbs = ", ".join([f"{s['herb_name']} ({s.get('primary_bioactive', '')})" for s in sub.get('botanical_substitutes', [])])
+                    substitute_context = (
+                        f"\nHERBALIST AI SYNTHETIC DRUG SUBSTITUTION INTELLIGENCE:\n"
+                        f"- Target Pharmaceutical Drug: {sub['synthetic_name']} ({sub['drug_class']})\n"
+                        f"- Verified Botanical Substitutes in System: {sub_herbs}\n"
+                        f"- Clinical Mechanism Note: Whole natural botanicals (e.g. fresh oranges, Amla, Camu Camu) provide natural Vitamin C with bioflavonoids (hesperidin, rutin) that enhance stability and absorption compared to isolated synthetic ascorbic acid.\n"
+                        f"- Clinical Dosing Guidance: For daily health & maintenance, whole plant sources are superior. For acute high-dose clinical prescriptions, explain how to transition safely under clinical supervision.\n"
+                    )
+                    break
+    except Exception as se:
+        print(f"[Herbalist AI] Substitute lookup notice: {se}")
+
     prompt = (
-        f"You are Dr. Herbalist, a friendly, warm, and highly skilled Senior Integrative Medical Doctor & Botanical Specialist.\n"
+        f"You are Herbalist AI (Dr. Herbalist), the world's leading Integrative Medical Doctor and Botanical Phytotherapy Specialist.\n"
         f"You are speaking directly with patient '{patient_username or 'there'}'.\n\n"
         f"{history_context}"
         f"PATIENT'S QUESTION:\n\"{query}\"\n\n"
         f"TOPIC:\n{condition_topic.title()}\n\n"
+        f"{substitute_context}"
         f"RELEVANT HERBS IN KNOWLEDGE BASE:\n{herbs_summary if herbs_summary else 'General Botanical Herbs'}\n\n"
         f"CRITICAL COMMUNICATION GUIDELINES:\n"
         f"1. RELATABLE & SIMPLE LANGUAGE: Write in plain, everyday English that is crystal clear, empathetic, and easy to understand for any ordinary reader. Strictly avoid heavy, intimidating medical jargon (e.g. write 'soothes swelling and fights germs' instead of 'downregulates inflammatory cascades', write 'balances body temperature' instead of 'thermal dysregulation').\n"
-        f"2. CLEAR, FRIENDLY STRUCTURE:\n"
-        f"   - 🌿 **What is happening in the body**: Explain what causes this and what is happening in 2-3 simple, comforting sentences.\n"
-        f"   - 🍃 **Best Natural & Herbal Remedies**: Mention 3-4 top proven herbs with their common names and explain in plain words how each one helps (e.g. soothing the skin, stopping itching, cooling fever, easing digestion, fighting bacteria).\n"
-        f"   - 💡 **Simple Home Care Tips**: Practical, everyday things the person can do right now at home (e.g. food to eat or avoid, cool water, rest, gentle hygiene).\n"
+        f"2. DIRECT & DEFINITIVE ANSWER: Start by directly and clearly answering the patient's exact question (e.g. if they ask if orange can replace vitamin C, give a clear, direct answer immediately in the opening paragraph).\n"
+        f"3. CLEAR, FRIENDLY STRUCTURE:\n"
+        f"   - 🌿 **What is happening in the body**: Explain the physiological mechanisms in 2-3 simple, comforting sentences.\n"
+        f"   - 🍃 **Best Natural & Herbal Remedies**: Mention 3-4 top proven botanicals with their common names and explain in plain words how each one helps.\n"
+        f"   - 💡 **Simple Home Care Tips**: Practical, everyday things the person can do right now at home (e.g. food to eat or avoid, hydration, preparation instructions).\n"
         f"   - ⚠️ **When to Seek Medical Help**: Simple, clear warning signs that mean they should visit a hospital or clinic.\n"
-        f"3. WARM NEXT STEP: Conclude with an open, caring question asking if they or a family member are experiencing this right now, inviting them to share more details if they want a step-by-step personalized home recipe with exact measurements.\n"
-        f"4. COMPLETE THOUGHTS: Always complete all paragraphs and sentences fully. Never stop in the middle of a sentence.\n\n"
+        f"4. COMPLETE THOUGHTS: Always complete all paragraphs and sentences fully. Never stop in the middle of a sentence.\n"
+        f"5. WARM NEXT STEP: Conclude with an open, caring invitation asking if they'd like a personalized daily routine or kitchen recipe.\n\n"
         f"Format with clean Markdown headers (##), bold text, and bullet points."
     )
 
