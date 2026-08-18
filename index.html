@@ -3947,9 +3947,22 @@
         window.currentClinicalModality = currentClinicalModality;
 
         /* ══════ CLIENT CHAT SESSION STORAGE (CHATGPT / GEMINI ARCHITECTURE) ══════ */
-        function getLocalChatSessions() {
+        function getActiveUserStorageKey() {
             try {
-                const raw = localStorage.getItem('herbalist_chat_sessions');
+                const u = currentUserState || JSON.parse(localStorage.getItem('herbalist_user') || 'null');
+                if (u && (u.id || u.uid || u.email)) {
+                    const cleanId = (u.id || u.uid || u.email).replace(/[^a-zA-Z0-9_]/g, '_');
+                    return `herbalist_chat_sessions_${cleanId}`;
+                }
+            } catch(e) {}
+            return null;
+        }
+
+        function getLocalChatSessions() {
+            const key = getActiveUserStorageKey();
+            if (!key) return {};
+            try {
+                const raw = localStorage.getItem(key);
                 return raw ? JSON.parse(raw) : {};
             } catch(e) {
                 return {};
@@ -3957,15 +3970,35 @@
         }
 
         function saveLocalChatSessions(sessions) {
+            const key = getActiveUserStorageKey();
+            if (!key) return;
             try {
-                localStorage.setItem('herbalist_chat_sessions', JSON.stringify(sessions));
+                localStorage.setItem(key, JSON.stringify(sessions));
             } catch(e) {
                 console.warn("[Local Sessions Save Notice]", e);
             }
         }
 
+        function formatDoctorBubbleHTML(messageText, followUpChips = [], isTriage = false) {
+            const renderedMsg = renderMarkdown(messageText || '');
+            const chipsHtml = (followUpChips && followUpChips.length > 0) ? renderFollowUpChipsHTML(followUpChips) : '';
+            const triageBadge = isTriage ? `<span style="font-size:11px;font-weight:700;color:var(--accent-green);background:rgba(46,204,113,0.15);padding:2px 8px;border-radius:10px;margin-left:6px;">Diagnostic Triage</span>` : '';
+            
+            return `
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.4 19 2c1 2 2 4.1 2 9 0 4.9-4 9-9 9z"></path></svg>
+                    <span style="font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;color:var(--accent-green);">Dr. Herbalist</span>
+                    ${triageBadge}
+                </div>
+                <div style="line-height:1.7;font-size:14.5px;color:#f4f9f5;">${renderedMsg}</div>
+                ${chipsHtml}
+            `;
+        }
+
         function persistActiveChatSession() {
             if (!currentSessionId || currentChatMessages.length === 0) return;
+            const userKey = getActiveUserStorageKey();
+            if (!userKey) return; // Guest consultations are not persisted into multi-session recents
             try {
                 const sessions = getLocalChatSessions();
                 let sessionTitle = "Botanical Consultation";
@@ -4008,13 +4041,23 @@
             const container = document.getElementById('recents-list');
             if (!container) return;
 
+            const userKey = getActiveUserStorageKey();
+            if (!userKey) {
+                // Guest / Unauthenticated: Show professional sign-in prompt
+                container.innerHTML = `
+                    <div style="color:var(--text-muted);font-size:12px;padding:16px 10px;text-align:center;line-height:1.5;background:rgba(255,255,255,0.02);border-radius:12px;border:1px dashed rgba(255,255,255,0.08);margin:4px;">
+                        <span style="font-size:18px;display:block;margin-bottom:4px;">🔒</span>
+                        <span style="display:block;color:rgba(255,255,255,0.7);font-size:11.5px;">Sign in to view your consultation history</span>
+                        <button onclick="openAuthModal('login')" style="margin-top:8px;background:rgba(46,204,113,0.15);border:1px solid var(--accent-green);color:var(--accent-green);padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">Sign In</button>
+                    </div>
+                `;
+                return;
+            }
+
             const localSessions = getLocalChatSessions();
             const localList = Object.values(localSessions).filter(s => s.messages && s.messages.length > 0);
 
-            // Merge local sessions and backend cases
             const mergedMap = new Map();
-
-            // Pinned first, then sorted by updatedAt desc
             localList.sort((a, b) => {
                 if (a.isPinned && !b.isPinned) return -1;
                 if (!a.isPinned && b.isPinned) return 1;
@@ -4044,9 +4087,8 @@
             }
 
             const items = Array.from(mergedMap.values());
-
             if (items.length === 0) {
-                container.innerHTML = '<div style="color:var(--text-muted);font-size:11px;padding:8px 12px;font-style:italic;">No past consultations yet. Start a consultation above!</div>';
+                container.innerHTML = '<div style="color:var(--text-muted);font-size:11px;padding:12px;text-align:center;font-style:italic;">No past consultations yet. Start a consultation above!</div>';
                 return;
             }
 
@@ -4113,7 +4155,7 @@
                 const cleanMessages = session.messages.filter(msg => {
                     if (!msg || !msg.html) return false;
                     if (msg.html.includes('typing-dots') || msg.html.includes('analyzing specimen & medical data')) return false;
-                    if (msg.html.includes('LIVE STREAM') && !msg.html.includes('stream-text-') && !msg.html.includes('Dr. Herbalist')) return false;
+                    if (msg.html.includes('LIVE STREAM') && !msg.html.includes('primary_diagnosis') && !msg.html.includes('metric-grid')) return false;
                     return true;
                 });
 
@@ -5114,9 +5156,6 @@
                                     }
                                 }
                             } else if (eventType === 'final_response' || eventType === 'final_prescription') {
-                                const badge = document.getElementById(`streaming-badge-${msgId}`);
-                                if (badge) badge.remove();
-
                                 if (sentenceSpeechBuffer.trim()) {
                                     enqueueStreamSentence(sentenceSpeechBuffer);
                                     sentenceSpeechBuffer = '';
@@ -5135,35 +5174,32 @@
                                 } else if (dataObj.is_triage_question) {
                                     showTriageProgress(dataObj.triage_phase);
                                     updateTriageStepper(dataObj.triage_phase);
-                                    const payloadEl = document.getElementById(`stream-payload-${msgId}`);
-                                    if (payloadEl) {
-                                        payloadEl.innerHTML = renderFollowUpChipsHTML(dataObj.follow_up_suggestions || ['The symptoms started 3 days ago.', 'Mild severity (4/10), no other meds.', 'I have a sensitive stomach.']);
+                                    const cleanHtml = formatDoctorBubbleHTML(dataObj.conversational_message || streamTextBuffer, dataObj.follow_up_suggestions, true);
+                                    const streamingBubble = document.getElementById(`bubble-inner-${msgId}`)?.closest('.chat-bubble');
+                                    if (streamingBubble) {
+                                        streamingBubble.innerHTML = cleanHtml;
                                     }
-                                    const bubbleInner = document.getElementById(`bubble-inner-${msgId}`);
-                                    if (bubbleInner) {
-                                        const bubbleCard = bubbleInner.closest('.chat-bubble') || bubbleInner;
-                                        currentChatMessages.push({ role: 'doctor', html: bubbleCard.innerHTML, timestamp: Date.now() });
-                                        persistActiveChatSession();
-                                    }
+                                    currentChatMessages.push({ role: 'doctor', html: cleanHtml, timestamp: Date.now() });
+                                    persistActiveChatSession();
+                                    return;
                                 } else if (dataObj.is_greeting || dataObj.is_knowledge_answer) {
-                                    const payloadEl = document.getElementById(`stream-payload-${msgId}`);
-                                    if (payloadEl) {
-                                        payloadEl.innerHTML = renderFollowUpChipsHTML(dataObj.follow_up_suggestions || ['I need a natural remedy for fever.', 'What herbs help with digestion?']);
+                                    const cleanHtml = formatDoctorBubbleHTML(dataObj.conversational_message || streamTextBuffer, dataObj.follow_up_suggestions, false);
+                                    const streamingBubble = document.getElementById(`bubble-inner-${msgId}`)?.closest('.chat-bubble');
+                                    if (streamingBubble) {
+                                        streamingBubble.innerHTML = cleanHtml;
                                     }
-                                    const bubbleInner = document.getElementById(`bubble-inner-${msgId}`);
-                                    if (bubbleInner) {
-                                        const bubbleCard = bubbleInner.closest('.chat-bubble') || bubbleInner;
-                                        currentChatMessages.push({ role: 'doctor', html: bubbleCard.innerHTML, timestamp: Date.now() });
-                                        persistActiveChatSession();
-                                    }
+                                    currentChatMessages.push({ role: 'doctor', html: cleanHtml, timestamp: Date.now() });
+                                    persistActiveChatSession();
+                                    return;
                                 }
                             } else if (eventType === 'done') {
-                                const badge = document.getElementById(`streaming-badge-${msgId}`);
-                                if (badge) badge.remove();
-                                const bubbleInner = document.getElementById(`bubble-inner-${msgId}`);
-                                if (bubbleInner && streamTextBuffer && !currentChatMessages.some(m => m.html && m.html.includes(streamTextBuffer.substring(0, 30)))) {
-                                    const bubbleCard = bubbleInner.closest('.chat-bubble') || bubbleInner;
-                                    currentChatMessages.push({ role: 'doctor', html: bubbleCard.innerHTML, timestamp: Date.now() });
+                                if (streamTextBuffer && !currentChatMessages.some(m => m.html && m.html.includes(streamTextBuffer.substring(0, 30)))) {
+                                    const cleanHtml = formatDoctorBubbleHTML(streamTextBuffer, ['I need a natural remedy for fever.', 'What herbs help with digestion?'], false);
+                                    const streamingBubble = document.getElementById(`bubble-inner-${msgId}`)?.closest('.chat-bubble');
+                                    if (streamingBubble) {
+                                        streamingBubble.innerHTML = cleanHtml;
+                                    }
+                                    currentChatMessages.push({ role: 'doctor', html: cleanHtml, timestamp: Date.now() });
                                     persistActiveChatSession();
                                 }
                             }
@@ -5622,7 +5658,10 @@
 
         async function loadRecentsFromBackend() {
             try {
-                const res = await fetch('/api/recents');
+                const token = localStorage.getItem('herbalist_jwt_token');
+                const headers = {};
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+                const res = await fetch('/api/recents', { headers, credentials: 'same-origin' });
                 if (res.ok) {
                     const data = await res.json();
                     renderRecentsList(data.recents || []);
@@ -8342,22 +8381,6 @@ ${recipeText}
             }
         }
 
-        function startNewChat() {
-            currentSessionId = null;
-            closeAllModals();
-            const feed = document.getElementById('chat-feed');
-            if (feed) {
-                feed.innerHTML = '';
-                feed.style.display = 'none';
-            }
-            const hero = document.getElementById('hero-welcome');
-            if (hero) hero.style.display = 'flex';
-            const stepper = document.getElementById('triage-stepper');
-            if (stepper) stepper.remove();
-            showSection('consultation');
-            loadRecentsFromBackend();
-        }
-
         /* ══════ Vision AI Scanner JS ══════ */
         function triggerFileInput() {
             document.getElementById('scanner-file-input').click();
@@ -10742,6 +10765,13 @@ ${recipeText}
                 if (heroTitle) {
                     heroTitle.innerText = 'What can I help with?';
                 }
+            }
+
+            // Refresh Recents sidebar strictly based on authenticated user context
+            if (user && (user.id || user.uid || user.email)) {
+                loadRecentsFromBackend();
+            } else {
+                renderRecentsList([]);
             }
         }
 
