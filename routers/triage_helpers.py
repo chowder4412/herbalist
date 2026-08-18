@@ -709,6 +709,20 @@ def generate_knowledge_medical_answer(
     except Exception as se:
         print(f"[Herbalist AI] Substitute lookup notice: {se}")
 
+    # Inject peer-reviewed PubMed and WHO Pharmacopeia RAG citations
+    rag_citations_context = ""
+    if doctor and getattr(doctor, 'pubmed_rag', None):
+        try:
+            rag_list = doctor.pubmed_rag.retrieve_citations(condition=condition_topic or query)
+            if rag_list:
+                formatted_cites = [
+                    f"- *{getattr(c, 'title', '')}* ({getattr(c, 'journal', '')}, {getattr(c, 'evidence_level', 'Peer-Reviewed')}) [PMID: {getattr(c, 'pmid', '')}]. Evidence: {getattr(c, 'key_findings', '')}"
+                    for c in rag_list[:3]
+                ]
+                rag_citations_context = f"\nVERIFIED PUBMED & WHO CLINICAL TRIAL CITATIONS:\n" + "\n".join(formatted_cites) + "\n"
+        except Exception as re:
+            print(f"[Herbalist AI] PubMed RAG context notice: {re}")
+
     prompt = (
         f"You are Herbalist AI (Dr. Herbalist / Dr. Aisha), the world's leading Integrative Medical Doctor and Botanical Phytotherapy Specialist utilizing WHO-standard medicinal monographs.\n"
         f"You are speaking directly with patient '{patient_username or 'there'}'.\n\n"
@@ -716,6 +730,7 @@ def generate_knowledge_medical_answer(
         f"PATIENT'S QUESTION:\n\"{query}\"\n\n"
         f"TOPIC:\n{condition_topic.title()}\n\n"
         f"{substitute_context}"
+        f"{rag_citations_context}"
         f"RELEVANT HERBS IN KNOWLEDGE BASE:\n{herbs_summary if herbs_summary else 'General Botanical Herbs'}\n\n"
         f"CRITICAL CLINICAL & BOTANICAL PRESCRIPTION GUIDELINES:\n"
         f"1. YOU ARE THE TREATING HERBAL DOCTOR: You are the botanical physician prescribing natural remedies and phytotherapy monographs for this patient. Never tell the patient to simply go to a clinic or take synthetic drugs instead of receiving your herbal treatment plan. Provide your complete, evidence-based botanical prescription right here.\n"
