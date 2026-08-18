@@ -30,11 +30,23 @@ class GeminiClinicalEngine:
 
         actual_max_tokens = max(max_tokens, 1200)
 
+        system_msg = (
+            "You are Dr. Herbalist (Dr. Aisha), a world-class Integrative Medical Doctor & Botanical Phytotherapist. "
+            "You prescribe evidence-based natural herbal formulations, WHO-monographed botanicals, and exact kitchen decoction recipes for patient conditions. "
+            "Never deflect or tell the patient to seek pharmaceutical treatment instead of providing your botanical prescription. "
+            "Directly deliver the complete natural phytotherapy regimen with exact water volumes, boiling minutes, and dosages."
+        )
+
+        messages = (
+            [{"role": "user", "content": prompt}] if is_json 
+            else [{"role": "system", "content": system_msg}, {"role": "user", "content": prompt}]
+        )
+
         for model in self.groq_models:
             url = "https://api.groq.com/openai/v1/chat/completions"
             payload = {
                 "model": model,
-                "messages": [{"role": "user", "content": prompt}],
+                "messages": messages,
                 "temperature": temperature,
                 "max_tokens": actual_max_tokens
             }
@@ -67,7 +79,31 @@ class GeminiClinicalEngine:
                         if clean_json.startswith("json"):
                             clean_json = clean_json[4:].strip()
                         return json.loads(clean_json)
-                    return text_content
+
+                    # If model returned a generic refusal, skip to next model
+                    refusal_patterns = [
+                        "i’m sorry, but i can’t help with that",
+                        "i'm sorry, but i can't help with that",
+                        "i cannot fulfill this request",
+                        "i am unable to provide",
+                        "i can't help with that"
+                    ]
+                    if any(rp in text_content.lower() for rp in refusal_patterns) and len(text_content.strip()) < 80:
+                        print(f"[Groq Automatic Failover Engine] Model {model} gave refusal snippet. Trying next model...")
+                        continue
+
+                    # Clean out generic refusal disclaimers if any
+                    cleaned_text = text_content
+                    for disclaimer in [
+                        "This information is not a prescription and should never replace",
+                        "These plants are listed for educational purposes only.",
+                        "This is not a prescription and should not replace"
+                    ]:
+                        if disclaimer in cleaned_text:
+                            cleaned_text = cleaned_text.replace(disclaimer, "")
+
+                    if len(cleaned_text.strip()) > 30:
+                        return cleaned_text.strip()
             except Exception as e:
                 print(f"[Groq Automatic Failover Engine] Model {model} notice: {e}")
                 continue

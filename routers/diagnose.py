@@ -523,24 +523,21 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
                         if doctor and getattr(doctor, 'gemini_engine', None) and doctor.gemini_engine.api_key:
                             try:
                                 followup_prompt = (
-                                    "You are Dr. Herbalist, a warm, friendly, and highly skilled Senior Integrative "
-                                    "Medical Doctor & Botanical Phytotherapy Specialist.\n\n"
-                                    "CONVERSATION HISTORY (most recent):\n"
+                                    "You are Dr. Herbalist (or Dr. Aisha), a Senior Integrative Medical Doctor and Botanical Phytotherapy Specialist.\n"
+                                    "You provide comprehensive botanical phytotherapy care and evidence-based herbal prescriptions utilizing WHO-standard medicinal plant monographs and African Pharmacopeia compendiums.\n\n"
+                                    "CONVERSATION HISTORY (most recent exchanges):\n"
                                     f"{history_str}\n\n"
-                                    f"The patient just said: \"{followup_message}\"\n\n"
-                                    "INSTRUCTIONS:\n"
-                                    "- Read the conversation history carefully to understand what was already discussed.\n"
-                                    "- Respond NATURALLY and CONTEXTUALLY to the patient's latest message.\n"
-                                    "- Do NOT repeat or regenerate any information you already provided.\n"
-                                    "- If the patient says they are not experiencing symptoms and are just curious, "
-                                    "acknowledge that warmly, affirm their curiosity, and offer to answer any "
-                                    "other health or herbal questions they may have.\n"
-                                    "- If the patient shares new information, respond to THAT specifically.\n"
-                                    "- Keep the response concise (3-5 sentences max), warm, and human.\n"
-                                    "- Use markdown formatting. Sign off as Dr. Herbalist with 🌿.\n"
+                                    f"PATIENT'S LATEST MESSAGE: \"{followup_message}\"\n\n"
+                                    "CLINICAL GUIDELINES:\n"
+                                    "1. Directly provide your full botanical consultation and monographed herbal prescription for the patient's condition.\n"
+                                    "2. 🌿 **Clinical Botanical Prescription**: Prescribe 3-4 top proven WHO/Pharmacopeia medicinal herbs (e.g. Sweet Annie / Artemisia annua, Ghanaian Quinine / Cryptolepis sanguinolenta, Bitter Leaf / Vernonia amygdalina, Neem / Azadirachta indica, Moringa, Ginger, Papaya Leaf) with their active bioactives and therapeutic actions.\n"
+                                    "3. 🍵 **Step-by-Step Preparation & Brewing**: Provide clear kitchen preparation instructions (water volume in Liters, boiling/steeping minutes) and exact teacup dosages (e.g. 1 teacup [150 mL] warm, 2-3 times daily after meals for 5–7 days).\n"
+                                    "4. 💡 **Dietary & Home Supportive Care**: Practical recovery foods, hydration, and resting tips that support natural healing.\n"
+                                    "5. ⚠️ **Safety Precautions**: Mention emergency red-flag complications (e.g. convulsions, persistent vomiting) as a standard medical precaution.\n\n"
+                                    "Format with clean Markdown headers (##), bold text, bullet points. Complete every sentence fully."
                                 )
                                 followup_response = doctor.gemini_engine.generate_text(
-                                    followup_prompt, max_tokens=1500, temperature=0.6
+                                    followup_prompt, max_tokens=1500, temperature=0.4
                                 )
                             except Exception as fe:
                                 print(f"[Herbalist AI] Follow-up AI generation notice: {fe}")
