@@ -3937,12 +3937,204 @@
 
         window.showToast = showToast;
 
+        let currentSelectedChatId = null;
         let currentSelectedChat = null;
-        let currentSessionId = null;
+        let currentChatMessages = [];
+        let currentSessionId = localStorage.getItem('herbalist_active_session_id') || ('chat_' + Date.now());
         let activeClinicalModality = (typeof localStorage !== 'undefined' && localStorage.getItem('herbalist_modality')) || 'auto';
         let currentClinicalModality = activeClinicalModality;
         window.activeClinicalModality = activeClinicalModality;
         window.currentClinicalModality = currentClinicalModality;
+
+        /* ══════ CLIENT CHAT SESSION STORAGE (CHATGPT / GEMINI ARCHITECTURE) ══════ */
+        function getLocalChatSessions() {
+            try {
+                const raw = localStorage.getItem('herbalist_chat_sessions');
+                return raw ? JSON.parse(raw) : {};
+            } catch(e) {
+                return {};
+            }
+        }
+
+        function saveLocalChatSessions(sessions) {
+            try {
+                localStorage.setItem('herbalist_chat_sessions', JSON.stringify(sessions));
+            } catch(e) {
+                console.warn("[Local Sessions Save Notice]", e);
+            }
+        }
+
+        function persistActiveChatSession() {
+            if (!currentSessionId || currentChatMessages.length === 0) return;
+            try {
+                const sessions = getLocalChatSessions();
+                let sessionTitle = "Botanical Consultation";
+
+                // Derive title from first user query or primary diagnosis
+                const firstUser = currentChatMessages.find(m => m.role === 'patient');
+                if (firstUser) {
+                    const cleanText = firstUser.html.replace(/<[^>]*>?/gm, '').replace(/🎙️|📄/g, '').trim();
+                    if (cleanText) {
+                        sessionTitle = cleanText.length > 32 ? cleanText.substring(0, 32) + '...' : cleanText;
+                    }
+                }
+
+                if (activePrescriptionPayload && activePrescriptionPayload.primary_diagnosis) {
+                    sessionTitle = activePrescriptionPayload.primary_diagnosis.length > 32 
+                        ? activePrescriptionPayload.primary_diagnosis.substring(0, 32) + '...' 
+                        : activePrescriptionPayload.primary_diagnosis;
+                }
+
+                const existing = sessions[currentSessionId] || {};
+                sessions[currentSessionId] = {
+                    id: currentSessionId,
+                    title: existing.isRenamed ? existing.title : sessionTitle,
+                    isRenamed: existing.isRenamed || false,
+                    isPinned: existing.isPinned || false,
+                    messages: currentChatMessages,
+                    prescription: activePrescriptionPayload || existing.prescription || null,
+                    updatedAt: Date.now()
+                };
+
+                saveLocalChatSessions(sessions);
+                localStorage.setItem('herbalist_active_session_id', currentSessionId);
+                renderRecentsList();
+            } catch(e) {
+                console.warn("[Persist Chat Session Notice]", e);
+            }
+        }
+
+        function renderRecentsList(backendCases = []) {
+            const container = document.getElementById('recents-list');
+            if (!container) return;
+
+            const localSessions = getLocalChatSessions();
+            const localList = Object.values(localSessions).filter(s => s.messages && s.messages.length > 0);
+
+            // Merge local sessions and backend cases
+            const mergedMap = new Map();
+
+            // Pinned first, then sorted by updatedAt desc
+            localList.sort((a, b) => {
+                if (a.isPinned && !b.isPinned) return -1;
+                if (!a.isPinned && b.isPinned) return 1;
+                return (b.updatedAt || 0) - (a.updatedAt || 0);
+            });
+
+            localList.forEach(s => {
+                mergedMap.set(s.id, {
+                    id: s.id,
+                    title: s.title || 'Botanical Consultation',
+                    isLocal: true,
+                    isPinned: s.isPinned || false
+                });
+            });
+
+            if (Array.isArray(backendCases)) {
+                backendCases.forEach(b => {
+                    if (!mergedMap.has(b.case_id)) {
+                        mergedMap.set(b.case_id, {
+                            id: b.case_id,
+                            title: b.title || b.diagnosis || 'Clinical Case',
+                            isLocal: false,
+                            isPinned: false
+                        });
+                    }
+                });
+            }
+
+            const items = Array.from(mergedMap.values());
+
+            if (items.length === 0) {
+                container.innerHTML = '<div style="color:var(--text-muted);font-size:11px;padding:8px 12px;font-style:italic;">No past consultations yet. Start a consultation above!</div>';
+                return;
+            }
+
+            container.innerHTML = items.map(item => {
+                const isActive = item.id === currentSessionId;
+                return `
+                    <div class="recent-item ${isActive ? 'active' : ''}" onclick="loadRecentConsultation('${item.id}')" style="cursor:pointer; display:flex; align-items:center; justify-content:space-between; padding:8px 12px; border-radius:10px; margin-bottom:2px; ${isActive ? 'background:rgba(46,204,113,0.15); border:1px solid rgba(46,204,113,0.35); color:#fff;' : ''}">
+                        <div style="display:flex; align-items:center; gap:6px; min-width:0; flex:1;">
+                            <span style="font-size:12px; flex-shrink:0;">${item.isPinned ? '📌' : '💬'}</span>
+                            <span class="recent-item-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:12.5px;">${item.title}</span>
+                        </div>
+                        <span class="three-dots" onclick="openContextMenu(event, '${item.id}', '${item.title.replace(/'/g, "\\'")}')" style="padding:2px 6px; border-radius:6px; opacity:0.75; flex-shrink:0;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.75'">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
+                        </span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function startNewChat() {
+            // 1. If active chat had messages, ensure it is safely committed to storage
+            if (currentChatMessages.length > 0) {
+                persistActiveChatSession();
+            }
+
+            // 2. Generate a fresh session ID
+            currentSessionId = 'chat_' + Date.now();
+            currentChatMessages = [];
+            activePrescriptionPayload = null;
+            localStorage.setItem('herbalist_active_session_id', currentSessionId);
+            try { localStorage.removeItem('herbalist_active_cook_rx'); } catch(e){}
+
+            // 3. Reset feed and bring back hero welcome
+            const feed = document.getElementById('chat-feed');
+            if (feed) {
+                feed.innerHTML = '';
+                feed.style.display = 'none';
+            }
+            const hero = document.getElementById('hero-welcome');
+            if (hero) hero.style.display = 'flex';
+
+            const scrollAreaEl = document.getElementById('view-scroll-area');
+            if (scrollAreaEl) scrollAreaEl.classList.add('hero-mode');
+
+            const input = document.getElementById('user-input');
+            if (input) {
+                input.value = '';
+                input.focus();
+            }
+
+            renderRecentsList();
+            showToast('✨ Started new consultation session', 'info', 2200);
+        }
+
+        function restoreActiveSessionOnBoot() {
+            const savedSessionId = localStorage.getItem('herbalist_active_session_id');
+            if (!savedSessionId) return false;
+
+            const sessions = getLocalChatSessions();
+            const session = sessions[savedSessionId];
+
+            if (session && session.messages && session.messages.length > 0) {
+                currentSessionId = savedSessionId;
+                currentChatMessages = session.messages;
+                activePrescriptionPayload = session.prescription || null;
+
+                const hero = document.getElementById('hero-welcome');
+                if (hero) hero.style.display = 'none';
+
+                const feed = document.getElementById('chat-feed');
+                if (feed) {
+                    feed.style.display = 'flex';
+                    feed.innerHTML = '';
+                }
+
+                const scrollAreaEl = document.getElementById('view-scroll-area');
+                if (scrollAreaEl) scrollAreaEl.classList.remove('hero-mode');
+
+                // Replay messages without re-persisting
+                currentChatMessages.forEach(msg => {
+                    appendBubble(msg.role, msg.html, true);
+                });
+
+                renderRecentsList();
+                return true;
+            }
+            return false;
+        }
 
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('collapsed');
@@ -4052,7 +4244,6 @@
             }
         }
 
-
         function openClinicalModal() {
             document.getElementById('clinical-modal').classList.add('active');
         }
@@ -4065,37 +4256,90 @@
             closeClinicalModal();
         }
 
-        function openContextMenu(e, chatTitle) {
-            e.stopPropagation();
+        function openContextMenu(e, sessionId, chatTitle) {
+            if (e && e.stopPropagation) e.stopPropagation();
+            currentSelectedChatId = sessionId;
             currentSelectedChat = chatTitle;
             const menu = document.getElementById('context-menu');
-            menu.style.top = e.clientY + 'px';
-            menu.style.left = (e.clientX + 10) + 'px';
-            menu.classList.add('active');
+            if (menu) {
+                menu.style.top = (e.clientY || 100) + 'px';
+                menu.style.left = ((e.clientX || 50) + 10) + 'px';
+                menu.classList.add('active');
+            }
         }
 
         document.addEventListener('click', () => {
-            document.getElementById('context-menu').classList.remove('active');
+            const menu = document.getElementById('context-menu');
+            if (menu) menu.classList.remove('active');
         });
 
-        function shareConversation() {
-            alert(`Sharing consultation: "${currentSelectedChat}"`);
+        async function shareConversation() {
+            const sessions = getLocalChatSessions();
+            const session = sessions[currentSelectedChatId];
+            const title = session ? session.title : (currentSelectedChat || 'Herbalist Consultation');
+            
+            const shareText = `🌿 Official Herbalist AI Consultation: "${title}"\n🩺 Consulted with Dr. Herbalist at https://herbalist-dumq.onrender.com`;
+            
+            if (navigator.share) {
+                try {
+                    await navigator.share({ title: `Herbalist AI - ${title}`, text: shareText, url: window.location.origin });
+                    showToast('📲 Consultation shared successfully!', 'success');
+                    return;
+                } catch(e) {}
+            }
+
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(shareText);
+                showToast('📋 Consultation summary copied to clipboard!', 'success');
+            } else {
+                showToast(`Sharing: "${title}"`, 'info');
+            }
         }
 
         function pinConversation() {
-            alert(`Pinned consultation: "${currentSelectedChat}"`);
+            if (!currentSelectedChatId) return;
+            const sessions = getLocalChatSessions();
+            if (sessions[currentSelectedChatId]) {
+                sessions[currentSelectedChatId].isPinned = !sessions[currentSelectedChatId].isPinned;
+                saveLocalChatSessions(sessions);
+                renderRecentsList();
+                showToast(sessions[currentSelectedChatId].isPinned ? '📌 Consultation pinned to top' : 'Unpinned consultation', 'success');
+            }
         }
 
         function renameConversation() {
-            const newName = prompt("Rename consultation:", currentSelectedChat);
-            if (newName) {
-                alert(`Renamed to: ${newName}`);
+            if (!currentSelectedChatId) return;
+            const sessions = getLocalChatSessions();
+            const session = sessions[currentSelectedChatId];
+            const oldName = session ? session.title : (currentSelectedChat || '');
+            const newName = prompt("Rename consultation:", oldName);
+            if (newName && newName.trim()) {
+                if (sessions[currentSelectedChatId]) {
+                    sessions[currentSelectedChatId].title = newName.trim();
+                    sessions[currentSelectedChatId].isRenamed = true;
+                    saveLocalChatSessions(sessions);
+                }
+                renderRecentsList();
+                showToast('✏️ Consultation renamed successfully', 'success');
             }
         }
 
         function deleteConversation() {
-            if (confirm(`Delete consultation "${currentSelectedChat}"?`)) {
-                alert(`Deleted "${currentSelectedChat}"`);
+            if (!currentSelectedChatId) return;
+            const sessions = getLocalChatSessions();
+            const session = sessions[currentSelectedChatId];
+            const title = session ? session.title : (currentSelectedChat || 'this consultation');
+
+            if (confirm(`Delete consultation "${title}"?`)) {
+                delete sessions[currentSelectedChatId];
+                saveLocalChatSessions(sessions);
+
+                if (currentSessionId === currentSelectedChatId) {
+                    startNewChat();
+                } else {
+                    renderRecentsList();
+                }
+                showToast('🗑️ Consultation deleted', 'info');
             }
         }
 
@@ -4565,22 +4809,30 @@
         }
 
         /* ══════ Append a chat bubble to the feed ══════ */
-        function appendBubble(role, html) {
+        function appendBubble(role, html, skipPersist = false) {
             const feed = document.getElementById('chat-feed');
+            if (!feed) return;
             const scrollArea = feed.closest('.view-scroll-area') || feed.parentElement;
             const bubble = document.createElement('div');
+            bubble.className = 'chat-bubble';
             bubble.style.cssText = role === 'patient'
                 ? 'background: rgba(255,255,255,0.06); padding: 14px 20px; border-radius: 18px 18px 4px 18px; align-self: flex-end; max-width: 78%; animation: fadeSlideIn 0.35s ease;'
                 : 'background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 4px 20px 20px 20px; padding: 20px 24px; max-width: 85%; align-self: flex-start; animation: fadeSlideIn 0.4s ease;';
             bubble.innerHTML = html;
             feed.appendChild(bubble);
+
             // Scroll the actual scrollable container, not the chat-feed div itself
             if (scrollArea) {
                 scrollArea.scrollTop = scrollArea.scrollHeight;
             }
 
+            if (!skipPersist) {
+                currentChatMessages.push({ role, html, timestamp: Date.now() });
+                persistActiveChatSession();
+            }
+
             // Speak out loud if role is doctor/herbalist and Voice ON is active
-            if (role !== 'patient') {
+            if (role !== 'patient' && !skipPersist) {
                 speakText(html);
             }
         }
@@ -5338,65 +5590,75 @@
                 const res = await fetch('/api/recents');
                 if (res.ok) {
                     const data = await res.json();
-                    const recentsContainer = document.getElementById('recents-list');
-                    if (recentsContainer) {
-                        if (data.recents && data.recents.length > 0) {
-                            recentsContainer.innerHTML = data.recents.map(r => `
-                                <div class="recent-item" onclick="loadRecentConsultation('${r.case_id}')" style="cursor:pointer;">
-                                    <span class="recent-item-title">${r.title}</span>
-                                    <span class="three-dots" onclick="event.stopPropagation(); openContextMenu(event, '${r.title}')">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
-                                    </span>
-                                </div>
-                            `).join('');
-                        } else {
-                            recentsContainer.innerHTML = '<div style="color:var(--text-muted);font-size:11px;padding:8px 12px;font-style:italic;">No past consultations yet. Start a consultation above!</div>';
-                        }
-                    }
+                    renderRecentsList(data.recents || []);
+                } else {
+                    renderRecentsList([]);
                 }
             } catch (e) {
-                console.log("Could not load recents from backend API");
+                renderRecentsList([]);
             }
         }
 
-        async function loadRecentConsultation(caseId) {
+        async function loadRecentConsultation(sessionId) {
             closeAllModals();
-            currentSessionId = caseId;
+            currentSessionId = sessionId;
+            localStorage.setItem('herbalist_active_session_id', sessionId);
+
             document.getElementById('hero-welcome').style.display = 'none';
             const feed = document.getElementById('chat-feed');
             feed.style.display = 'flex';
             feed.innerHTML = '';
 
-            try {
-                const res = await fetch('/api/recents');
-                if (res.ok) {
-                    const data = await res.json();
-                    const targetCase = (data.recents || []).find(r => r.case_id === caseId);
-                    if (targetCase) {
-                        appendBubble('patient', `<p style="font-weight:500;font-size:15px;">${targetCase.symptoms}</p>`);
-                        appendBubble('doctor', `
-                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-                                <div style="display:flex;align-items:center;gap:10px;">
-                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.4 19 2c1 2 2 4.1 2 9 0 4.9-4 9-9 9z"></path></svg>
-                                    <h3 style="font-family:'Outfit',sans-serif;font-size:18px;">Herbalist Consultation — ${targetCase.diagnosis}</h3>
+            const scrollAreaEl = document.getElementById('view-scroll-area');
+            if (scrollAreaEl) scrollAreaEl.classList.remove('hero-mode');
+
+            const sessions = getLocalChatSessions();
+            const targetSession = sessions[sessionId];
+
+            if (targetSession && targetSession.messages && targetSession.messages.length > 0) {
+                currentChatMessages = targetSession.messages;
+                activePrescriptionPayload = targetSession.prescription || null;
+                
+                // Replay messages
+                currentChatMessages.forEach(msg => {
+                    appendBubble(msg.role, msg.html, true);
+                });
+            } else {
+                // Fetch from backend /api/recents
+                currentChatMessages = [];
+                try {
+                    const res = await fetch('/api/recents');
+                    if (res.ok) {
+                        const data = await res.json();
+                        const targetCase = (data.recents || []).find(r => r.case_id === sessionId);
+                        if (targetCase) {
+                            appendBubble('patient', `<p style="font-weight:500;font-size:15px;">${targetCase.symptoms}</p>`);
+                            appendBubble('doctor', `
+                                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                                    <div style="display:flex;align-items:center;gap:10px;">
+                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.4 19 2c1 2 2 4.1 2 9 0 4.9-4 9-9 9z"></path></svg>
+                                        <h3 style="font-family:'Outfit',sans-serif;font-size:18px;">Herbalist Consultation — ${targetCase.diagnosis}</h3>
+                                    </div>
+                                    <span style="background:rgba(46,204,113,0.15);border:1px solid var(--accent-green);color:var(--accent-green);padding:4px 12px;border-radius:12px;font-weight:700;font-size:13px;">${targetCase.match_score || 95}% Match</span>
                                 </div>
-                                <span style="background:rgba(46,204,113,0.15);border:1px solid var(--accent-green);color:var(--accent-green);padding:4px 12px;border-radius:12px;font-weight:700;font-size:13px;">${targetCase.match_score || 95}% Match</span>
-                            </div>
-                            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(46,204,113,0.2);border-radius:14px;padding:16px;margin-bottom:14px;font-size:13px;line-height:1.6;">
-                                <strong style="color:var(--accent-green);">Prescribed Botanical Formulation:</strong> ${targetCase.formulation}<br>
-                                <strong style="color:var(--accent-gold);">Chief Complaint:</strong> ${targetCase.symptoms}<br>
-                                <span style="font-size:11px;color:var(--text-muted);">Recorded on: ${targetCase.timestamp}</span>
-                            </div>
-                            <div style="font-size:12px;color:var(--accent-green);background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.25);padding:10px 14px;border-radius:10px;margin-top:10px;display:flex;align-items:center;gap:8px;">
-                                <span>💬</span>
-                                <span><strong>Consultation Restored:</strong> You can ask follow-up questions or describe new symptoms below to continue your consultation with Dr. Herbalist.</span>
-                            </div>
-                        `);
+                                <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(46,204,113,0.2);border-radius:14px;padding:16px;margin-bottom:14px;font-size:13px;line-height:1.6;">
+                                    <strong style="color:var(--accent-green);">Prescribed Botanical Formulation:</strong> ${targetCase.formulation}<br>
+                                    <strong style="color:var(--accent-gold);">Chief Complaint:</strong> ${targetCase.symptoms}<br>
+                                    <span style="font-size:11px;color:var(--text-muted);">Recorded on: ${targetCase.timestamp}</span>
+                                </div>
+                                <div style="font-size:12px;color:var(--accent-green);background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.25);padding:10px 14px;border-radius:10px;margin-top:10px;display:flex;align-items:center;gap:8px;">
+                                    <span>💬</span>
+                                    <span><strong>Consultation Restored:</strong> You can ask follow-up questions or describe new symptoms below to continue your consultation with Dr. Herbalist.</span>
+                                </div>
+                            `);
+                        }
                     }
+                } catch (e) {
+                    console.error("Could not load recent consultation", e);
                 }
-            } catch (e) {
-                console.error("Could not load recent consultation", e);
             }
+
+            renderRecentsList();
         }
 
         function showEmergencyModal(message) {
@@ -5753,8 +6015,19 @@ ${recipeText}
 
             if (sectionName === 'consultation') {
                 if (navItems[0]) navItems[0].classList.add('active');
-                document.getElementById('hero-welcome').style.display = 'flex';
-                document.getElementById('chat-feed').style.display = 'none';
+                if (currentChatMessages && currentChatMessages.length > 0) {
+                    const hero = document.getElementById('hero-welcome');
+                    if (hero) hero.style.display = 'none';
+                    const feed = document.getElementById('chat-feed');
+                    if (feed) feed.style.display = 'flex';
+                    const scrollAreaEl = document.getElementById('view-scroll-area');
+                    if (scrollAreaEl) scrollAreaEl.classList.remove('hero-mode');
+                } else {
+                    const hero = document.getElementById('hero-welcome');
+                    if (hero) hero.style.display = 'flex';
+                    const feed = document.getElementById('chat-feed');
+                    if (feed) feed.style.display = 'none';
+                }
             } else if (sectionName === 'pharmacopeia') {
                 if (!currentUserState) {
                     showToast('🔒 Please sign in or create an account to access the Botanical Pharmacopeia Explorer.', 'error');
@@ -10806,9 +11079,14 @@ ${recipeText}
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            const restored = restoreActiveSessionOnBoot();
             loadRecentsFromBackend();
             checkUserSession();
             renderDynamicPromptChips();
+            if (restored) {
+                showToast('💬 Restored previous active consultation session', 'info', 2500);
+            }
+        });
 
             // PWA Service Worker Registration
             if ('serviceWorker' in navigator) {
