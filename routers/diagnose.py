@@ -505,6 +505,79 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
 
             if is_ready:
                 if session and session.get("info_mode"):
+                    # FOLLOW-UP DETECTION: If the user sent a conversational reply
+                    # (e.g., "I'm not feeling symptoms, just curious"), use AI with
+                    # full conversation history to respond contextually — NOT the
+                    # original monograph again.
+                    is_followup = session.pop("_is_followup", False)
+                    followup_message = session.pop("_followup_message", "")
+
+                    if is_followup and followup_message:
+                        conv_history = session.get("conversation", [])
+                        history_str = "\n".join([
+                            f"[{t.get('role', 'user').title()}]: {t.get('text', '')}"
+                            for t in conv_history[-8:]
+                        ])
+
+                        followup_response = None
+                        if doctor and getattr(doctor, 'gemini_engine', None) and doctor.gemini_engine.api_key:
+                            try:
+                                followup_prompt = (
+                                    "You are Dr. Herbalist, a warm, friendly, and highly skilled Senior Integrative "
+                                    "Medical Doctor & Botanical Phytotherapy Specialist.\n\n"
+                                    "CONVERSATION HISTORY (most recent):\n"
+                                    f"{history_str}\n\n"
+                                    f"The patient just said: \"{followup_message}\"\n\n"
+                                    "INSTRUCTIONS:\n"
+                                    "- Read the conversation history carefully to understand what was already discussed.\n"
+                                    "- Respond NATURALLY and CONTEXTUALLY to the patient's latest message.\n"
+                                    "- Do NOT repeat or regenerate any information you already provided.\n"
+                                    "- If the patient says they are not experiencing symptoms and are just curious, "
+                                    "acknowledge that warmly, affirm their curiosity, and offer to answer any "
+                                    "other health or herbal questions they may have.\n"
+                                    "- If the patient shares new information, respond to THAT specifically.\n"
+                                    "- Keep the response concise (3-5 sentences max), warm, and human.\n"
+                                    "- Use markdown formatting. Sign off as Dr. Herbalist with 🌿.\n"
+                                )
+                                followup_response = doctor.gemini_engine.generate_text(
+                                    followup_prompt, max_tokens=350, temperature=0.6
+                                )
+                            except Exception as fe:
+                                print(f"[Herbalist AI] Follow-up AI generation notice: {fe}")
+
+                        if not followup_response or len(followup_response.strip()) < 20:
+                            # Smart deterministic fallback for common follow-up patterns
+                            fl = followup_message.strip().lower()
+                            if any(w in fl for w in ["not feeling", "no symptom", "don't have", "just curious",
+                                                      "curiosity", "just asking", "just want to know",
+                                                      "just wanted to know", "no i don't", "i'm fine",
+                                                      "i am fine", "not sick", "i'm okay", "i am okay"]):
+                                followup_response = (
+                                    f"🩺 **Dr. Herbalist**: That's wonderful to hear that you're doing well! 🌿\n\n"
+                                    f"I love that you're proactively learning about health and herbal medicine — "
+                                    f"knowledge is the best preventive medicine! Feel free to ask me anything else "
+                                    f"about herbal remedies, nutrition, or wellness. I'm here for you!"
+                                )
+                            else:
+                                followup_response = (
+                                    f"🩺 **Dr. Herbalist**: Thank you for sharing that! 🌿\n\n"
+                                    f"Is there anything else you'd like to know about herbal medicine, "
+                                    f"natural remedies, or health wellness? I'm here to help!"
+                                )
+
+                        session["conversation"].append({"role": "doctor", "text": followup_response})
+                        session_manager._save_session(session_id, session)
+
+                        return {
+                            "status": "success",
+                            "session_id": session_id,
+                            "is_greeting": False,
+                            "is_knowledge_answer": True,
+                            "conversational_message": followup_response,
+                            "follow_up_suggestions": ["Tell me about moringa benefits", "What herbs help with sleep?", "Natural remedies for stress", "Start a new consultation"],
+                        }
+
+                    # FIRST-TIME knowledge answer (not a follow-up)
                     condition_topic = session.get("condition_topic") or ComplaintClassifier.extract_condition_topic(complaint) or complaint
                     original_question = session.get("original_question") or complaint
 

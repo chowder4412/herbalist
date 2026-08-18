@@ -536,6 +536,18 @@ class SessionStore:
             self._save_session(session_id, session)
             return None, session, True
 
+        # 2. CONVERSATIONAL FOLLOW-UP DETECTION
+        # If the session is already in info_mode + ready (knowledge answer was already given),
+        # and the user sends a casual follow-up (e.g., "I'm not feeling any symptoms, just curious"),
+        # mark this as a conversational follow-up so the system uses AI + conversation history
+        # instead of blindly regenerating the same knowledge monograph.
+        if current_phase == "ready" and session.get("info_mode"):
+            session["conversation"].append({"role": "patient", "text": user_answer})
+            session["_is_followup"] = True  # Signal to diagnose.py that this is a follow-up, not a repeat
+            session["_followup_message"] = user_answer  # The actual current message
+            self._save_session(session_id, session)
+            return None, session, True
+
         if current_phase == "intent_clarification":
             intent = IntentClassifier.classify(
                 user_answer,
@@ -661,9 +673,19 @@ def generate_knowledge_medical_answer(
         recent_turns = conversation_history[-6:]
         history_str = "\n".join([f"[{t.get('role', 'user').title()}]: {t.get('text', '')}" for t in recent_turns])
 
+    history_context = ""
+    if history_str:
+        history_context = (
+            f"\nCONVERSATION HISTORY (most recent exchanges):\n{history_str}\n\n"
+            f"IMPORTANT: Read the conversation history above. Do NOT repeat information already given. "
+            f"If you already answered this question, provide NEW complementary details or address the "
+            f"patient's latest message directly.\n\n"
+        )
+
     prompt = (
         f"You are Dr. Herbalist, a friendly, warm, and highly skilled Senior Integrative Medical Doctor & Botanical Specialist.\n"
         f"You are speaking directly with patient '{patient_username or 'there'}'.\n\n"
+        f"{history_context}"
         f"PATIENT'S QUESTION:\n\"{query}\"\n\n"
         f"TOPIC:\n{condition_topic.title()}\n\n"
         f"RELEVANT HERBS IN KNOWLEDGE BASE:\n{herbs_summary if herbs_summary else 'General Botanical Herbs'}\n\n"
