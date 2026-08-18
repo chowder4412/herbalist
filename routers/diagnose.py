@@ -115,6 +115,7 @@ class LabUploadRequest(BaseModel):
 class DrugScanRequest(BaseModel):
     image_data: Optional[str] = None
     drug_name: Optional[str] = None
+    herb_name: Optional[str] = "Ginkgo biloba"
     mime_type: Optional[str] = "image/jpeg"
     file_name: Optional[str] = "Pill_Bottle.jpg"
 
@@ -139,6 +140,7 @@ async def scan_drug_bottle_camera(body: DrugScanRequest):
     from synthetic_substitutes_engine import check_herb_drug_interaction, get_synthetic_botanical_substitute
 
     identified_drug = body.drug_name or "Warfarin"
+    target_herb = body.herb_name or "Ginkgo biloba"
     raw_ocr_text = None
 
     if body.image_data and doctor.gemini_engine:
@@ -162,13 +164,14 @@ async def scan_drug_bottle_camera(body: DrugScanRequest):
         except Exception as ve:
             print(f"[Drug Camera OCR Notice]: {ve}")
 
-    # Run check against common botanical herbs
-    interaction_data = check_herb_drug_interaction(identified_drug, "Ginkgo biloba")
+    # Run check against specified or common botanical herbs
+    interaction_data = check_herb_drug_interaction(identified_drug, target_herb)
     substitute_data = get_synthetic_botanical_substitute(identified_drug)
 
     return {
         "status": "success",
         "identified_drug": identified_drug,
+        "target_herb": target_herb,
         "raw_ocr_text": raw_ocr_text,
         "confidence_score": 97.8,
         "interaction": interaction_data,
