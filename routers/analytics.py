@@ -141,10 +141,9 @@ async def get_recents(request: Request):
 
     recents = []
 
-    conn = memory_store.get_connection()
-    cursor = conn.cursor()
-
     if user_auth and ("user_id" in user_auth or "email" in user_auth):
+        conn = memory_store.get_connection()
+        cursor = conn.cursor()
         user_id = user_auth.get("user_id", "")
         user_email = user_auth.get("email", "")
         username = user_auth.get("username", "")
@@ -153,26 +152,21 @@ async def get_recents(request: Request):
             'SELECT case_id, symptoms, primary_diagnosis, prescribed_formulation, bioactive_match_score, timestamp FROM episodic_cases WHERE patient_id = ? OR patient_id = ? OR patient_id = ? ORDER BY timestamp DESC LIMIT 20',
             (user_id, user_email, username)
         )
-    else:
-        cursor.execute(
-            'SELECT case_id, symptoms, primary_diagnosis, prescribed_formulation, bioactive_match_score, timestamp FROM episodic_cases ORDER BY timestamp DESC LIMIT 20'
-        )
+        rows = cursor.fetchall()
+        conn.close()
 
-    rows = cursor.fetchall()
-    conn.close()
-
-    for r in rows:
-        raw_title = r[2] if (r[2] and "Examination" not in r[2]) else (r[1].split(',')[0].title() if r[1] else "Botanical Consultation")
-        clean_title = raw_title.replace("Consultation: ", "").strip()
-        recents.append({
-            "case_id": r[0],
-            "title": clean_title[:35] + ("..." if len(clean_title) > 35 else ""),
-            "symptoms": r[1],
-            "diagnosis": r[2],
-            "formulation": r[3],
-            "match_score": r[4],
-            "timestamp": r[5]
-        })
+        for r in rows:
+            raw_title = r[2] if (r[2] and "Examination" not in r[2]) else (r[1].split(',')[0].title() if r[1] else "Botanical Consultation")
+            clean_title = raw_title.replace("Consultation: ", "").strip()
+            recents.append({
+                "case_id": r[0],
+                "title": clean_title[:35] + ("..." if len(clean_title) > 35 else ""),
+                "symptoms": r[1],
+                "diagnosis": r[2],
+                "formulation": r[3],
+                "match_score": r[4],
+                "timestamp": r[5]
+            })
 
     return {
         "status": "success",

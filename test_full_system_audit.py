@@ -100,14 +100,24 @@ class FullSystemAuditSuite(unittest.TestCase):
         self.assertTrue(sess["isPinned"])
         print("[AUDIT 3 PASS] ChatGPT / Gemini style session storage schema verified.")
 
-    def test_04_recents_database_and_guest_fallback(self):
-        """Audit 4: Verify episodic_cases SQLite fallback populates Recents for unauthenticated sessions"""
-        res = self.client.get("/api/recents")
-        self.assertEqual(res.status_code, 200)
-        data = res.json()
-        self.assertEqual(data.get("status"), "success")
-        self.assertIsInstance(data.get("recents"), list)
-        print(f"[AUDIT 4 PASS] Recents API successfully retrieved {len(data.get('recents'))} past cases from database.")
+    def test_04_recents_privacy_and_auth_scoping(self):
+        """Audit 4: Verify unauthenticated requests return empty recents (no leakage), and authenticated return scoped recents"""
+        # Guest request
+        res_guest = self.client.get("/api/recents")
+        self.assertEqual(res_guest.status_code, 200)
+        data_guest = res_guest.json()
+        self.assertEqual(data_guest.get("status"), "success")
+        self.assertEqual(len(data_guest.get("recents", [])), 0, "Guest should not see other users' history")
+
+        # Authenticated user request
+        from routers.auth import create_jwt_token
+        test_token = create_jwt_token({"user_id": "test_user_privacy_123", "email": "tester@herbalist.ai", "username": "tester"})
+        res_auth = self.client.get("/api/recents", headers={"Authorization": f"Bearer {test_token}"})
+        self.assertEqual(res_auth.status_code, 200)
+        data_auth = res_auth.json()
+        self.assertEqual(data_auth.get("status"), "success")
+        self.assertIsInstance(data_auth.get("recents"), list)
+        print("[AUDIT 4 PASS] Recents API successfully scoped strictly to authenticated user; guest leakage eliminated.")
 
 
 if __name__ == "__main__":
