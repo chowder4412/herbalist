@@ -599,9 +599,14 @@
     // ══════════════════════════════════════════════════════════════
     let currentAuthMode = 'login'; // 'login' | 'register'
 
-    // Parse URL query parameter (e.g. /auth.html?mode=register or /register)
+    // Parse URL query parameter (e.g. /auth.html?mode=register or /register & redirect=pharmacopeia)
     const urlParams = new URLSearchParams(window.location.search);
     const initialMode = urlParams.get('mode') || (window.location.pathname.includes('register') ? 'register' : 'login');
+    const redirectTarget = urlParams.get('redirect') || '';
+
+    function getResolvedRedirectUrl() {
+      return redirectTarget ? `/app?open=${encodeURIComponent(redirectTarget)}` : '/app';
+    }
 
     function setAuthMode(mode) {
       currentAuthMode = mode;
@@ -734,10 +739,10 @@
             localStorage.setItem('herbalist_user_profile', JSON.stringify(data.user));
           }
 
-          showAlert('Account created successfully! Redirecting to consultation app...', 'success');
+          showAlert('Account created successfully! Directing to feature workspace...', 'success');
           setTimeout(() => {
-            window.location.href = '/app';
-          }, 1200);
+            window.location.href = getResolvedRedirectUrl();
+          }, 1000);
 
         } else {
           // 2. Call Backend Login API
@@ -760,10 +765,10 @@
             localStorage.setItem('herbalist_user_profile', JSON.stringify(data.user));
           }
 
-          showAlert('Signed in successfully! Launching workspace...', 'success');
+          showAlert('Signed in successfully! Launching feature workspace...', 'success');
           setTimeout(() => {
-            window.location.href = '/app';
-          }, 800);
+            window.location.href = getResolvedRedirectUrl();
+          }, 750);
         }
       } catch (err) {
         showAlert(err.message || 'Authentication error. Please try again.');
@@ -810,15 +815,15 @@
               full_name: result.user.displayName,
               uid: result.user.uid
             }));
-            window.location.href = '/app';
+            window.location.href = getResolvedRedirectUrl();
             return;
           }
         }
       } catch(e) {
         console.log("Firebase popup notice:", e);
       }
-      // Direct redirect to /app if popup closed
-      window.location.href = '/app';
+      // Direct redirect to resolved url
+      window.location.href = getResolvedRedirectUrl();
     }
 
     // Set initial mode on page load

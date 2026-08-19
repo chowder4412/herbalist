@@ -11550,6 +11550,39 @@ ${recipeText}
                 showToast('💬 Restored previous active consultation session', 'info', 2500);
             }
 
+            // Auto-open target feature when redirected from welcome or auth (?open=pharmacopeia | ?open=rag | ?open=cookmode | ?open=telehealth | ?open=toolkit | ?open=prescriptions | ?open=consultation)
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const autoOpen = urlParams.get('open');
+                if (autoOpen) {
+                    setTimeout(() => {
+                        if (autoOpen === 'pharmacopeia') {
+                            showSection('pharmacopeia');
+                        } else if (autoOpen === 'rag') {
+                            showSection('rag');
+                        } else if (autoOpen === 'cookmode') {
+                            if (typeof openCookModeHud === 'function') openCookModeHud();
+                            else if (typeof startCookModeFromHero === 'function') startCookModeFromHero();
+                            else if (typeof openCookModeModal === 'function') openCookModeModal();
+                        } else if (autoOpen === 'telehealth') {
+                            if (typeof startTelehealthCall === 'function') startTelehealthCall();
+                            else if (typeof openTelehealthModal === 'function') openTelehealthModal();
+                        } else if (autoOpen === 'toolkit') {
+                            const tkModal = document.getElementById('patient-care-toolkit-modal');
+                            if (tkModal) { closeAllModals(); tkModal.classList.add('active'); }
+                        } else if (autoOpen === 'prescriptions') {
+                            openPrescriptionsModal();
+                        } else if (autoOpen === 'scanner') {
+                            showSection('scanner');
+                        } else if (autoOpen === 'consultation') {
+                            document.getElementById('user-input')?.focus();
+                        }
+                    }, 400);
+                }
+            } catch(e) {
+                console.log("[Auto-Open Notice]", e);
+            }
+
             // PWA Service Worker Registration
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
