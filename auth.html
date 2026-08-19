@@ -293,18 +293,32 @@
 
     .btn-toggle-pw {
       position: absolute;
-      right: 12px;
+      right: 10px;
       background: transparent;
       border: none;
       color: var(--text-muted);
       cursor: pointer;
-      font-size: 1rem;
-      padding: 4px;
-      line-height: 1;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      transition: all 0.2s ease;
     }
 
     .btn-toggle-pw:hover {
-      color: #ffffff;
+      color: var(--primary-emerald);
+      background: rgba(16, 185, 129, 0.12);
+    }
+
+    .btn-toggle-pw svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
     .forgot-pw-link {
@@ -507,8 +521,13 @@
               <a href="#" class="forgot-pw-link" id="forgotPwLink" onclick="openForgotPasswordView(event)">Forgot Password?</a>
             </label>
             <div class="form-input-wrapper">
-              <input type="password" id="passwordInput" required placeholder="••••••••">
-              <button type="button" class="btn-toggle-pw" onclick="togglePasswordVisibility('passwordInput', this)" title="Toggle password visibility">👁️</button>
+              <input type="password" id="passwordInput" required placeholder="••••••••" style="padding-right: 42px;">
+              <button type="button" class="btn-toggle-pw" id="btnTogglePw" onclick="togglePasswordVisibility('passwordInput', this)" title="Show password" aria-label="Toggle password visibility">
+                <svg viewBox="0 0 24 24">
+                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
             </div>
           </div>
 
@@ -634,15 +653,32 @@
       document.getElementById('authSubtitle').innerText = 'Regain access to your Herbalist AI clinical account';
     }
 
+    const SVG_EYE_OPEN = `
+      <svg viewBox="0 0 24 24">
+        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+        <circle cx="12" cy="12" r="3"></circle>
+      </svg>
+    `;
+    const SVG_EYE_OFF = `
+      <svg viewBox="0 0 24 24">
+        <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path>
+        <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path>
+        <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path>
+        <line x1="2" y1="2" x2="22" y2="22"></line>
+      </svg>
+    `;
+
     function togglePasswordVisibility(inputId, btn) {
       const input = document.getElementById(inputId);
       if (!input) return;
       if (input.type === 'password') {
         input.type = 'text';
-        btn.innerText = '🙈';
+        btn.innerHTML = SVG_EYE_OFF;
+        btn.title = 'Hide password';
       } else {
         input.type = 'password';
-        btn.innerText = '👁️';
+        btn.innerHTML = SVG_EYE_OPEN;
+        btn.title = 'Show password';
       }
     }
 

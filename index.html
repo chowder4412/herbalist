@@ -2364,9 +2364,12 @@
                         <a href="#" id="forgot-password-link" onclick="openForgotPasswordStep(event)" style="display: none; font-size: 11px; color: var(--accent-gold); text-decoration: none; font-weight: 600;">Forgot Password?</a>
                     </div>
                     <div style="position: relative; display: flex; align-items: center;">
-                        <input type="password" id="auth-password" placeholder="••••••••" style="width: 100%; padding-right: 40px;">
-                        <button type="button" onclick="toggleAuthPasswordVisibility()" id="btn-toggle-auth-pw" style="position: absolute; right: 10px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 15px; padding: 4px;" title="Toggle Password Visibility">
-                            👁️
+                        <input type="password" id="auth-password" placeholder="••••••••" style="width: 100%; padding-right: 42px;">
+                        <button type="button" onclick="toggleAuthPasswordVisibility()" id="btn-toggle-auth-pw" style="position: absolute; right: 8px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 6px; display: flex; align-items: center; justify-content: center; border-radius: 8px; transition: all 0.2s ease;" title="Show password" aria-label="Toggle password visibility">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
                         </button>
                     </div>
                 </div>
@@ -6308,6 +6311,55 @@ ${recipeText}
 
         function closePharmacopeiaModal() { document.getElementById('pharmacopeia-modal')?.classList.remove('active'); }
         function closeScannerModal() { document.getElementById('scanner-modal')?.classList.remove('active'); }
+        function openAuthModal() {
+            closeAllModals();
+            document.getElementById('auth-modal')?.classList.add('active');
+        }
+        function closeAuthModal() { document.getElementById('auth-modal')?.classList.remove('active'); }
+
+        function switchAuthTab(tab) {
+            const tabLogin = document.getElementById('tab-login');
+            const tabRegister = document.getElementById('tab-register');
+            const groupFullname = document.getElementById('group-fullname');
+            const submitBtn = document.getElementById('auth-submit-btn');
+            const forgotLink = document.getElementById('forgot-password-link');
+            const title = document.getElementById('auth-modal-title');
+
+            if (tab === 'register') {
+                if (tabLogin) { tabLogin.style.background = 'transparent'; tabLogin.style.color = 'var(--text-muted)'; }
+                if (tabRegister) { tabRegister.style.background = 'var(--accent-green)'; tabRegister.style.color = '#000'; }
+                if (groupFullname) groupFullname.style.display = 'block';
+                if (forgotLink) forgotLink.style.display = 'none';
+                if (submitBtn) submitBtn.innerText = 'Create Free Account';
+                if (title) title.innerText = 'Create Account';
+            } else {
+                if (tabLogin) { tabLogin.style.background = 'var(--accent-green)'; tabLogin.style.color = '#000'; }
+                if (tabRegister) { tabRegister.style.background = 'transparent'; tabRegister.style.color = 'var(--text-muted)'; }
+                if (groupFullname) groupFullname.style.display = 'none';
+                if (forgotLink) forgotLink.style.display = 'inline';
+                if (submitBtn) submitBtn.innerText = 'Sign In to Account';
+                if (title) title.innerText = 'Sign In';
+            }
+        }
+
+        const SVG_EYE_OPEN_INDEX = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
+        const SVG_EYE_OFF_INDEX = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path><line x1="2" y1="2" x2="22" y2="22"></line></svg>`;
+
+        function toggleAuthPasswordVisibility() {
+            const input = document.getElementById('auth-password');
+            const btn = document.getElementById('btn-toggle-auth-pw');
+            if (!input || !btn) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                btn.innerHTML = SVG_EYE_OFF_INDEX;
+                btn.title = 'Hide password';
+            } else {
+                input.type = 'password';
+                btn.innerHTML = SVG_EYE_OPEN_INDEX;
+                btn.title = 'Show password';
+            }
+        }
+
         function openPrescriptionsModal() {
             closeAllModals();
             const modal = document.getElementById('prescriptions-modal');
@@ -6321,6 +6373,10 @@ ${recipeText}
         function closeSynergyLabModal() { document.getElementById('synergy-lab-modal')?.classList.remove('active'); }
         function closeVaultRecoveryModal() { document.getElementById('vault-recovery-modal')?.classList.remove('active'); }
 
+        window.openAuthModal = openAuthModal;
+        window.closeAuthModal = closeAuthModal;
+        window.toggleAuthPasswordVisibility = toggleAuthPasswordVisibility;
+        window.switchAuthTab = switchAuthTab;
         window.openPrescriptionsModal = openPrescriptionsModal;
         window.closePrescriptionsModal = closePrescriptionsModal;
 
