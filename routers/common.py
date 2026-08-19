@@ -58,6 +58,25 @@ async def serve_welcome():
     raise HTTPException(status_code=404, detail="Welcome page not found")
 
 
+@router.api_route("/auth", methods=["GET", "HEAD"], include_in_schema=False)
+@router.api_route("/login", methods=["GET", "HEAD"], include_in_schema=False)
+@router.api_route("/register", methods=["GET", "HEAD"], include_in_schema=False)
+@router.api_route("/auth.html", methods=["GET", "HEAD"], include_in_schema=False)
+async def serve_auth():
+    auth_path = os.path.join(os.getcwd(), "auth.html")
+    if os.path.exists(auth_path):
+        headers = {
+            "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+        return FileResponse(auth_path, media_type="text/html", headers=headers)
+    index_path = os.path.join(os.getcwd(), "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path, media_type="text/html")
+    raise HTTPException(status_code=404, detail="Auth page not found")
+
+
 @router.api_route("/app", methods=["GET", "HEAD"], include_in_schema=False)
 @router.api_route("/consult", methods=["GET", "HEAD"], include_in_schema=False)
 @router.api_route("/index.html", methods=["GET", "HEAD"], include_in_schema=False)
