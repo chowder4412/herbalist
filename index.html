@@ -2916,7 +2916,15 @@
                                 <span id="cook-hud-pot-badge" style="font-size: 11px; font-weight: 700; color: var(--accent-gold); background: rgba(243, 156, 18, 0.15); border: 1px solid rgba(243, 156, 18, 0.3); padding: 2px 8px; border-radius: 8px;">2.0 L Batch Volume</span>
                             </div>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <select id="cook-audio-lang-toolkit" onchange="changeCookAudioLanguage(this.value)" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(243,156,18,0.4); color: var(--accent-gold); padding: 5px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; outline: none;">
+                                <option value="en">🇬🇧 English</option>
+                                <option value="yo">🇳🇬 Yorùbá (Dr. Adewale)</option>
+                                <option value="ha">🇳🇬 Hausa (Dr. Aminu)</option>
+                                <option value="ig">🇳🇬 Igbo (Dr. Chioma)</option>
+                                <option value="sw">🇰🇪 Kiswahili (Dr. Juma)</option>
+                                <option value="fr">🇫🇷 Français (Dr. Monique)</option>
+                            </select>
                             <button class="kitchen-hud-btn" onclick="toggleCookVoiceNarration()" id="cook-voice-toggle-btn" style="padding: 6px 12px; font-size: 11px;">
                                 <svg id="cook-voice-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                     <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
@@ -3394,12 +3402,12 @@
             <!-- Voice Persona & Audio Settings Selector -->
             <div style="display: flex; align-items: center; gap: 10px;">
                 <select id="telehealth-voice-selector" onchange="changeTelehealthVoicePersona(this.value)" style="background: rgba(0,0,0,0.5); border: 1px solid var(--pill-border); color: #fff; padding: 8px 12px; border-radius: 12px; font-size: 12px; cursor: pointer; font-family: 'Inter', sans-serif;">
-                    <option value="male_uk" selected>🩺 Dr. Herbalist (Senior Integrative MD - British/Global)</option>
-                    <option value="female_ng">🇳🇬 Dr. Aisha (Female - Fluent Nigerian English)</option>
-                    <option value="male_pidgin">🇳🇬 Dr. Bovi (Male - Nigerian Pidgin English)</option>
-                    <option value="hindi_in">🇮🇳 Vaidya Rajesh (Hindi & Hinglish)</option>
-                    <option value="male_sw">🌴 Dkt. Amani (Swahili / Kiswahili)</option>
-                    <option value="female_fr">🇫🇷 Dr. Sophie (Français / French)</option>
+                    <option value="male_uk" selected>🇬🇧 Dr. Herbalist (Senior Integrative MD - British/Global)</option>
+                    <option value="male_yo">🇳🇬 Dr. Adewale (Yorùbá Ethnomedicine)</option>
+                    <option value="male_ha">🇳🇬 Dr. Aminu (Hausa Phytotherapy)</option>
+                    <option value="female_ig">🇳🇬 Dr. Chioma (Igbo Botanical Healer)</option>
+                    <option value="male_sw">🇰🇪 Dr. Juma (Swahili / Kiswahili Dawa Asili)</option>
+                    <option value="female_fr">🇫🇷 Dr. Monique (Français / French)</option>
                     <option value="female_us">🌿 Dr. Maya (Empathetic US English)</option>
                 </select>
                 <button class="icon-btn" onclick="closeLiveVoiceConsultationModal()" title="Minimize to Chat" style="background: rgba(255,255,255,0.08); border-radius: 12px; width: 40px; height: 40px;">
@@ -3511,7 +3519,15 @@
                     <span id="cook-hud-pot-badge" style="font-size: 11px; font-weight: 700; color: var(--accent-gold); background: rgba(243, 156, 18, 0.15); border: 1px solid rgba(243, 156, 18, 0.3); padding: 2px 8px; border-radius: 8px;">2.0 L Batch Volume</span>
                 </div>
             </div>
-            <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <select id="cook-audio-lang-fullscreen" onchange="changeCookAudioLanguage(this.value)" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(243,156,18,0.4); color: var(--accent-gold); padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; outline: none;">
+                    <option value="en">🇬🇧 English</option>
+                    <option value="yo">🇳🇬 Yorùbá (Dr. Adewale)</option>
+                    <option value="ha">🇳🇬 Hausa (Dr. Aminu)</option>
+                    <option value="ig">🇳🇬 Igbo (Dr. Chioma)</option>
+                    <option value="sw">🇰🇪 Kiswahili (Dr. Juma)</option>
+                    <option value="fr">🇫🇷 Français (Dr. Monique)</option>
+                </select>
                 <button class="kitchen-hud-btn" onclick="toggleCookVoiceNarration()" id="cook-voice-toggle-btn" style="padding: 10px 18px; font-size: 13px;">
                     <svg id="cook-voice-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
@@ -5603,6 +5619,33 @@
             const recipeSteps = f.household_kitchen_recipe || f.preparation_recipe_steps || [];
             const doseSchedule = f.household_dose_schedule || f.dosing_frequency || '1 teacup (150 mL) 3 times daily after meals';
             
+            // 0. Maternal & Pediatric Safety Lock Callout
+            let safetyLockHTML = '';
+            if (data.safety_lock && data.safety_lock.is_locked) {
+                const s = data.safety_lock;
+                const subsHTML = (s.substitutions && s.substitutions.length > 0) 
+                    ? `<div style="margin-top:8px;font-size:11.5px;color:rgba(255,255,255,0.85);background:rgba(0,0,0,0.25);padding:8px 12px;border-radius:8px;border:1px solid rgba(46,204,113,0.25);">
+                        <strong style="color:var(--accent-gold);">🛡️ Clinical Auto-Substitutions:</strong>
+                        <div style="margin-top:4px;display:flex;flex-direction:column;gap:4px;">
+                            ${s.substitutions.map(sub => `<span>• Replaced <strong style="color:#ff7675;">${sub.original}</strong> → <strong style="color:#2ecc71;">${sub.substituted_with}</strong> <em>(${sub.reason})</em></span>`).join('')}
+                        </div>
+                       </div>`
+                    : '';
+                safetyLockHTML = `
+                    <div style="background:linear-gradient(135deg,rgba(46,204,113,0.16),rgba(39,174,96,0.08));border:1.5px solid var(--accent-green);padding:14px 16px;border-radius:14px;margin-bottom:16px;box-shadow:0 4px 18px rgba(46,204,113,0.15);">
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+                            <span style="font-size:22px;">🛡️</span>
+                            <div>
+                                <div style="font-size:12px;font-weight:800;color:var(--accent-green);text-transform:uppercase;letter-spacing:0.5px;">${s.safety_badge || 'MATERNAL / PEDIATRIC SAFETY LOCK ACTIVE'}</div>
+                                <div style="font-size:12.5px;color:#fff;font-weight:700;">${s.status || 'Active Safety Protocols'}</div>
+                            </div>
+                        </div>
+                        <div style="font-size:12px;color:rgba(255,255,255,0.9);line-height:1.5;margin-top:4px;">${s.warning_text || ''}</div>
+                        ${subsHTML}
+                    </div>
+                `;
+            }
+
             // 1. Layman Explanation Callout
             let laymanHTML = '';
             if (layman) {
@@ -5744,8 +5787,8 @@
                 </div>`;
 
             // If parsed content is present, return structured HTML, otherwise return styled card text
-            if (ingredients.length > 0 || recipeSteps.length > 0 || layman) {
-                return laymanHTML + ingredientsHTML + recipeHTML + dosingHTML + dietaryHTML + altSubstitutesHTML + safetyHTML;
+            if (ingredients.length > 0 || recipeSteps.length > 0 || layman || safetyLockHTML) {
+                return safetyLockHTML + laymanHTML + ingredientsHTML + recipeHTML + dosingHTML + dietaryHTML + altSubstitutesHTML + safetyHTML;
             } else {
                 return `<pre style="font-family:'Outfit','Inter',sans-serif;font-size:13px;line-height:1.6;white-space:pre-wrap;margin:0;color:#e0ece3;">${cardText}</pre>`;
             }
@@ -7802,35 +7845,84 @@ ${recipeText}
             }
         }
 
-        function speakText(text) {
+        let currentCookAudioLang = 'en';
+
+        function changeCookAudioLanguage(lang) {
+            currentCookAudioLang = lang || 'en';
+            const select1 = document.getElementById('cook-audio-lang-toolkit');
+            const select2 = document.getElementById('cook-audio-lang-fullscreen');
+            if (select1) select1.value = currentCookAudioLang;
+            if (select2) select2.value = currentCookAudioLang;
+            
+            const langNames = {
+                'yo': 'Yorùbá (Dr. Adewale)',
+                'ha': 'Hausa (Dr. Aminu)',
+                'ig': 'Igbo (Dr. Chioma)',
+                'sw': 'Kiswahili (Dr. Juma)',
+                'fr': 'Français (Dr. Monique)',
+                'en': 'English'
+            };
+            showToast(`🌐 Audio language set to ${langNames[currentCookAudioLang] || 'English'}`, 'info', 2000);
+            speakActiveCookStep();
+        }
+
+        async function speakTextWithLang(text, langCode = 'en') {
             if (!text || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
             try {
                 window.speechSynthesis.cancel();
-                const clean = text.replace(/<[^>]*>?/gm, '').replace(/[*_#]/g, '');
+                let clean = text.replace(/<[^>]*>?/gm, '').replace(/[*_#`]/g, '').trim();
+                
+                if (langCode && langCode !== 'en') {
+                    try {
+                        const res = await fetch('/api/audio/speech-translate', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ text: clean, target_language: langCode })
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (data.translated_text) clean = data.translated_text;
+                        }
+                    } catch(err) {
+                        console.warn("Speech translation network note:", err);
+                    }
+                }
+                
                 const utterance = new SpeechSynthesisUtterance(clean);
-                utterance.rate = 1.0;
+                utterance.rate = (langCode === 'yo' || langCode === 'ig' || langCode === 'ha') ? 0.92 : 0.98;
                 utterance.pitch = 1.0;
+                
+                const langMap = {
+                    'yo': 'yo-NG',
+                    'ha': 'ha-NG',
+                    'ig': 'ig-NG',
+                    'sw': 'sw-KE',
+                    'fr': 'fr-FR',
+                    'en': 'en-GB'
+                };
+                utterance.lang = langMap[langCode] || 'en-US';
+                
                 window.speechSynthesis.speak(utterance);
             } catch (e) {
                 console.log("Speech narration note:", e);
             }
         }
 
-        function speakActiveCookStep() {
+        function speakText(text) {
+            speakTextWithLang(text, currentCookAudioLang || 'en');
+        }
+
+        async function speakActiveCookStep() {
             if (!cookVoiceNarrationActive) return;
             const step = cookStepsList[currentCookStepIndex];
             if (step) {
                 const text = `${step.title}. ${step.desc.replace(/<[^>]*>?/gm, '')}`;
-                speakText(text);
+                await speakTextWithLang(text, currentCookAudioLang);
             }
         }
 
         function readActiveCookStepAloud() {
-            const step = cookStepsList[currentCookStepIndex];
-            if (step) {
-                const text = `${step.title}. ${step.desc.replace(/<[^>]*>?/gm, '')}`;
-                speakText(text);
-            }
+            speakActiveCookStep();
         }
 
         function toggleCookVoiceNarration() {
@@ -9042,12 +9134,12 @@ ${recipeText}
         let activeVoicePersona = 'male_uk'; // Default to Dr. Herbalist (Senior Integrative MD)
 
         const telehealthPersonas = {
-            'male_uk': { name: 'Dr. Herbalist', title: '🩺 Dr. Herbalist (Senior Integrative MD - British/Global)', flag: '🇬🇧', lang: 'en-GB', langFallback: 'en-GB', voiceCode: 'en-GB', pitch: 0.96, rate: 0.94, gender: 'male' },
-            'female_ng': { name: 'Dr. Aisha', title: '🩺 Dr. Aisha (Female - Fluent Nigerian English)', flag: '🇳🇬', lang: 'en-NG', langFallback: 'en-GB', voiceCode: 'en-NG', pitch: 1.12, rate: 0.96, gender: 'female' },
-            'male_pidgin': { name: 'Dr. Bovi', title: '🎤 Dr. Bovi (Male - Nigerian Pidgin English)', flag: '🇳🇬', lang: 'pcm-NG', langFallback: 'en-NG', voiceCode: 'en-NG', pitch: 0.92, rate: 1.0, gender: 'male' },
-            'hindi_in': { name: 'Vaidya Rajesh', title: '🕉️ Vaidya Dr. Rajesh (Ayurvedic Specialist - Hindi/Hinglish)', flag: '🇮🇳', lang: 'hi-IN', langFallback: 'en-IN', voiceCode: 'hi-IN', pitch: 1.0, rate: 0.95, gender: 'male' },
-            'male_sw': { name: 'Dkt. Amani', title: '🌴 Dkt. Amani (Swahili Ethnomedicine)', flag: '🇰🇪', lang: 'sw-KE', langFallback: 'sw', voiceCode: 'sw', pitch: 0.95, rate: 1.0, gender: 'male' },
-            'female_fr': { name: 'Dr. Sophie', title: '🇫🇷 Dr. Sophie (Phytothérapie Clinique)', flag: '🇫🇷', lang: 'fr-FR', langFallback: 'fr', voiceCode: 'fr-FR', pitch: 1.05, rate: 1.0, gender: 'female' },
+            'male_uk': { name: 'Dr. Herbalist', title: '🇬🇧 Dr. Herbalist (Senior Integrative MD - British/Global)', flag: '🇬🇧', lang: 'en-GB', langFallback: 'en-GB', voiceCode: 'en-GB', pitch: 0.96, rate: 0.94, gender: 'male' },
+            'male_yo': { name: 'Dr. Adewale', title: '🇳🇬 Dr. Adewale (Yorùbá Ethnomedicine)', flag: '🇳🇬', lang: 'yo-NG', langFallback: 'en-NG', voiceCode: 'yo-NG', pitch: 0.95, rate: 0.94, gender: 'male' },
+            'male_ha': { name: 'Dr. Aminu', title: '🇳🇬 Dr. Aminu (Hausa Phytotherapy)', flag: '🇳🇬', lang: 'ha-NG', langFallback: 'en-NG', voiceCode: 'ha-NG', pitch: 0.95, rate: 0.94, gender: 'male' },
+            'female_ig': { name: 'Dr. Chioma', title: '🇳🇬 Dr. Chioma (Igbo Botanical Healer)', flag: '🇳🇬', lang: 'ig-NG', langFallback: 'en-NG', voiceCode: 'ig-NG', pitch: 1.10, rate: 0.95, gender: 'female' },
+            'male_sw': { name: 'Dr. Juma', title: '🇰🇪 Dr. Juma (Swahili / Kiswahili Dawa Asili)', flag: '🇰🇪', lang: 'sw-KE', langFallback: 'sw', voiceCode: 'sw', pitch: 0.95, rate: 0.98, gender: 'male' },
+            'female_fr': { name: 'Dr. Monique', title: '🇫🇷 Dr. Monique (Phytothérapie Clinique)', flag: '🇫🇷', lang: 'fr-FR', langFallback: 'fr', voiceCode: 'fr-FR', pitch: 1.05, rate: 0.98, gender: 'female' },
             'female_us': { name: 'Dr. Maya', title: '🌿 Dr. Maya (Empathetic US Clinical Herbalist)', flag: '🇺🇸', lang: 'en-US', langFallback: 'en-US', voiceCode: 'en-US', pitch: 1.08, rate: 0.98, gender: 'female' }
         };
 
