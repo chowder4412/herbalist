@@ -51,3 +51,18 @@ async def serve_index():
         }
         return FileResponse(index_path, media_type="text/html", headers=headers)
     raise HTTPException(status_code=404, detail="Index file not found")
+
+
+@router.api_route("/welcome", methods=["GET", "HEAD"], include_in_schema=False)
+@router.api_route("/welcome.html", methods=["GET", "HEAD"], include_in_schema=False)
+async def serve_welcome():
+    welcome_path = os.path.join(os.getcwd(), "welcome.html")
+    if os.path.exists(welcome_path):
+        headers = {
+            "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+        return FileResponse(welcome_path, media_type="text/html", headers=headers)
+    raise HTTPException(status_code=404, detail="Welcome file not found")
+
