@@ -40,19 +40,6 @@ async def get_favicon():
 
 
 @router.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
-@router.api_route("/index.html", methods=["GET", "HEAD"], include_in_schema=False)
-async def serve_index():
-    index_path = os.path.join(os.getcwd(), "index.html")
-    if os.path.exists(index_path):
-        headers = {
-            "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
-            "Pragma": "no-cache",
-            "Expires": "0"
-        }
-        return FileResponse(index_path, media_type="text/html", headers=headers)
-    raise HTTPException(status_code=404, detail="Index file not found")
-
-
 @router.api_route("/welcome", methods=["GET", "HEAD"], include_in_schema=False)
 @router.api_route("/welcome.html", methods=["GET", "HEAD"], include_in_schema=False)
 async def serve_welcome():
@@ -64,5 +51,24 @@ async def serve_welcome():
             "Expires": "0"
         }
         return FileResponse(welcome_path, media_type="text/html", headers=headers)
-    raise HTTPException(status_code=404, detail="Welcome file not found")
+    # Fallback to index if welcome doesn't exist
+    index_path = os.path.join(os.getcwd(), "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path, media_type="text/html")
+    raise HTTPException(status_code=404, detail="Welcome page not found")
+
+
+@router.api_route("/app", methods=["GET", "HEAD"], include_in_schema=False)
+@router.api_route("/consult", methods=["GET", "HEAD"], include_in_schema=False)
+@router.api_route("/index.html", methods=["GET", "HEAD"], include_in_schema=False)
+async def serve_index():
+    index_path = os.path.join(os.getcwd(), "index.html")
+    if os.path.exists(index_path):
+        headers = {
+            "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+        return FileResponse(index_path, media_type="text/html", headers=headers)
+    raise HTTPException(status_code=404, detail="Index file not found")
 
