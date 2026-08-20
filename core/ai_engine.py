@@ -155,12 +155,12 @@ class GeminiClinicalEngine:
 
         return self._call_groq_fallback(system_instruction, is_json=True, max_tokens=1500, temperature=0.2)
 
-    def generate_text(self, prompt: str, max_tokens: int = 1500, temperature: float = 0.4) -> Optional[str]:
+    def generate_text(self, prompt: str, max_tokens: int = 2500, temperature: float = 0.4) -> Optional[str]:
         """
         Plain conversational text generation.
         Triggers Groq failover if Gemini is rate-limited or unavailable.
         """
-        actual_max_tokens = max(max_tokens, 1200)
+        actual_max_tokens = max(max_tokens, 2000)
         if self.api_key and not self.gemini_disabled:
             payload = {
                 "contents": [{"role": "user", "parts": [{"text": prompt}]}],
@@ -172,7 +172,7 @@ class GeminiClinicalEngine:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.api_key}"
                 req = urllib.request.Request(url, data=data_bytes, headers={'Content-Type': 'application/json'})
                 try:
-                    with urllib.request.urlopen(req, timeout=8) as resp:
+                    with urllib.request.urlopen(req, timeout=18) as resp:
                         result = json.loads(resp.read().decode('utf-8'))
                         return result['candidates'][0]['content']['parts'][0]['text'].strip()
                 except urllib.error.HTTPError as he:
@@ -190,11 +190,12 @@ class GeminiClinicalEngine:
 
         return self._call_groq_fallback(prompt, is_json=False, max_tokens=actual_max_tokens, temperature=temperature)
 
-    def stream_generate_text(self, prompt: str, max_tokens: int = 1500, temperature: float = 0.4):
+    def stream_generate_text(self, prompt: str, max_tokens: int = 2500, temperature: float = 0.4):
         """
         Yields text tokens in real-time for live typewriter streaming.
         Supports Groq streaming API and Gemini streamGenerateContent API.
         """
+        actual_max_tokens = max(max_tokens, 2000)
         groq_key = self.groq_api_key or os.environ.get("GROQ_API_KEY", "")
         if groq_key:
             for model in self.groq_models:
@@ -203,7 +204,7 @@ class GeminiClinicalEngine:
                     "model": model,
                     "messages": [{"role": "user", "content": prompt}],
                     "temperature": temperature,
-                    "max_tokens": max_tokens,
+                    "max_tokens": actual_max_tokens,
                     "stream": True
                 }
                 data_bytes = json.dumps(payload).encode('utf-8')
@@ -217,7 +218,7 @@ class GeminiClinicalEngine:
                     }
                 )
                 try:
-                    with urllib.request.urlopen(req, timeout=15) as resp:
+                    with urllib.request.urlopen(req, timeout=25) as resp:
                         for line in resp:
                             line_str = line.decode('utf-8').strip()
                             if line_str.startswith("data: ") and not line_str.endswith("[DONE]"):
@@ -234,7 +235,7 @@ class GeminiClinicalEngine:
                     print(f"[Groq Stream notice] {e}")
                     continue
 
-        full_text = self.generate_text(prompt, max_tokens=max_tokens, temperature=temperature)
+        full_text = self.generate_text(prompt, max_tokens=actual_max_tokens, temperature=temperature)
         if full_text:
             words = full_text.split(" ")
             for i, w in enumerate(words):

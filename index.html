@@ -3641,14 +3641,14 @@
             <div style="display: flex; gap: 8px; align-items: center; flex-wrap: nowrap;">
                 <!-- Multi-Tradition Modality Switcher (Default: Auto WHO Synthesis) -->
                 <div style="position: relative; display: flex; align-items: center;" title="Switch Clinical Medical Tradition (WHO Monographs)">
-                    <select id="clinical-modality-selector" onchange="changeClinicalModality(this.value)" style="background: rgba(0,0,0,0.45); border: 1px solid rgba(46,204,113,0.35); color: #d0e4d7; padding: 6px 26px 6px 10px; border-radius: 12px; font-weight: 700; font-size: 11.5px; cursor: pointer; font-family: 'Outfit', sans-serif; outline: none; appearance: none; -webkit-appearance: none;">
-                        <option value="auto" selected>🌐 Auto (WHO Global)</option>
-                        <option value="tcm">☯️ TCM (Chinese)</option>
-                        <option value="ayurveda">🕉️ Ayurveda (Tridosha)</option>
-                        <option value="african">🌍 African Ethnomedicine</option>
-                        <option value="western">🌿 Western Herbalism</option>
+                    <select id="clinical-modality-selector" onchange="changeClinicalModality(this.value)" style="background: rgba(0,0,0,0.45); border: 1px solid rgba(46,204,113,0.35); color: #d0e4d7; padding: 6px 22px 6px 8px; border-radius: 12px; font-weight: 700; font-size: 11px; max-width: 140px; text-overflow: ellipsis; cursor: pointer; font-family: 'Outfit', sans-serif; outline: none; appearance: none; -webkit-appearance: none;">
+                        <option value="auto" selected>🌐 Auto (WHO)</option>
+                        <option value="tcm">☯️ Chinese TCM</option>
+                        <option value="ayurveda">🕉️ Ayurveda</option>
+                        <option value="african">🌍 African Ethno</option>
+                        <option value="western">🌿 Western Herb</option>
                     </select>
-                    <span style="position: absolute; right: 9px; pointer-events: none; font-size: 9px; color: var(--accent-green);">▼</span>
+                    <span style="position: absolute; right: 7px; pointer-events: none; font-size: 8px; color: var(--accent-green);">▼</span>
                 </div>
 
                 <!-- Daily Decoction Adherence & Reminders (Hidden until activated in Vault / Modal) -->
