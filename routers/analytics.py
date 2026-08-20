@@ -307,7 +307,7 @@ async def api_consult_stream(body: ConsultationRequest, request: Request):
         )
 
         try:
-            for token in doctor.gemini_engine.stream_generate_text(prompt, max_tokens=2500, temperature=0.35):
+            for token in doctor.gemini_engine.stream_generate_text(prompt, max_tokens=8192, temperature=0.35):
                 yield "data: " + json.dumps({"type": "chunk", "text": token}) + "\n\n"
                 await asyncio.sleep(0.005)
         except Exception:

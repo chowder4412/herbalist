@@ -654,7 +654,7 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
                                     "Format with clean Markdown headers (##), bold text, bullet points. Complete every sentence fully."
                                 )
                                 followup_response = doctor.gemini_engine.generate_text(
-                                    followup_prompt, max_tokens=1500, temperature=0.4
+                                    followup_prompt, max_tokens=8192, temperature=0.4
                                 )
                             except Exception as fe:
                                 print(f"[Herbalist AI] Follow-up AI generation notice: {fe}")
@@ -929,7 +929,7 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
                     "not on this off-topic subject. Invite them to ask a health concern, symptom, or herbal medicine question instead. "
                     "Keep it concise (2-3 sentences max). Format with markdown."
                 )
-                out_msg = doctor.gemini_engine.generate_text(prompt, max_tokens=1500, temperature=0.6)
+                out_msg = doctor.gemini_engine.generate_text(prompt, max_tokens=8192, temperature=0.6)
             except Exception:
                 out_msg = None
 
@@ -1060,7 +1060,7 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
                     "Respond helpfully, completely, and naturally as Dr. Herbalist. Address their question or concern thoroughly. "
                     "Use markdown formatting. Always finish your thoughts with complete, well-formed sentences."
                 )
-                fallback_response = doctor.gemini_engine.generate_text(fallback_prompt, max_tokens=1500, temperature=0.5)
+                fallback_response = doctor.gemini_engine.generate_text(fallback_prompt, max_tokens=8192, temperature=0.5)
             except Exception as fe:
                 print(f"[Herbalist AI] Conversational fallback notice: {fe}")
 

@@ -19,7 +19,7 @@ class GeminiClinicalEngine:
         self.groq_models = ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.6-27b", "groq/compound"]
         self.gemini_disabled = False if (self.api_key and len(self.api_key) > 15) else True
 
-    def _call_groq_fallback(self, prompt: str, is_json: bool = False, max_tokens: int = 1500, temperature: float = 0.2) -> Optional[Any]:
+    def _call_groq_fallback(self, prompt: str, is_json: bool = False, max_tokens: int = 8192, temperature: float = 0.2) -> Optional[Any]:
         """
         Automatic Failover Engine using Groq Cloud (openai/gpt-oss-120b, openai/gpt-oss-20b, qwen/qwen3.6-27b).
         Triggers automatically if Gemini API key is missing or hits rate limits.
@@ -28,13 +28,14 @@ class GeminiClinicalEngine:
         if not groq_key:
             return None
 
-        actual_max_tokens = max(max_tokens, 1200)
+        actual_max_tokens = max(max_tokens, 8192)
 
         system_msg = (
             "You are Dr. Herbalist (Dr. Aisha), a world-class Integrative Medical Doctor & Botanical Phytotherapist. "
             "You prescribe evidence-based natural herbal formulations, WHO-monographed botanicals, and exact kitchen decoction recipes for patient conditions. "
             "Never deflect or tell the patient to seek pharmaceutical treatment instead of providing your botanical prescription. "
-            "Directly deliver the complete natural phytotherapy regimen with exact water volumes, boiling minutes, and dosages."
+            "Directly deliver the complete natural phytotherapy regimen with exact water volumes, boiling minutes, and dosages. "
+            "Always deliver complete, exhaustive, and fully structured medical and botanical explanations without cutting off."
         )
 
         messages = (
@@ -65,66 +66,37 @@ class GeminiClinicalEngine:
             )
 
             try:
-                with urllib.request.urlopen(req, timeout=12) as resp:
+                with urllib.request.urlopen(req, timeout=30) as resp:
                     result = json.loads(resp.read().decode('utf-8'))
                     text_content = result['choices'][0]['message']['content'].strip()
-                    print(f"[Groq Automatic Failover Engine] Successfully generated response via Groq ({model})!")
-
+                    
                     if is_json:
                         clean_json = text_content
-                        if clean_json.startswith("```"):
-                            clean_json = clean_json.split("\n", 1)[1]
-                        if clean_json.endswith("```"):
-                            clean_json = clean_json.rsplit("\n", 1)[0]
-                        if clean_json.startswith("json"):
-                            clean_json = clean_json[4:].strip()
+                        if clean_json.startswith("```"): clean_json = clean_json.split("\n", 1)[1]
+                        if clean_json.endswith("```"): clean_json = clean_json.rsplit("\n", 1)[0]
+                        if clean_json.startswith("json"): clean_json = clean_json[4:].strip()
                         return json.loads(clean_json)
-
-                    # If model returned a generic refusal, skip to next model
-                    refusal_patterns = [
-                        "i’m sorry, but i can’t help with that",
-                        "i'm sorry, but i can't help with that",
-                        "i cannot fulfill this request",
-                        "i am unable to provide",
-                        "i can't help with that"
-                    ]
-                    if any(rp in text_content.lower() for rp in refusal_patterns) and len(text_content.strip()) < 80:
-                        print(f"[Groq Automatic Failover Engine] Model {model} gave refusal snippet. Trying next model...")
-                        continue
-
-                    # Clean out generic refusal disclaimers if any
-                    cleaned_text = text_content
-                    for disclaimer in [
-                        "This information is not a prescription and should never replace",
-                        "These plants are listed for educational purposes only.",
-                        "This is not a prescription and should not replace"
-                    ]:
-                        if disclaimer in cleaned_text:
-                            cleaned_text = cleaned_text.replace(disclaimer, "")
-
-                    if len(cleaned_text.strip()) > 30:
-                        return cleaned_text.strip()
+                    return text_content
             except Exception as e:
-                print(f"[Groq Automatic Failover Engine] Model {model} notice: {e}")
+                print(f"[Groq Engine notice on {model}] {e}")
                 continue
 
         return None
 
-    def analyze_clinical_case(self, complaint: str, weight_kg: float, age: int, gender: str, severity: int) -> dict:
+    def diagnose_case(self, complaint: str, age: int, gender: str, weight_kg: float, severity: int = 5) -> Optional[dict]:
         """
-        Multimodal Clinical AI Case Analyzer.
-        Runs full medical differential diagnosis, pharmacopeia bioactive match, WHO safety, and PubMed citations.
+        Primary clinical diagnostics method. Calls Gemini first, then falls back to Groq Cloud.
         """
-        if self.api_key and not self.gemini_disabled:
-            system_instruction = (
-                f"You are Dr. Herbalist, a Senior Medical Doctor & Phytotherapy Specialist. Analyze this patient case:\n"
-                f"Chief Complaint: {complaint}\nAge: {age}, Gender: {gender}, Body Weight: {weight_kg} kg, Severity: {severity}/10.\n\n"
-                f"Respond ONLY with a raw valid JSON string following the expected medical schema."
-            )
+        system_instruction = (
+            f"You are Dr. Herbalist, a Senior Medical Doctor & Phytotherapy Specialist. Analyze this patient case:\n"
+            f"Chief Complaint: {complaint}\nAge: {age}, Gender: {gender}, Body Weight: {weight_kg} kg, Severity: {severity}/10.\n\n"
+            f"Respond ONLY with a raw valid JSON string following the expected medical schema."
+        )
 
+        if self.api_key and not self.gemini_disabled:
             payload = {
                 "contents": [{"role": "user", "parts": [{"text": system_instruction}]}],
-                "generationConfig": {"temperature": 0.2, "topP": 0.95, "maxOutputTokens": 1500}
+                "generationConfig": {"temperature": 0.2, "topP": 0.95, "maxOutputTokens": 8192}
             }
             data_bytes = json.dumps(payload).encode('utf-8')
 
@@ -132,7 +104,7 @@ class GeminiClinicalEngine:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.api_key}"
                 req = urllib.request.Request(url, data=data_bytes, headers={'Content-Type': 'application/json'})
                 try:
-                    with urllib.request.urlopen(req, timeout=8) as resp:
+                    with urllib.request.urlopen(req, timeout=25) as resp:
                         result = json.loads(resp.read().decode('utf-8'))
                         text_content = result['candidates'][0]['content']['parts'][0]['text']
                         clean_json = text_content.strip()
@@ -153,14 +125,14 @@ class GeminiClinicalEngine:
                 except Exception as e:
                     print(f"[Gemini Clinical Engine] Exception on model {model}: {e}")
 
-        return self._call_groq_fallback(system_instruction, is_json=True, max_tokens=1500, temperature=0.2)
+        return self._call_groq_fallback(system_instruction, is_json=True, max_tokens=8192, temperature=0.2)
 
-    def generate_text(self, prompt: str, max_tokens: int = 2500, temperature: float = 0.4) -> Optional[str]:
+    def generate_text(self, prompt: str, max_tokens: int = 8192, temperature: float = 0.4) -> Optional[str]:
         """
         Plain conversational text generation.
         Triggers Groq failover if Gemini is rate-limited or unavailable.
         """
-        actual_max_tokens = max(max_tokens, 2000)
+        actual_max_tokens = max(max_tokens, 8192)
         if self.api_key and not self.gemini_disabled:
             payload = {
                 "contents": [{"role": "user", "parts": [{"text": prompt}]}],
@@ -172,7 +144,7 @@ class GeminiClinicalEngine:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.api_key}"
                 req = urllib.request.Request(url, data=data_bytes, headers={'Content-Type': 'application/json'})
                 try:
-                    with urllib.request.urlopen(req, timeout=18) as resp:
+                    with urllib.request.urlopen(req, timeout=30) as resp:
                         result = json.loads(resp.read().decode('utf-8'))
                         return result['candidates'][0]['content']['parts'][0]['text'].strip()
                 except urllib.error.HTTPError as he:
@@ -190,12 +162,12 @@ class GeminiClinicalEngine:
 
         return self._call_groq_fallback(prompt, is_json=False, max_tokens=actual_max_tokens, temperature=temperature)
 
-    def stream_generate_text(self, prompt: str, max_tokens: int = 2500, temperature: float = 0.4):
+    def stream_generate_text(self, prompt: str, max_tokens: int = 8192, temperature: float = 0.4):
         """
         Yields text tokens in real-time for live typewriter streaming.
         Supports Groq streaming API and Gemini streamGenerateContent API.
         """
-        actual_max_tokens = max(max_tokens, 2000)
+        actual_max_tokens = max(max_tokens, 8192)
         groq_key = self.groq_api_key or os.environ.get("GROQ_API_KEY", "")
         if groq_key:
             for model in self.groq_models:
@@ -218,7 +190,7 @@ class GeminiClinicalEngine:
                     }
                 )
                 try:
-                    with urllib.request.urlopen(req, timeout=25) as resp:
+                    with urllib.request.urlopen(req, timeout=35) as resp:
                         for line in resp:
                             line_str = line.decode('utf-8').strip()
                             if line_str.startswith("data: ") and not line_str.endswith("[DONE]"):

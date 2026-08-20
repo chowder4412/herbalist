@@ -748,7 +748,7 @@ def generate_knowledge_medical_answer(
 
     if doctor and getattr(doctor, 'gemini_engine', None):
         try:
-            ai_msg = doctor.gemini_engine.generate_text(prompt, max_tokens=1500, temperature=0.5)
+            ai_msg = doctor.gemini_engine.generate_text(prompt, max_tokens=8192, temperature=0.5)
             if ai_msg and len(ai_msg.strip()) > 50:
                 return f"{emergency_prefix}{ai_msg.strip()}"
         except Exception as ge:
@@ -928,7 +928,7 @@ def generate_conversational_doctor_response(
     
     if doctor and getattr(doctor, 'gemini_engine', None):
         try:
-            ai_msg = doctor.gemini_engine.generate_text(prompt, max_tokens=1500, temperature=0.6)
+            ai_msg = doctor.gemini_engine.generate_text(prompt, max_tokens=8192, temperature=0.6)
             if ai_msg and len(ai_msg.strip()) > 10:
                 return f"{emergency_prefix}{ai_msg.strip()}"
         except Exception as ge:
