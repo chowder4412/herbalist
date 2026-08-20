@@ -1362,11 +1362,11 @@ async def diagnose_patient_stream(body: DiagnoseRequest, request: Request):
 @router.post("/api/audio/speech-translate")
 async def translate_speech_instruction(body: SpeechTranslateRequest):
     """
-    Translates herbal preparation and dosage instructions into indigenous African languages
-    (Yoruba, Hausa, Igbo, Swahili, French, English) for localized voice readout.
+    Translates herbal preparation, diagnosis insights, and doctor voice responses into indigenous African and global languages
+    (Yoruba, Hausa, Igbo, Swahili, French, Spanish, Arabic, Chinese, English) for localized voice readout.
     """
     text = body.text
-    target_lang = (body.target_language or "yo").lower()
+    target_lang = (body.target_language or "en").lower()
     
     lang_names = {
         "yo": "Yoruba (Yorùbá)",
@@ -1374,10 +1374,13 @@ async def translate_speech_instruction(body: SpeechTranslateRequest):
         "ig": "Igbo (Asụsụ Igbo)",
         "sw": "Swahili (Kiswahili)",
         "fr": "French (Français)",
+        "es": "Spanish (Español)",
+        "ar": "Arabic (العربية)",
+        "zh": "Chinese (中文 - Mandarin)",
         "en": "English"
     }
     
-    target_name = lang_names.get(target_lang, "Yoruba")
+    target_name = lang_names.get(target_lang, "English")
     
     if target_lang == "en":
         return {
@@ -1389,15 +1392,15 @@ async def translate_speech_instruction(body: SpeechTranslateRequest):
         }
         
     prompt = (
-        f"You are Dr. Herbalist's indigenous ethnomedicine medical translator.\n"
-        f"Translate the following botanical decoction preparation and dosage instruction into natural, authentic {target_name}.\n"
-        f"Ensure medical accuracy, warmth, and clarity for elderly rural and community patients listening out loud.\n\n"
-        f"Original Instruction:\n\"{text}\"\n\n"
-        f"Provide ONLY the direct translation in {target_name} without meta commentary or markdown headers."
+        f"You are Dr. Herbalist's clinical multilingual voice translation specialist.\n"
+        f"Translate the following medical consultation explanation and herbal guidance into authentic, natural {target_name}.\n"
+        f"Ensure clinical precision, warmth, and clarity for patients listening to a voice readout.\n\n"
+        f"Original Text:\n\"{text}\"\n\n"
+        f"Provide ONLY the direct translation in {target_name} without meta commentary or markdown formatting."
     )
     
     try:
-        translated = doctor.gemini_engine.generate_text(prompt, max_tokens=500, temperature=0.3)
+        translated = doctor.gemini_engine.generate_text(prompt, max_tokens=8192, temperature=0.3)
         if not translated or len(translated.strip()) < 4:
             raise ValueError("Empty translation from LLM")
         return {
@@ -1413,7 +1416,10 @@ async def translate_speech_instruction(body: SpeechTranslateRequest):
             "ha": "Da fatan za a tafasa wannan ganye a cikin ruwa na tsawon mintuna 15. A sha kofi daya da safe da yamma bayan cin abinci.",
             "ig": "Biko sie ọgwụ ahịhịa a n'ime mmiri ruo nkeji iri na ise. Na-aṅụ otu iko n'ụtụtụ na anyasị mgbe i risịrị nri.",
             "sw": "Tafadhali chemsha dawa hii ya kienyeji katika maji kwa dakika kumi na tano. Kunywa kikombe kimoja asubuhi na jioni baada ya chakula.",
-            "fr": "Veuillez faire bouillir cette préparation à base de plantes pendant 15 minutes. Prenez une tasse le matin et le soir après le repas."
+            "fr": "Veuillez faire bouillir cette préparation à base de plantes pendant 15 minutes. Prenez une tasse le matin et le soir après le repas.",
+            "es": "Por favor hierva esta preparación herbal durante 15 minutos. Tome una taza por la mañana y por la noche después de las comidas.",
+            "ar": "يرجى غلي هذه التركيبة العشبية لمدة 15 دقيقة وتناول كوب في الصباح والمساء بعد الوجبات.",
+            "zh": "请将此草药配方在水中煎煮15分钟。饭后早晚各服用一杯。"
         }
         return {
             "status": "success",

@@ -584,6 +584,78 @@
             transition: transform 0.2s ease;
         }
 
+        /* ══════ MULTILINGUAL CHAT VOICE LANGUAGE PICKER CSS ══════ */
+        .chat-voice-lang-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(46, 204, 113, 0.3);
+            border-radius: 12px;
+            padding: 0 4px;
+            transition: all 0.2s ease;
+            height: 32px;
+            box-sizing: border-box;
+        }
+
+        .chat-voice-lang-container:hover, .chat-voice-lang-container:focus-within {
+            border-color: var(--accent-green);
+            background: rgba(46, 204, 113, 0.12);
+            box-shadow: 0 0 12px rgba(46, 204, 113, 0.25);
+        }
+
+        .chat-voice-lang-select {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #e2efe6;
+            font-size: 11.5px;
+            font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+            padding: 4px 18px 4px 6px;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            max-width: 140px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .chat-voice-lang-select option {
+            background: #111e16;
+            color: #ffffff;
+            font-size: 12px;
+        }
+
+        .chat-voice-lang-caret {
+            position: absolute;
+            right: 6px;
+            pointer-events: none;
+            font-size: 8px;
+            color: var(--accent-green);
+        }
+
+        .bubble-audio-btn {
+            background: rgba(46, 204, 113, 0.1);
+            border: 1px solid rgba(46, 204, 113, 0.3);
+            color: var(--accent-green);
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .bubble-audio-btn:hover {
+            background: rgba(46, 204, 113, 0.22);
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.25);
+        }
+
         .send-btn:hover {
             transform: scale(1.08);
         }
@@ -2232,6 +2304,24 @@
                 padding: 11px 12px !important;
                 font-size: 12.5px !important;
             }
+
+            /* Responsive Chat Voice Language Selector */
+            .chat-voice-lang-container {
+                height: 30px !important;
+                padding: 0 2px !important;
+            }
+
+            .chat-voice-lang-select {
+                max-width: 78px !important;
+                font-size: 11px !important;
+                padding: 4px 14px 4px 4px !important;
+            }
+
+            .topbar-voice-lang-container select {
+                max-width: 90px !important;
+                font-size: 10px !important;
+                padding: 5px 16px 5px 6px !important;
+            }
         }
     </style>
 </head>
@@ -3787,6 +3877,22 @@
                     <span style="position: absolute; right: 7px; pointer-events: none; font-size: 8px; color: var(--accent-green);">▼</span>
                 </div>
 
+                <!-- Synchronized Voice AI Language Selector in Top Navbar -->
+                <div class="topbar-voice-lang-container" style="position: relative; display: flex; align-items: center;" title="Voice Assistant & Consultation Language">
+                    <select id="topbar-voice-lang-select" onchange="changeChatVoiceLanguage(this.value)" style="background: rgba(0,0,0,0.45); border: 1px solid rgba(46,204,113,0.35); color: #d0e4d7; padding: 6px 22px 6px 8px; border-radius: 12px; font-weight: 700; font-size: 11px; max-width: 130px; text-overflow: ellipsis; cursor: pointer; font-family: 'Outfit', sans-serif; outline: none; appearance: none; -webkit-appearance: none;">
+                        <option value="en" selected>🗣️ 🇬🇧 English</option>
+                        <option value="yo">🗣️ 🇳🇬 Yorùbá</option>
+                        <option value="ha">🗣️ 🇳🇬 Hausa</option>
+                        <option value="ig">🗣️ 🇳🇬 Igbo</option>
+                        <option value="sw">🗣️ 🇰🇪 Swahili</option>
+                        <option value="fr">🗣️ 🇫🇷 Français</option>
+                        <option value="es">🗣️ 🇪🇸 Español</option>
+                        <option value="ar">🗣️ 🇸🇦 العربية</option>
+                        <option value="zh">🗣️ 🇨🇳 中文</option>
+                    </select>
+                    <span style="position: absolute; right: 7px; pointer-events: none; font-size: 8px; color: var(--accent-green);">▼</span>
+                </div>
+
                 <!-- Daily Decoction Adherence & Reminders (Hidden until activated in Vault / Modal) -->
                 <div id="adherence-nav-container" style="display: none; align-items: center; gap: 4px; background: rgba(243,156,18,0.12); border: 1px solid var(--accent-gold); padding: 4px 8px 4px 10px; border-radius: 12px;">
                     <button id="adherence-nav-btn" onclick="openAdherenceModal()" title="Daily Decoction Dose Adherence Tracker & Push Reminders" style="background: transparent; border: none; color: var(--accent-gold); font-weight: 700; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 0;">
@@ -3929,6 +4035,22 @@
                 <input type="file" id="chat-file-upload" accept="image/*,.pdf,.doc,.docx" style="display: none;" onchange="handleChatFileSelected(event)">
                 <textarea class="chat-input" id="user-input" rows="1" placeholder="Ask Herbalist AI Doctor..." onkeydown="handleKeyPress(event)" oninput="autoExpandTextarea(this)"></textarea>
                 <div class="pill-actions">
+                    <!-- MULTILINGUAL CHAT VOICE LANGUAGE DROPDOWN -->
+                    <div class="chat-voice-lang-container" title="Select Voice AI Language / Doctor Persona">
+                        <select id="chat-voice-lang-select" onchange="changeChatVoiceLanguage(this.value)" class="chat-voice-lang-select">
+                            <option value="en" selected>🇬🇧 English</option>
+                            <option value="yo">🇳🇬 Yorùbá</option>
+                            <option value="ha">🇳🇬 Hausa</option>
+                            <option value="ig">🇳🇬 Igbo</option>
+                            <option value="sw">🇰🇪 Swahili</option>
+                            <option value="fr">🇫🇷 Français</option>
+                            <option value="es">🇪🇸 Español</option>
+                            <option value="ar">🇸🇦 العربية</option>
+                            <option value="zh">🇨🇳 中文</option>
+                        </select>
+                        <span class="chat-voice-lang-caret">▼</span>
+                    </div>
+
                     <!-- MODERN STUDIO MICROPHONE SVG ICON WITH WEB SPEECH API -->
                     <button class="mic-btn" id="mic-btn-el" onclick="toggleSpeechRecognition()" title="Voice Input — Speak to Dr. Herbalist">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -4503,6 +4625,182 @@
         // ══════════════════════════════════════════════════════════════
         // WEB SPEECH API — MULTILINGUAL VOICE CONSULTATION ENGINE
         // ══════════════════════════════════════════════════════════════
+        let currentChatVoiceLang = 'en'; // default English
+        window.currentChatVoiceLang = currentChatVoiceLang;
+
+        const CHAT_VOICE_PROFILES = {
+            'en': {
+                code: 'en',
+                name: 'English',
+                doctor: 'Dr. Herbalist (Global MD)',
+                flag: '🇬🇧',
+                sttLang: 'en-US',
+                ttsCode: 'en-GB',
+                langFallback: 'en-US',
+                pitch: 0.96,
+                rate: 0.96,
+                modalityHint: 'auto'
+            },
+            'yo': {
+                code: 'yo',
+                name: 'Yorùbá',
+                doctor: 'Dr. Adewale (Yorùbá Ethno)',
+                flag: '🇳🇬',
+                sttLang: 'yo-NG',
+                ttsCode: 'yo-NG',
+                langFallback: 'en-NG',
+                pitch: 0.95,
+                rate: 0.92,
+                modalityHint: 'african'
+            },
+            'ha': {
+                code: 'ha',
+                name: 'Hausa',
+                doctor: 'Dr. Yusuf (Yusuf Lawal)',
+                flag: '🇳🇬',
+                sttLang: 'ha-NG',
+                ttsCode: 'ha-NG',
+                langFallback: 'en-NG',
+                pitch: 0.95,
+                rate: 0.92,
+                modalityHint: 'african'
+            },
+            'ig': {
+                code: 'ig',
+                name: 'Igbo',
+                doctor: 'Dr. Chioma (Igbo Healer)',
+                flag: '🇳🇬',
+                sttLang: 'ig-NG',
+                ttsCode: 'ig-NG',
+                langFallback: 'en-NG',
+                pitch: 1.05,
+                rate: 0.92,
+                modalityHint: 'african'
+            },
+            'sw': {
+                code: 'sw',
+                name: 'Kiswahili',
+                doctor: 'Dr. Juma (Dawa Asili)',
+                flag: '🇰🇪',
+                sttLang: 'sw-KE',
+                ttsCode: 'sw-KE',
+                langFallback: 'sw',
+                pitch: 0.95,
+                rate: 0.94,
+                modalityHint: 'african'
+            },
+            'fr': {
+                code: 'fr',
+                name: 'Français',
+                doctor: 'Dr. Monique (Phytothérapie)',
+                flag: '🇫🇷',
+                sttLang: 'fr-FR',
+                ttsCode: 'fr-FR',
+                langFallback: 'fr',
+                pitch: 1.02,
+                rate: 0.96,
+                modalityHint: 'western'
+            },
+            'es': {
+                code: 'es',
+                name: 'Español',
+                doctor: 'Dra. Elena (Fitoterapia)',
+                flag: '🇪🇸',
+                sttLang: 'es-ES',
+                ttsCode: 'es-ES',
+                langFallback: 'es',
+                pitch: 1.02,
+                rate: 0.96,
+                modalityHint: 'western'
+            },
+            'ar': {
+                code: 'ar',
+                name: 'العربية',
+                doctor: 'Dr. Tariq (Al-Tibb)',
+                flag: '🇸🇦',
+                sttLang: 'ar-SA',
+                ttsCode: 'ar-SA',
+                langFallback: 'ar',
+                pitch: 0.95,
+                rate: 0.94,
+                modalityHint: 'western'
+            },
+            'zh': {
+                code: 'zh',
+                name: '中文',
+                doctor: 'Dr. Chen (TCM)',
+                flag: '🇨🇳',
+                sttLang: 'zh-CN',
+                ttsCode: 'zh-CN',
+                langFallback: 'zh',
+                pitch: 0.98,
+                rate: 0.95,
+                modalityHint: 'tcm'
+            }
+        };
+
+        function initChatVoiceLanguage() {
+            try {
+                const saved = localStorage.getItem('herbalist_chat_voice_lang');
+                if (saved && CHAT_VOICE_PROFILES[saved]) {
+                    currentChatVoiceLang = saved;
+                    window.currentChatVoiceLang = saved;
+                }
+            } catch(e) {}
+
+            const select1 = document.getElementById('chat-voice-lang-select');
+            const select2 = document.getElementById('topbar-voice-lang-select');
+            if (select1) select1.value = currentChatVoiceLang;
+            if (select2) select2.value = currentChatVoiceLang;
+        }
+
+        function changeChatVoiceLanguage(langKey, notify = true) {
+            if (!CHAT_VOICE_PROFILES[langKey]) langKey = 'en';
+            currentChatVoiceLang = langKey;
+            window.currentChatVoiceLang = langKey;
+
+            try {
+                localStorage.setItem('herbalist_chat_voice_lang', langKey);
+            } catch(e) {}
+
+            // Sync all dropdown instances
+            const select1 = document.getElementById('chat-voice-lang-select');
+            const select2 = document.getElementById('topbar-voice-lang-select');
+            if (select1 && select1.value !== langKey) select1.value = langKey;
+            if (select2 && select2.value !== langKey) select2.value = langKey;
+
+            // Also synchronize with Cook Mode audio language
+            const cookSelect1 = document.getElementById('cook-audio-lang-toolkit');
+            const cookSelect2 = document.getElementById('cook-audio-lang-fullscreen');
+            if (cookSelect1) cookSelect1.value = langKey;
+            if (cookSelect2) cookSelect2.value = langKey;
+            if (typeof currentCookAudioLang !== 'undefined') currentCookAudioLang = langKey;
+
+            // Also sync Telehealth persona
+            const telehealthMap = {
+                'en': 'male_uk',
+                'yo': 'male_yo',
+                'ha': 'male_ha',
+                'ig': 'female_ig',
+                'sw': 'male_sw',
+                'fr': 'female_fr',
+                'es': 'female_us',
+                'ar': 'male_uk',
+                'zh': 'male_uk'
+            };
+            const telehealthKey = telehealthMap[langKey];
+            if (telehealthKey && typeof telehealthPersonas !== 'undefined') {
+                const teleSelect = document.getElementById('telehealth-voice-selector');
+                if (teleSelect) teleSelect.value = telehealthKey;
+                if (typeof activeVoicePersona !== 'undefined') activeVoicePersona = telehealthKey;
+            }
+
+            const profile = CHAT_VOICE_PROFILES[langKey];
+            if (notify && typeof showToast === 'function') {
+                showToast(`${profile.flag} Voice Language: ${profile.name} (${profile.doctor})`, 'success', 2200);
+            }
+        }
+
         let recognitionInstance = null;
         let isListening = false;
 
@@ -4512,7 +4810,11 @@
             const userInput = document.getElementById('user-input');
 
             if (!SpeechRecognition) {
-                alert("⚠️ Voice Speech Input is not supported by your browser. Please use Google Chrome, Microsoft Edge, or Safari.");
+                if (typeof showToast === 'function') {
+                    showToast("⚠️ Voice Speech Input is not supported by your browser. Please use Google Chrome, Microsoft Edge, or Safari.", "error");
+                } else {
+                    alert("⚠️ Voice Speech Input is not supported by your browser. Please use Google Chrome, Microsoft Edge, or Safari.");
+                }
                 return;
             }
 
@@ -4528,17 +4830,21 @@
             }
 
             try {
+                const profile = CHAT_VOICE_PROFILES[currentChatVoiceLang] || CHAT_VOICE_PROFILES['en'];
                 recognitionInstance = new SpeechRecognition();
                 recognitionInstance.continuous = false;
                 recognitionInstance.interimResults = true;
-                recognitionInstance.lang = navigator.language || 'en-US';
+                recognitionInstance.lang = profile.sttLang || 'en-US';
 
                 recognitionInstance.onstart = function() {
                     isListening = true;
                     if (micBtn) {
                         micBtn.style.background = 'rgba(231, 76, 60, 0.25)';
                         micBtn.style.color = '#e74c3c';
-                        micBtn.title = '🔴 Listening... Speak now!';
+                        micBtn.title = `🔴 Listening in ${profile.name}... Speak now!`;
+                    }
+                    if (typeof showToast === 'function') {
+                        showToast(`🎙️ Listening in ${profile.flag} ${profile.name} (${profile.doctor})... Speak freely!`, 'info', 2000);
                     }
                 };
 
@@ -5128,9 +5434,78 @@
             openLiveVoiceConsultationModal();
         }
 
+        async function speakDoctorMessageInSelectedLanguage(text, overrideLang = null) {
+            if (!text || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+            const targetLang = overrideLang || currentChatVoiceLang || 'en';
+            const profile = CHAT_VOICE_PROFILES[targetLang] || CHAT_VOICE_PROFILES['en'];
+
+            try {
+                window.speechSynthesis.cancel();
+                let clean = text
+                    .replace(/<[^>]*>?/gm, ' ')
+                    .replace(/[*_#`~>\[\]]/g, ' ')
+                    .replace(/https?:\/\/\S+/g, '')
+                    .replace(/PATIENT_GUEST/g, 'patient')
+                    .replace(/🔊\s*Listen\s*\([^\)]*\)/gi, '')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+
+                if (!clean) return;
+
+                // Translate if target language is not English
+                if (targetLang !== 'en') {
+                    try {
+                        const res = await fetch('/api/audio/speech-translate', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                text: clean.slice(0, 450), 
+                                target_language: targetLang 
+                            })
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (data.translated_text) clean = data.translated_text;
+                        }
+                    } catch(translateErr) {
+                        console.warn("Notice translating speech audio:", translateErr);
+                    }
+                }
+
+                const utter = new SpeechSynthesisUtterance(clean.slice(0, 600));
+                utter.pitch = profile.pitch || 1.0;
+                utter.rate = profile.rate || 0.95;
+                utter.lang = profile.ttsCode || 'en-US';
+
+                // Select best available browser voice
+                const voices = window.speechSynthesis.getVoices() || [];
+                const langPrefix = targetLang.toLowerCase();
+                let matched = voices.find(v => v.lang.toLowerCase().startsWith(profile.ttsCode.toLowerCase()));
+                if (!matched) {
+                    matched = voices.find(v => v.lang.toLowerCase().startsWith(langPrefix));
+                }
+                if (matched) utter.voice = matched;
+
+                // Show wave visualizer
+                const waveVis = document.getElementById('voice-wave-visualizer');
+                if (waveVis) waveVis.style.display = 'flex';
+
+                utter.onend = () => {
+                    if (waveVis) waveVis.style.display = 'none';
+                };
+                utter.onerror = () => {
+                    if (waveVis) waveVis.style.display = 'none';
+                };
+
+                window.speechSynthesis.speak(utter);
+            } catch(err) {
+                console.error("Speech Synthesis Error:", err);
+            }
+        }
+
         function speakText(text) {
             if (!isVoiceEnabled || !window.speechSynthesis || !text) return;
-            telehealthDoctorSpeak(text);
+            speakDoctorMessageInSelectedLanguage(text);
         }
 
         /* ══════ Markdown-lite Renderer ══════ */
@@ -5152,7 +5527,21 @@
             bubble.style.cssText = role === 'patient'
                 ? 'background: rgba(255,255,255,0.06); padding: 14px 20px; border-radius: 18px 18px 4px 18px; align-self: flex-end; max-width: 78%; animation: fadeSlideIn 0.35s ease;'
                 : 'background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 4px 20px 20px 20px; padding: 20px 24px; max-width: 85%; align-self: flex-start; animation: fadeSlideIn 0.4s ease;';
-            bubble.innerHTML = html;
+
+            // If doctor role, attach a clean on-demand audio readout button
+            let contentHtml = html;
+            if (role !== 'patient' && !skipPersist) {
+                const langProf = CHAT_VOICE_PROFILES[currentChatVoiceLang] || CHAT_VOICE_PROFILES['en'];
+                contentHtml += `
+                    <div style="display: flex; gap: 8px; align-items: center; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+                        <button class="bubble-audio-btn" onclick="speakDoctorMessageInSelectedLanguage(this.closest('.chat-bubble').innerText)" title="Listen to doctor's response out loud in ${langProf.name}">
+                            <span>🔊</span><span>Listen (${langProf.flag} ${langProf.name})</span>
+                        </button>
+                    </div>
+                `;
+            }
+
+            bubble.innerHTML = contentHtml;
             feed.appendChild(bubble);
 
             // Scroll the actual scrollable container, not the chat-feed div itself
@@ -11951,6 +12340,7 @@ ${recipeText}
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            initChatVoiceLanguage();
             const restored = restoreActiveSessionOnBoot();
             loadRecentsFromBackend();
             checkUserSession();
