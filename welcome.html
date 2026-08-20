@@ -440,7 +440,7 @@
       color: var(--primary-emerald);
     }
 
-    /* --- Feature Badges Row --- */
+    /* --- Feature Badges Row (Non-clickable Informational Chips) --- */
     .feature-pills {
       display: flex;
       flex-wrap: wrap;
@@ -458,16 +458,8 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      text-decoration: none;
-      transition: all 0.2s ease;
-      cursor: pointer;
-    }
-
-    .feature-pill:hover {
-      background: rgba(16, 185, 129, 0.08);
-      border-color: var(--border-hover);
-      color: var(--primary-emerald);
-      transform: translateY(-1px);
+      cursor: default;
+      user-select: none;
     }
 
     .feature-pill svg, .nav-link-item svg {
@@ -838,23 +830,23 @@
         </div>
       </div>
 
-      <!-- Feature Badges -->
+      <!-- Feature Badges (Informational Capabilities) -->
       <div class="feature-pills">
-        <a href="/auth.html?mode=login&redirect=pharmacopeia" class="feature-pill" title="Explore WHO botanical monographs">
+        <div class="feature-pill">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
             <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
           </svg>
           <span>100+ Plant WHO Monographs</span>
-        </a>
-        <a href="/auth.html?mode=login&redirect=consultation" class="feature-pill" title="Safety Interlock & Clark's Rule Dosing">
+        </div>
+        <div class="feature-pill">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
             <circle cx="12" cy="11" r="2"></circle>
           </svg>
           <span>Pregnancy & Pediatric Safety Lock</span>
-        </a>
-        <a href="/auth.html?mode=login&redirect=toolkit" class="feature-pill" title="Access Patient Care Toolkit">
+        </div>
+        <div class="feature-pill">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
             <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
@@ -862,14 +854,14 @@
             <line x1="9" y1="14" x2="15" y2="14"></line>
           </svg>
           <span>Patient Toolkit</span>
-        </a>
-        <a href="/auth.html?mode=login&redirect=telehealth" class="feature-pill" title="Start Telehealth Video Consultation">
+        </div>
+        <div class="feature-pill">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="23 7 16 12 23 17 23 7"></polygon>
             <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
           </svg>
           <span>Telehealth Call</span>
-        </a>
+        </div>
       </div>
     </section>
 
