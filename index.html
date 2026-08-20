@@ -2065,6 +2065,114 @@
                 padding: 9px 14px !important;
                 font-size: 12.5px !important;
             }
+
+            /* ══════ LIVE TELEHEALTH VOICE MODAL MOBILE RESPONSIVE ENGINE (<= 768px) ══════ */
+            .telehealth-modal-overlay {
+                padding: 12px 14px 16px 14px !important;
+                height: 100vh !important;
+                height: 100dvh !important;
+                max-height: 100dvh !important;
+                justify-content: space-between !important;
+                box-sizing: border-box !important;
+                overflow-y: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+                gap: 8px !important;
+            }
+
+            .telehealth-header {
+                padding-bottom: 2px !important;
+            }
+
+            .telehealth-header h2 {
+                font-size: 15px !important;
+            }
+
+            #telehealth-voice-selector {
+                max-width: 130px !important;
+                font-size: 11px !important;
+                padding: 5px 8px !important;
+                text-overflow: ellipsis !important;
+            }
+
+            .telehealth-center-hud {
+                gap: 8px !important;
+                margin: auto 0 !important;
+                width: 100% !important;
+            }
+
+            .stethoscope-orb-container {
+                width: 125px !important;
+                height: 125px !important;
+            }
+
+            .orb-glow-ring {
+                inset: -8px !important;
+            }
+
+            .orb-core-sphere {
+                width: 100px !important;
+                height: 100px !important;
+            }
+
+            .orb-core-sphere svg {
+                width: 40px !important;
+                height: 40px !important;
+            }
+
+            #telehealth-status-badge {
+                font-size: 13.5px !important;
+                margin-bottom: 2px !important;
+            }
+
+            .waveform-canvas {
+                height: 36px !important;
+                max-width: 100% !important;
+            }
+
+            .caption-ticker-box {
+                padding: 8px 12px !important;
+                min-height: 50px !important;
+                max-height: 75px !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+                border-radius: 14px !important;
+            }
+
+            #caption-text-body {
+                font-size: 12px !important;
+                line-height: 1.35 !important;
+                min-height: 24px !important;
+            }
+
+            .telehealth-bottom-dock {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+                gap: 8px !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+
+            .telehealth-ctrl-btn {
+                padding: 10px 10px !important;
+                font-size: 12px !important;
+                border-radius: 12px !important;
+                justify-content: center !important;
+                gap: 6px !important;
+                white-space: nowrap !important;
+                box-sizing: border-box !important;
+                width: 100% !important;
+            }
+
+            .telehealth-ctrl-btn.danger {
+                grid-column: span 2 !important;
+                padding: 12px 14px !important;
+                font-size: 13px !important;
+                font-weight: 800 !important;
+                background: linear-gradient(135deg, rgba(231, 76, 60, 0.3), rgba(192, 57, 43, 0.45)) !important;
+                border: 1.5px solid #e74c3c !important;
+                color: #ffffff !important;
+                box-shadow: 0 4px 16px rgba(231, 76, 60, 0.35) !important;
+            }
         }
 
         @media (max-width: 480px) {
@@ -2094,6 +2202,35 @@
             #toolkit-panel-cook > div:last-child button {
                 width: 100% !important;
                 justify-content: center !important;
+            }
+
+            .telehealth-modal-overlay {
+                padding: 10px 12px 14px 12px !important;
+            }
+
+            .stethoscope-orb-container {
+                width: 110px !important;
+                height: 110px !important;
+            }
+
+            .orb-core-sphere {
+                width: 88px !important;
+                height: 88px !important;
+            }
+
+            .orb-core-sphere svg {
+                width: 36px !important;
+                height: 36px !important;
+            }
+
+            .telehealth-ctrl-btn {
+                padding: 9px 8px !important;
+                font-size: 11.5px !important;
+            }
+
+            .telehealth-ctrl-btn.danger {
+                padding: 11px 12px !important;
+                font-size: 12.5px !important;
             }
         }
     </style>
@@ -2923,7 +3060,7 @@
                             <select id="cook-audio-lang-toolkit" onchange="changeCookAudioLanguage(this.value)" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(243,156,18,0.4); color: var(--accent-gold); padding: 5px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; outline: none;">
                                 <option value="en">🇬🇧 English</option>
                                 <option value="yo">🇳🇬 Yorùbá (Dr. Adewale)</option>
-                                <option value="ha">🇳🇬 Hausa (Dr. Aminu)</option>
+                                <option value="ha">🇳🇬 Hausa (Dr. Yusuf - Yusuf Lawal)</option>
                                 <option value="ig">🇳🇬 Igbo (Dr. Chioma)</option>
                                 <option value="sw">🇰🇪 Kiswahili (Dr. Juma)</option>
                                 <option value="fr">🇫🇷 Français (Dr. Monique)</option>
@@ -3338,7 +3475,6 @@
 
                 <!-- Browser Push Notifications Configuration -->
                 <div style="background: rgba(46,204,113,0.05); border: 1px solid rgba(46,204,113,0.2); border-radius: 16px; padding: 16px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <span style="font-size: 16px;">🔔</span>
                             <span style="font-weight: 700; font-size: 13px; color: #fff;">Daily Push Dose Reminders</span>
@@ -3378,53 +3514,53 @@
     <!-- LIVE TELEHEALTH VOICE CONSULTATION OVERLAY MODAL -->
     <div class="telehealth-modal-overlay" id="voice-consultation-modal">
         <!-- Telehealth Top Header -->
-        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 900px; margin: 0 auto;">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="width: 44px; height: 44px; border-radius: 14px; background: rgba(46,204,113,0.15); border: 1px solid var(--accent-green); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 16px rgba(46,204,113,0.3);">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <div class="telehealth-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 900px; margin: 0 auto; flex-shrink: 0;">
+            <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(46,204,113,0.15); border: 1px solid var(--accent-green); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 16px rgba(46,204,113,0.3); flex-shrink: 0;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.4 19 2c1 2 2 4.1 2 9 0 4.9-4 9-9 9z"></path>
                         <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
                     </svg>
                 </div>
-                <div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <h2 style="font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 700; color: #fff; margin: 0;">Live Telehealth Consultation</h2>
-                        <span style="display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; color: #2ecc71; background: rgba(46,204,113,0.15); border: 1px solid rgba(46,204,113,0.3); padding: 2px 8px; border-radius: 10px;">
-                            <span style="width: 6px; height: 6px; border-radius: 50%; background: #2ecc71; box-shadow: 0 0 8px #2ecc71;"></span>
+                <div style="min-width: 0;">
+                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;">
+                        <h2 style="font-family: 'Outfit', sans-serif; font-size: 17px; font-weight: 700; color: #fff; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Live Telehealth Call</h2>
+                        <span style="display: flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; color: #2ecc71; background: rgba(46,204,113,0.15); border: 1px solid rgba(46,204,113,0.3); padding: 1px 6px; border-radius: 8px; flex-shrink: 0;">
+                            <span style="width: 5px; height: 5px; border-radius: 50%; background: #2ecc71; box-shadow: 0 0 6px #2ecc71;"></span>
                             LIVE
                         </span>
                     </div>
-                    <div style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 10px; margin-top: 2px;">
-                        <span id="telehealth-timer-display">⏱ 00:00</span>
+                    <div style="font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        <span id="telehealth-timer-display" style="font-weight: 600;">⏱ 00:00</span>
                         <span>•</span>
-                        <span id="telehealth-persona-label">🩺 Dr. Herbalist (Senior Integrative MD)</span>
+                        <span id="telehealth-persona-label" style="overflow: hidden; text-overflow: ellipsis;">🩺 Dr. Herbalist</span>
                     </div>
                 </div>
             </div>
 
             <!-- Voice Persona & Audio Settings Selector -->
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <select id="telehealth-voice-selector" onchange="changeTelehealthVoicePersona(this.value)" style="background: rgba(0,0,0,0.5); border: 1px solid var(--pill-border); color: #fff; padding: 8px 12px; border-radius: 12px; font-size: 12px; cursor: pointer; font-family: 'Inter', sans-serif;">
-                    <option value="male_uk" selected>🇬🇧 Dr. Herbalist (Senior Integrative MD - British/Global)</option>
-                    <option value="male_yo">🇳🇬 Dr. Adewale (Yorùbá Ethnomedicine)</option>
-                    <option value="male_ha">🇳🇬 Dr. Aminu (Hausa Phytotherapy)</option>
-                    <option value="female_ig">🇳🇬 Dr. Chioma (Igbo Botanical Healer)</option>
-                    <option value="male_sw">🇰🇪 Dr. Juma (Swahili / Kiswahili Dawa Asili)</option>
-                    <option value="female_fr">🇫🇷 Dr. Monique (Français / French)</option>
-                    <option value="female_us">🌿 Dr. Maya (Empathetic US English)</option>
+            <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                <select id="telehealth-voice-selector" onchange="changeTelehealthVoicePersona(this.value)" style="background: rgba(0,0,0,0.5); border: 1px solid var(--pill-border); color: #fff; padding: 6px 10px; border-radius: 12px; font-size: 11.5px; cursor: pointer; font-family: 'Inter', sans-serif; max-width: 145px; text-overflow: ellipsis;">
+                    <option value="male_uk" selected>🇬🇧 Dr. Herbalist (Global MD)</option>
+                    <option value="male_yo">🇳🇬 Dr. Adewale (Yorùbá)</option>
+                    <option value="male_ha">🇳🇬 Dr. Yusuf (Yusuf Lawal)</option>
+                    <option value="female_ig">🇳🇬 Dr. Chioma (Igbo)</option>
+                    <option value="male_sw">🇰🇪 Dr. Juma (Kiswahili)</option>
+                    <option value="female_fr">🇫🇷 Dr. Monique (Français)</option>
+                    <option value="female_us">🌿 Dr. Maya (US English)</option>
                 </select>
-                <button class="icon-btn" onclick="closeLiveVoiceConsultationModal()" title="Minimize to Chat" style="background: rgba(255,255,255,0.08); border-radius: 12px; width: 40px; height: 40px;">
+                <button class="icon-btn" onclick="closeLiveVoiceConsultationModal()" title="Minimize to Chat" style="background: rgba(255,255,255,0.08); border-radius: 12px; width: 36px; height: 36px; flex-shrink: 0;">
                     ✕
                 </button>
             </div>
         </div>
 
         <!-- Central Telehealth Sphere & Dynamic Waveform HUD -->
-        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; margin: auto 0;">
+        <div class="telehealth-center-hud" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; margin: auto 0; width: 100%; max-width: 700px; box-sizing: border-box;">
             <div class="stethoscope-orb-container" id="stethoscope-orb-box">
                 <div class="orb-glow-ring"></div>
                 <div class="orb-core-sphere" id="orb-core-sphere">
-                    <svg width="68" height="68" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));">
+                    <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));">
                         <path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"></path>
                         <path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4"></path>
                         <circle cx="20" cy="10" r="2"></circle>
@@ -3432,33 +3568,33 @@
                 </div>
             </div>
 
-            <div style="text-align: center;">
-                <div id="telehealth-status-badge" style="font-family: 'Outfit', sans-serif; font-size: 16px; font-weight: 700; color: var(--accent-green); text-shadow: 0 0 12px rgba(46,204,113,0.5); margin-bottom: 4px;">
+            <div style="text-align: center; padding: 0 8px;">
+                <div id="telehealth-status-badge" style="font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 700; color: var(--accent-green); text-shadow: 0 0 12px rgba(46,204,113,0.5); margin-bottom: 2px;">
                     🎙️ Listening to you... Speak freely
                 </div>
-                <div style="font-size: 12px; color: var(--text-muted);">
+                <div style="font-size: 11px; color: var(--text-muted);">
                     Web Speech Bi-Directional Streaming Engine • Hands-Free Conversational Loop
                 </div>
             </div>
 
             <!-- Dynamic Audio Frequency Oscilloscope Canvas -->
-            <canvas class="waveform-canvas" id="telehealth-waveform-canvas" width="600" height="70"></canvas>
+            <canvas class="waveform-canvas" id="telehealth-waveform-canvas" width="600" height="50"></canvas>
 
             <!-- Real-Time Subtitles & Closed Caption Box -->
             <div class="caption-ticker-box">
-                <div style="font-size: 11px; font-weight: 800; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;" id="caption-speaker-label">
+                <div style="font-size: 10px; font-weight: 800; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px;" id="caption-speaker-label">
                     Patient (Live Transcription)
                 </div>
-                <div style="font-size: 14px; color: #f4f9f5; line-height: 1.6; min-height: 42px;" id="caption-text-body">
+                <div style="font-size: 13px; color: #f4f9f5; line-height: 1.45; min-height: 36px; overflow-y: auto;" id="caption-text-body">
                     "Hello Dr. Herbalist, I'd like to consult with you regarding natural herbal remedies."
                 </div>
             </div>
         </div>
 
         <!-- Bottom Telehealth Control Dock -->
-        <div style="display: flex; justify-content: center; align-items: center; gap: 14px; flex-wrap: wrap; width: 100%; max-width: 900px; margin: 0 auto;">
+        <div class="telehealth-bottom-dock" style="display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap; width: 100%; max-width: 900px; margin: 0 auto; flex-shrink: 0; box-sizing: border-box;">
             <button class="telehealth-ctrl-btn active-mic" id="telehealth-mic-btn" onclick="toggleTelehealthMic()">
-                <svg id="telehealth-mic-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <svg id="telehealth-mic-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
                     <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
                     <line x1="12" y1="19" x2="12" y2="23"></line>
@@ -3526,7 +3662,7 @@
                 <select id="cook-audio-lang-fullscreen" onchange="changeCookAudioLanguage(this.value)" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(243,156,18,0.4); color: var(--accent-gold); padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; outline: none;">
                     <option value="en">🇬🇧 English</option>
                     <option value="yo">🇳🇬 Yorùbá (Dr. Adewale)</option>
-                    <option value="ha">🇳🇬 Hausa (Dr. Aminu)</option>
+                    <option value="ha">🇳🇬 Hausa (Dr. Yusuf - Yusuf Lawal)</option>
                     <option value="ig">🇳🇬 Igbo (Dr. Chioma)</option>
                     <option value="sw">🇰🇪 Kiswahili (Dr. Juma)</option>
                     <option value="fr">🇫🇷 Français (Dr. Monique)</option>
@@ -8185,7 +8321,7 @@ ${recipeText}
             
             const langNames = {
                 'yo': 'Yorùbá (Dr. Adewale)',
-                'ha': 'Hausa (Dr. Aminu)',
+                'ha': 'Hausa (Dr. Yusuf - Yusuf Lawal)',
                 'ig': 'Igbo (Dr. Chioma)',
                 'sw': 'Kiswahili (Dr. Juma)',
                 'fr': 'Français (Dr. Monique)',
@@ -9465,7 +9601,7 @@ ${recipeText}
         const telehealthPersonas = {
             'male_uk': { name: 'Dr. Herbalist', title: '🇬🇧 Dr. Herbalist (Senior Integrative MD - British/Global)', flag: '🇬🇧', lang: 'en-GB', langFallback: 'en-GB', voiceCode: 'en-GB', pitch: 0.96, rate: 0.94, gender: 'male' },
             'male_yo': { name: 'Dr. Adewale', title: '🇳🇬 Dr. Adewale (Yorùbá Ethnomedicine)', flag: '🇳🇬', lang: 'yo-NG', langFallback: 'en-NG', voiceCode: 'yo-NG', pitch: 0.95, rate: 0.94, gender: 'male' },
-            'male_ha': { name: 'Dr. Aminu', title: '🇳🇬 Dr. Aminu (Hausa Phytotherapy)', flag: '🇳🇬', lang: 'ha-NG', langFallback: 'en-NG', voiceCode: 'ha-NG', pitch: 0.95, rate: 0.94, gender: 'male' },
+            'male_ha': { name: 'Dr. Yusuf (Yusuf Lawal)', title: '🇳🇬 Dr. Yusuf (Yusuf Lawal - Hausa Phytotherapy)', flag: '🇳🇬', lang: 'ha-NG', langFallback: 'en-NG', voiceCode: 'ha-NG', pitch: 0.95, rate: 0.94, gender: 'male' },
             'female_ig': { name: 'Dr. Chioma', title: '🇳🇬 Dr. Chioma (Igbo Botanical Healer)', flag: '🇳🇬', lang: 'ig-NG', langFallback: 'en-NG', voiceCode: 'ig-NG', pitch: 1.10, rate: 0.95, gender: 'female' },
             'male_sw': { name: 'Dr. Juma', title: '🇰🇪 Dr. Juma (Swahili / Kiswahili Dawa Asili)', flag: '🇰🇪', lang: 'sw-KE', langFallback: 'sw', voiceCode: 'sw', pitch: 0.95, rate: 0.98, gender: 'male' },
             'female_fr': { name: 'Dr. Monique', title: '🇫🇷 Dr. Monique (Phytothérapie Clinique)', flag: '🇫🇷', lang: 'fr-FR', langFallback: 'fr', voiceCode: 'fr-FR', pitch: 1.05, rate: 0.98, gender: 'female' },
