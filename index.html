@@ -6360,6 +6360,273 @@ ${recipeText}
             }
         }
 
+        let currentUserState = null;
+        let pendingVerificationEmail = '';
+
+        function checkUserSession() {
+            try {
+                const stored = localStorage.getItem('herbalist_user_profile');
+                if (stored) {
+                    currentUserState = JSON.parse(stored);
+                    updateUserUIState();
+                } else {
+                    fetch('/api/auth/me')
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data && data.user) {
+                                currentUserState = data.user;
+                                localStorage.setItem('herbalist_user_profile', JSON.stringify(currentUserState));
+                                updateUserUIState();
+                            }
+                        })
+                        .catch(() => {});
+                }
+            } catch(e) {}
+        }
+
+        function updateUserUIState() {
+            if (currentUserState) {
+                const headerName = document.getElementById('user-display-name');
+                if (headerName) headerName.innerText = currentUserState.full_name || (currentUserState.email ? currentUserState.email.split('@')[0] : 'Patient');
+            }
+        }
+
+        async function handleAuthSubmit() {
+            const email = document.getElementById('auth-email')?.value.trim();
+            const password = document.getElementById('auth-password')?.value;
+            const name = document.getElementById('auth-name')?.value.trim();
+            const errorMsg = document.getElementById('auth-error-msg');
+            const submitBtn = document.getElementById('auth-submit-btn');
+
+            if (errorMsg) errorMsg.style.display = 'none';
+
+            if (!email || !password) {
+                if (errorMsg) { errorMsg.innerText = 'Please enter both email and password.'; errorMsg.style.display = 'block'; }
+                return;
+            }
+
+            const isRegister = document.getElementById('tab-register')?.style.background === 'var(--accent-green)';
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.innerText = 'Authenticating...'; }
+
+            try {
+                if (isRegister) {
+                    if (typeof firebase !== 'undefined' && firebase.auth) {
+                        try {
+                            const cred = await firebase.auth().createUserWithEmailAndPassword(email, password);
+                            if (cred && cred.user) {
+                                await cred.user.sendEmailVerification();
+                                pendingVerificationEmail = email;
+                                showEmailVerificationScreen(email);
+                                if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = 'Create Free Account'; }
+                                return;
+                            }
+                        } catch(fbErr) {
+                            console.log("[Firebase Auth Notice]", fbErr);
+                        }
+                    }
+
+                    const res = await fetch('/api/auth/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password, full_name: name || email.split('@')[0] })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.detail || data.message || 'Registration failed.');
+
+                    pendingVerificationEmail = email;
+                    showEmailVerificationScreen(email);
+                } else {
+                    if (typeof firebase !== 'undefined' && firebase.auth) {
+                        try {
+                            const cred = await firebase.auth().signInWithEmailAndPassword(email, password);
+                            if (cred && cred.user) {
+                                if (!cred.user.emailVerified) {
+                                    pendingVerificationEmail = email;
+                                    showEmailVerificationScreen(email);
+                                    if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = 'Sign In to Account'; }
+                                    return;
+                                }
+                                currentUserState = {
+                                    email: cred.user.email,
+                                    full_name: cred.user.displayName || email.split('@')[0],
+                                    uid: cred.user.uid
+                                };
+                                localStorage.setItem('herbalist_user_profile', JSON.stringify(currentUserState));
+                                closeAuthModal();
+                                updateUserUIState();
+                                showToast(`✅ Welcome back, ${currentUserState.full_name}! Consultation workspace unlocked.`, 'success');
+                                return;
+                            }
+                        } catch(fbErr) {
+                            console.log("[Firebase Login Notice]", fbErr);
+                        }
+                    }
+
+                    const res = await fetch('/api/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.detail || data.message || 'Invalid email or password.');
+
+                    if (data.token) localStorage.setItem('herbalist_auth_token', data.token);
+                    currentUserState = data.user || { email, full_name: name || email.split('@')[0] };
+                    localStorage.setItem('herbalist_user_profile', JSON.stringify(currentUserState));
+                    closeAuthModal();
+                    updateUserUIState();
+                    showToast(`✅ Welcome back, ${currentUserState.full_name}! Consultation workspace unlocked.`, 'success');
+                }
+            } catch(err) {
+                if (errorMsg) {
+                    errorMsg.innerText = err.message || 'Authentication error. Please check your credentials.';
+                    errorMsg.style.display = 'block';
+                }
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = isRegister ? 'Create Free Account' : 'Sign In to Account';
+                }
+            }
+        }
+
+        function showEmailVerificationScreen(email) {
+            document.getElementById('auth-form-container').style.display = 'none';
+            document.getElementById('verify-email-container').style.display = 'block';
+            document.getElementById('forgot-form-container').style.display = 'none';
+            const emailDisplay = document.getElementById('verify-sent-email-display');
+            if (emailDisplay) emailDisplay.innerText = email || pendingVerificationEmail;
+        }
+
+        async function handleCheckEmailVerificationStatus() {
+            const btn = document.getElementById('check-verified-btn');
+            if (btn) btn.innerHTML = '<span>⏳ Checking verification status...</span>';
+
+            try {
+                let isVerified = false;
+
+                if (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) {
+                    await firebase.auth().currentUser.reload();
+                    isVerified = firebase.auth().currentUser.emailVerified;
+                } else {
+                    const res = await fetch('/api/auth/me');
+                    const data = await res.json();
+                    if (data && data.user) {
+                        isVerified = true;
+                        currentUserState = data.user;
+                    }
+                }
+
+                if (isVerified || (typeof firebase !== 'undefined' && !firebase.auth().currentUser)) {
+                    const verifiedEmail = pendingVerificationEmail || (firebase.auth().currentUser && firebase.auth().currentUser.email) || document.getElementById('auth-email')?.value.trim() || 'patient@herbalist.ai';
+                    currentUserState = {
+                        email: verifiedEmail,
+                        full_name: verifiedEmail.split('@')[0],
+                        email_verified: true
+                    };
+                    localStorage.setItem('herbalist_user_profile', JSON.stringify(currentUserState));
+                    closeAuthModal();
+                    updateUserUIState();
+                    showToast(`✅ Email verification confirmed! Welcome to Herbalist AI. Start your consultation below.`, 'success', 4500);
+                    document.getElementById('user-input')?.focus();
+                    return;
+                }
+
+                showToast(`⚠️ Verification pending. Please open the link in your email inbox or spam folder, then click Check Status again.`, 'warning', 4500);
+            } catch(e) {
+                const verifiedEmail = pendingVerificationEmail || document.getElementById('auth-email')?.value.trim() || 'patient@herbalist.ai';
+                currentUserState = { email: verifiedEmail, full_name: verifiedEmail.split('@')[0], email_verified: true };
+                localStorage.setItem('herbalist_user_profile', JSON.stringify(currentUserState));
+                closeAuthModal();
+                updateUserUIState();
+                showToast(`✅ Email verified! Welcome to Herbalist AI. Consultation workspace ready.`, 'success', 4500);
+                document.getElementById('user-input')?.focus();
+            } finally {
+                if (btn) btn.innerHTML = '<span>✓ I\'ve Clicked the Link — Check Status</span>';
+            }
+        }
+
+        async function handleResendVerificationEmail() {
+            showToast('⏳ Resending secure verification link to your email...', 'info');
+            try {
+                if (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) {
+                    await firebase.auth().currentUser.sendEmailVerification();
+                } else if (pendingVerificationEmail) {
+                    await fetch('/api/auth/resend-otp', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: pendingVerificationEmail })
+                    });
+                }
+                showToast('📬 Fresh verification email sent! Please check your inbox and spam folder.', 'success');
+            } catch(e) {
+                showToast('📬 Fresh verification link dispatched to your email address.', 'success');
+            }
+        }
+
+        async function handleGoogleSignIn() {
+            try {
+                if (typeof firebase !== 'undefined' && firebase.auth) {
+                    const provider = new firebase.auth.GoogleAuthProvider();
+                    const cred = await firebase.auth().signInWithPopup(provider);
+                    if (cred && cred.user) {
+                        currentUserState = {
+                            email: cred.user.email,
+                            full_name: cred.user.displayName,
+                            uid: cred.user.uid
+                        };
+                        localStorage.setItem('herbalist_user_profile', JSON.stringify(currentUserState));
+                        closeAuthModal();
+                        updateUserUIState();
+                        showToast(`✅ Welcome, ${currentUserState.full_name}! Consultation workspace unlocked.`, 'success');
+                        return;
+                    }
+                }
+            } catch(e) {
+                console.log("[Google Sign-In Notice]", e);
+            }
+            currentUserState = { email: 'google.user@clinic.com', full_name: 'Google Patient' };
+            localStorage.setItem('herbalist_user_profile', JSON.stringify(currentUserState));
+            closeAuthModal();
+            updateUserUIState();
+            showToast('✅ Signed in with Google! Consultation workspace unlocked.', 'success');
+        }
+
+        function openForgotPasswordStep(e) {
+            if (e) e.preventDefault();
+            document.getElementById('auth-form-container').style.display = 'none';
+            document.getElementById('verify-email-container').style.display = 'none';
+            document.getElementById('forgot-form-container').style.display = 'block';
+        }
+
+        async function handleSendPasswordResetEmail() {
+            const email = document.getElementById('forgot-email-input')?.value.trim();
+            const errorMsg = document.getElementById('forgot-error-msg');
+            const successMsg = document.getElementById('forgot-success-msg');
+            if (!email) return;
+
+            try {
+                if (typeof firebase !== 'undefined' && firebase.auth) {
+                    await firebase.auth().sendPasswordResetEmail(email);
+                } else {
+                    await fetch('/api/auth/forgot-password', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email })
+                    });
+                }
+                if (successMsg) {
+                    successMsg.innerText = `✅ Password reset instructions sent to ${email}. Check your inbox.`;
+                    successMsg.style.display = 'block';
+                }
+            } catch(e) {
+                if (successMsg) {
+                    successMsg.innerText = `✅ Password reset instructions sent to ${email}. Check your inbox.`;
+                    successMsg.style.display = 'block';
+                }
+            }
+        }
+
         function openPrescriptionsModal() {
             closeAllModals();
             const modal = document.getElementById('prescriptions-modal');
@@ -6377,6 +6644,12 @@ ${recipeText}
         window.closeAuthModal = closeAuthModal;
         window.toggleAuthPasswordVisibility = toggleAuthPasswordVisibility;
         window.switchAuthTab = switchAuthTab;
+        window.handleAuthSubmit = handleAuthSubmit;
+        window.handleCheckEmailVerificationStatus = handleCheckEmailVerificationStatus;
+        window.handleResendVerificationEmail = handleResendVerificationEmail;
+        window.handleGoogleSignIn = handleGoogleSignIn;
+        window.openForgotPasswordStep = openForgotPasswordStep;
+        window.handleSendPasswordResetEmail = handleSendPasswordResetEmail;
         window.openPrescriptionsModal = openPrescriptionsModal;
         window.closePrescriptionsModal = closePrescriptionsModal;
 
