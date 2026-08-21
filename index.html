@@ -73,6 +73,35 @@
             padding: 0;
         }
 
+        /* Sleek custom scrollbars — completely removes white Windows native scroll buttons/arrows */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-button {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(46, 204, 113, 0.2);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(46, 204, 113, 0.45);
+        }
+
+        ::-webkit-scrollbar-corner {
+            background: transparent;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-dark);
@@ -539,6 +568,20 @@
             padding: 2px 0;
             overflow-y: auto;
             box-sizing: border-box;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .chat-input::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
+
+        .chat-input::-webkit-scrollbar-button {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
         }
 
         .chat-input::placeholder {
