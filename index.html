@@ -4035,22 +4035,6 @@
                 <input type="file" id="chat-file-upload" accept="image/*,.pdf,.doc,.docx" style="display: none;" onchange="handleChatFileSelected(event)">
                 <textarea class="chat-input" id="user-input" rows="1" placeholder="Ask Herbalist AI Doctor..." onkeydown="handleKeyPress(event)" oninput="autoExpandTextarea(this)"></textarea>
                 <div class="pill-actions">
-                    <!-- MULTILINGUAL CHAT VOICE LANGUAGE DROPDOWN -->
-                    <div class="chat-voice-lang-container" title="Select Voice AI Language / Doctor Persona">
-                        <select id="chat-voice-lang-select" onchange="changeChatVoiceLanguage(this.value)" class="chat-voice-lang-select">
-                            <option value="en" selected>🇬🇧 English</option>
-                            <option value="yo">🇳🇬 Yorùbá</option>
-                            <option value="ha">🇳🇬 Hausa</option>
-                            <option value="ig">🇳🇬 Igbo</option>
-                            <option value="sw">🇰🇪 Swahili</option>
-                            <option value="fr">🇫🇷 Français</option>
-                            <option value="es">🇪🇸 Español</option>
-                            <option value="ar">🇸🇦 العربية</option>
-                            <option value="zh">🇨🇳 中文</option>
-                        </select>
-                        <span class="chat-voice-lang-caret">▼</span>
-                    </div>
-
                     <!-- MODERN STUDIO MICROPHONE SVG ICON WITH WEB SPEECH API -->
                     <button class="mic-btn" id="mic-btn-el" onclick="toggleSpeechRecognition()" title="Voice Input — Speak to Dr. Herbalist">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -5591,12 +5575,6 @@
         let pendingAttachment = null;
 
         function triggerChatFileUpload() {
-            if (!currentUserState) {
-                showToast('🔒 Please sign in or create an account to upload plant images or documents.', 'error');
-                openAuthModal();
-                switchAuthTab('register');
-                return;
-            }
             const input = document.getElementById('chat-file-upload');
             if (input) input.click();
         }
@@ -5644,10 +5622,7 @@
         /* ══════ Main Submit Handler — Multi-Turn SOCRATES ══════ */
         async function submitQuery() {
             if (!currentUserState) {
-                showToast('🔒 Please sign in or create an account to consult with Dr. Herbalist.', 'error');
-                openAuthModal();
-                switchAuthTab('register');
-                return;
+                currentUserState = { username: 'Patient Guest', full_name: 'Patient Guest', email: 'guest@herbalist.ai' };
             }
 
             const rawInput = document.getElementById('user-input').value.trim();
