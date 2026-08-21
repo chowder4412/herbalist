@@ -548,7 +548,39 @@
         .pill-actions {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .speaker-btn {
+            background: transparent;
+            border: none;
+            color: var(--accent-green);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .speaker-btn:hover {
+            background: rgba(46, 204, 113, 0.15);
+            color: #2ecc71;
+            transform: scale(1.05);
+        }
+
+        .speaker-btn.muted-voice {
+            color: rgba(149, 167, 155, 0.55);
+        }
+
+        .speaker-btn.muted-voice:hover {
+            background: rgba(231, 76, 60, 0.15);
+            color: #e74c3c;
+            transform: scale(1.05);
         }
 
         .mic-btn {
@@ -563,6 +595,7 @@
             justify-content: center;
             cursor: pointer;
             transition: all 0.2s ease;
+            flex-shrink: 0;
         }
 
         .mic-btn:hover {
@@ -582,6 +615,7 @@
             justify-content: center;
             cursor: pointer;
             transition: transform 0.2s ease;
+            flex-shrink: 0;
         }
 
         /* ══════ MULTILINGUAL CHAT VOICE LANGUAGE PICKER CSS ══════ */
@@ -4035,6 +4069,13 @@
                 <input type="file" id="chat-file-upload" accept="image/*,.pdf,.doc,.docx" style="display: none;" onchange="handleChatFileSelected(event)">
                 <textarea class="chat-input" id="user-input" rows="1" placeholder="Ask Herbalist AI Doctor..." onkeydown="handleKeyPress(event)" oninput="autoExpandTextarea(this)"></textarea>
                 <div class="pill-actions">
+                    <!-- SPEAKER SOUND TOGGLE (VOICE OUTPUT READOUT ON/OFF) -->
+                    <button class="speaker-btn active-voice" id="voice-toggle-btn" onclick="toggleVoice()" title="Voice Audio Readout: ON — Click to Mute">
+                        <svg id="voice-toggle-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                        </svg>
+                    </button>
                     <!-- MODERN STUDIO MICROPHONE SVG ICON WITH WEB SPEECH API -->
                     <button class="mic-btn" id="mic-btn-el" onclick="toggleSpeechRecognition()" title="Voice Input — Speak to Dr. Herbalist">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -4736,6 +4777,7 @@
             const select2 = document.getElementById('topbar-voice-lang-select');
             if (select1) select1.value = currentChatVoiceLang;
             if (select2) select2.value = currentChatVoiceLang;
+            if (typeof updateVoiceToggleUI === 'function') updateVoiceToggleUI();
         }
 
         function changeChatVoiceLanguage(langKey, notify = true) {
@@ -5411,11 +5453,55 @@
             }
         }
 
-        // Standard Voice toggle helper for header
-        let isVoiceEnabled = true;
+        // Voice Audio Readout ON/OFF State
+        let isVoiceEnabled = localStorage.getItem('herbalist_voice_enabled') !== '0';
+
+        function updateVoiceToggleUI() {
+            const btn = document.getElementById('voice-toggle-btn');
+            if (!btn) return;
+            if (isVoiceEnabled) {
+                btn.className = 'speaker-btn active-voice';
+                btn.setAttribute('title', 'Voice Audio Readout: ON — Click to Mute');
+                btn.innerHTML = `
+                    <svg id="voice-toggle-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    </svg>
+                `;
+            } else {
+                btn.className = 'speaker-btn muted-voice';
+                btn.setAttribute('title', 'Voice Audio Readout: MUTED — Click to Unmute');
+                btn.innerHTML = `
+                    <svg id="voice-toggle-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                        <line x1="23" y1="9" x2="17" y2="15"></line>
+                        <line x1="17" y1="9" x2="23" y2="15"></line>
+                    </svg>
+                `;
+            }
+        }
 
         function toggleVoice() {
-            openLiveVoiceConsultationModal();
+            isVoiceEnabled = !isVoiceEnabled;
+            try {
+                localStorage.setItem('herbalist_voice_enabled', isVoiceEnabled ? '1' : '0');
+            } catch(e) {}
+            
+            updateVoiceToggleUI();
+
+            if (!isVoiceEnabled && typeof window !== 'undefined' && window.speechSynthesis) {
+                window.speechSynthesis.cancel();
+                const waveVis = document.getElementById('voice-wave-visualizer');
+                if (waveVis) waveVis.style.display = 'none';
+            }
+
+            if (typeof showToast === 'function') {
+                showToast(
+                    isVoiceEnabled ? '🔊 Voice audio readout enabled' : '🔇 Voice audio readout muted',
+                    isVoiceEnabled ? 'success' : 'info',
+                    2000
+                );
+            }
         }
 
         async function speakDoctorMessageInSelectedLanguage(text, overrideLang = null) {
