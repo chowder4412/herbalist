@@ -4807,7 +4807,256 @@
             }
         };
 
+        // Cache and warm up browser speech synthesis voices for natural human audio
+        let availableSpeechVoices = [];
+        function populateSpeechVoices() {
+            if (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis && typeof window.speechSynthesis.getVoices === 'function') {
+                try {
+                    availableSpeechVoices = window.speechSynthesis.getVoices() || [];
+                } catch(e) {
+                    availableSpeechVoices = [];
+                }
+            }
+        }
+        if (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis) {
+            populateSpeechVoices();
+            if ('onvoiceschanged' in window.speechSynthesis || window.speechSynthesis.onvoiceschanged !== undefined) {
+                window.speechSynthesis.onvoiceschanged = populateSpeechVoices;
+            }
+        }
+
+        // Comprehensive Medical Phonetic Sanitizer: Expands "Dr." to "Doctor", medical units, and clinical terms
+        function cleanClinicalTextForNaturalSpeech(text) {
+            if (!text) return '';
+            let clean = text
+                // 1. Remove HTML tags, URLs, Markdown formatting & on-demand button artifacts
+                .replace(/<[^>]*>?/gm, ' ')
+                .replace(/https?:\/\/\S+/g, '')
+                .replace(/[*_#`~>\[\]]/g, ' ')
+                .replace(/PATIENT_GUEST/g, 'patient')
+                .replace(/🔊\s*Listen\s*\([^\)]*\)/gi, '')
+                
+                // 2. Expand Doctor / Clinical Titles & Names so "Dr." is never read as "Drive"
+                .replace(/\bDr\.\s*Aisha\b/gi, 'Doctor Aisha')
+                .replace(/\bDr\.\s*Herbalist\b/gi, 'Doctor Herbalist')
+                .replace(/\bDr\.\s*Adewale\b/gi, 'Doctor Adewale')
+                .replace(/\bDr\.\s*Yusuf\b/gi, 'Doctor Yusuf')
+                .replace(/\bDr\.\s*Chioma\b/gi, 'Doctor Chioma')
+                .replace(/\bDr\.\s*Juma\b/gi, 'Doctor Juma')
+                .replace(/\bDr\.\s*Monique\b/gi, 'Doctor Monique')
+                .replace(/\bDr\.\s*Maya\b/gi, 'Doctor Maya')
+                .replace(/\bDra\.\s*Elena\b/gi, 'Doctora Elena')
+                .replace(/\bDr\.\s*Chen\b/gi, 'Doctor Chen')
+                .replace(/\bDr\.\s*Tariq\b/gi, 'Doctor Tariq')
+                .replace(/\bDr\.\s*([A-Za-z]+)\b/g, 'Doctor $1')
+                .replace(/\bDr\.\b/g, 'Doctor')
+                .replace(/\bDrs\.\b/g, 'Doctors')
+                .replace(/\bProf\.\b/g, 'Professor')
+                .replace(/\bMr\.\b/g, 'Mister')
+                .replace(/\bMrs\.\b/g, 'Missus')
+                .replace(/\bMs\.\b/g, 'Miz')
+                
+                // 3. Expand Clinical Dosages & Units for natural spoken rhythm
+                .replace(/(\d+(?:\.\d+)?)\s*mg\b/gi, '$1 milligrams')
+                .replace(/(\d+(?:\.\d+)?)\s*ml\b/gi, '$1 milliliters')
+                .replace(/(\d+(?:\.\d+)?)\s*kg\b/gi, '$1 kilograms')
+                .replace(/(\d+(?:\.\d+)?)\s*g\b(?=[\s,\.\)]|$)/gi, '$1 grams')
+                .replace(/(\d+(?:\.\d+)?)\s*L\b(?=[\s,\.\)]|$)/gi, '$1 liters')
+                .replace(/(\d+(?:\.\d+)?)\s*(?:tbsp|tbsps?)\b\.?/gi, '$1 tablespoons')
+                .replace(/(\d+(?:\.\d+)?)\s*(?:tsp|tsps?)\b\.?/gi, '$1 teaspoons')
+                .replace(/(\d+(?:\.\d+)?)\s*(?:oz|ozs?)\b\.?/gi, '$1 ounces')
+                .replace(/(\d+(?:\.\d+)?)\s*°\s*C\b/gi, '$1 degrees Celsius')
+                .replace(/(\d+(?:\.\d+)?)\s*°\s*F\b/gi, '$1 degrees Fahrenheit')
+                
+                // 4. Clinical abbreviations & acronyms
+                .replace(/\bRx\b/g, 'prescription')
+                .replace(/\be\.g\.,?\s*/gi, 'for example, ')
+                .replace(/\bi\.e\.,?\s*/gi, 'that is, ')
+                .replace(/\bvs\.?\b/gi, 'versus')
+                .replace(/\bapprox\.?\b/gi, 'approximately')
+                .replace(/\bTCM\b/g, 'Traditional Chinese Medicine')
+                .replace(/\bWHO\b/g, 'World Health Organization')
+                .replace(/\bbid\b/gi, 'twice daily')
+                .replace(/\btid\b/gi, 'three times daily')
+                .replace(/\bqd\b/gi, 'once daily')
+                
+                // 5. Clean emojis, bullet glyphs and symbols that speech synthesizers stumble on
+                .replace(/[\u{1F300}-\u{1F9FF}]/gu, '')
+                .replace(/[\u{2600}-\u{26FF}]/gu, '')
+                .replace(/[\u{2700}-\u{27BF}]/gu, '')
+                .replace(/[•–—]/g, ', ')
+                .replace(/[:;]\s*/g, '. ')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+            return clean;
+        }
+
+        // Dynamic Regional English Voice & Consultant Profiles (Africa -> Dr. Aisha with Nigerian accent, USA -> US accent, Rest of World -> British accent)
+        function getRegionalEnglishVoiceProfile() {
+            const loc = (typeof window !== 'undefined' && window.userLocationData) ? window.userLocationData : { country_code: 'GL', timezone: '' };
+            const cc = (loc.country_code || '').toUpperCase();
+            const tz = (loc.timezone || (typeof Intl !== 'undefined' && Intl.DateTimeFormat ? Intl.DateTimeFormat().resolvedOptions().timeZone : '') || '').toLowerCase();
+            const mod = (typeof activeClinicalModality !== 'undefined' ? activeClinicalModality : '').toLowerCase();
+
+            // 1. African Users -> Dr. Aisha with Fluent Nigerian English
+            const isAfrican = cc === 'AF' || cc === 'NG' || cc === 'GH' || cc === 'KE' || cc === 'ZA' || cc === 'EG' || cc === 'ET' || cc === 'TZ' || cc === 'UG' || cc === 'RW' || cc === 'CM' || cc === 'CI' || cc === 'SN' || cc === 'ZW' ||
+                tz.includes('lagos') || tz.includes('accra') || tz.includes('nairobi') || tz.includes('johannesburg') || tz.includes('cairo') || tz.includes('africa') ||
+                mod === 'african';
+
+            if (isAfrican) {
+                return {
+                    code: 'en',
+                    name: 'English',
+                    doctor: 'Dr. Aisha (African Ethnomedicine)',
+                    flag: '🇳🇬',
+                    sttLang: 'en-NG',
+                    ttsCode: 'en-NG',
+                    region: 'african',
+                    preferredKeywords: ['nigeria', 'nigerian', 'en-ng', 'ezinne', 'blessing', 'abeo', 'isha', 'aisha', 'chioma', 'wanjiku', 'ayotunde'],
+                    pitch: 1.0,
+                    rate: 0.94,
+                    modalityHint: 'african'
+                };
+            }
+
+            // 2. USA Users -> Dr. Maya with US English
+            const isUSA = cc === 'US' || tz.includes('new_york') || tz.includes('chicago') || tz.includes('los_angeles') || tz.includes('denver') || tz.includes('phoenix') || tz.includes('detroit') || tz.includes('america');
+            if (isUSA) {
+                return {
+                    code: 'en',
+                    name: 'English',
+                    doctor: 'Dr. Maya (US Clinical)',
+                    flag: '🇺🇸',
+                    sttLang: 'en-US',
+                    ttsCode: 'en-US',
+                    region: 'usa',
+                    preferredKeywords: ['en-us', 'jenny', 'aria', 'guy', 'ryan', 'samantha', 'natural', 'united states'],
+                    pitch: 1.0,
+                    rate: 0.96,
+                    modalityHint: 'western'
+                };
+            }
+
+            // 3. Rest of the World -> Dr. Herbalist with British English
+            return {
+                code: 'en',
+                name: 'English',
+                doctor: 'Dr. Herbalist (Global MD)',
+                flag: '🇬🇧',
+                sttLang: 'en-GB',
+                ttsCode: 'en-GB',
+                region: 'british',
+                preferredKeywords: ['en-gb', 'sonia', 'ryan', 'george', 'oliver', 'daniel', 'natural', 'united kingdom', 'british'],
+                pitch: 0.98,
+                rate: 0.96,
+                modalityHint: 'auto'
+            };
+        }
+
+        function syncRegionalEnglishVoiceProfile() {
+            const regProfile = getRegionalEnglishVoiceProfile();
+            CHAT_VOICE_PROFILES['en'] = regProfile;
+
+            // Synchronize Dropdown options for English across the topbar and settings
+            const topSelect = document.getElementById('topbar-voice-lang-select');
+            const chatSelect = document.getElementById('chat-voice-lang-select');
+            
+            let optLabel = '🗣️ 🇬🇧 English';
+            if (regProfile.region === 'african') {
+                optLabel = '🗣️ 🇳🇬 English (Dr. Aisha)';
+            } else if (regProfile.region === 'usa') {
+                optLabel = '🗣️ 🇺🇸 English (US)';
+            } else {
+                optLabel = '🗣️ 🇬🇧 English (British)';
+            }
+
+            [topSelect, chatSelect].forEach(sel => {
+                if (sel) {
+                    const enOpt = sel.querySelector('option[value="en"]');
+                    if (enOpt) enOpt.innerText = optLabel;
+                }
+            });
+        }
+
+        // Select the most natural human voice available (prioritizing Nigerian/US/British regional accents & Neural voices)
+        function getBestNaturalVoice(targetCode = 'en-GB', preferredGender = 'female') {
+            if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
+            if (!availableSpeechVoices || availableSpeechVoices.length === 0) {
+                populateSpeechVoices();
+            }
+            const voices = availableSpeechVoices;
+            if (!voices || voices.length === 0) return null;
+
+            const target = (targetCode || 'en-GB').toLowerCase();
+            const langPrefix = target.split('-')[0];
+            const isFemale = preferredGender === 'female';
+
+            // 1. If target is Nigerian English ('en-ng' / African region), match Nigerian / African English voice packs first
+            if (target.includes('ng') || target === 'en-ng') {
+                const ngKeywords = ['nigeria', 'nigerian', 'en-ng', 'ezinne', 'blessing', 'abeo', 'isha', 'aisha', 'chioma', 'wanjiku', 'ayotunde'];
+                for (const v of voices) {
+                    const name = v.name.toLowerCase();
+                    const lang = v.lang.toLowerCase();
+                    if (ngKeywords.some(k => name.includes(k) || lang.includes(k))) {
+                        return v;
+                    }
+                }
+            }
+
+            // Tier 1: Natural / Neural / Online / Enhanced voices matching target language
+            const naturalKeywords = ['natural', 'neural', 'online', 'premium', 'enhanced', 'high quality'];
+            for (const v of voices) {
+                const name = v.name.toLowerCase();
+                const lang = v.lang.toLowerCase();
+                const matchesLang = lang.includes(target) || lang.startsWith(langPrefix);
+                const isNatural = naturalKeywords.some(k => name.includes(k));
+
+                if (matchesLang && isNatural) {
+                    if (isFemale && (name.includes('female') || name.includes('jenny') || name.includes('aria') || name.includes('sonia') || name.includes('samantha') || name.includes('victoria') || !name.includes('male'))) {
+                        return v;
+                    }
+                    if (!isFemale && (name.includes('male') || name.includes('ryan') || name.includes('guy') || name.includes('george') || name.includes('daniel'))) {
+                        return v;
+                    }
+                    return v;
+                }
+            }
+
+            // Tier 2: Google, Apple (Siri/Samantha), Microsoft Modern High-Fidelity voices
+            for (const v of voices) {
+                const name = v.name.toLowerCase();
+                const lang = v.lang.toLowerCase();
+                const matchesLang = lang.includes(target) || lang.startsWith(langPrefix);
+
+                if (matchesLang && (name.includes('google') || name.includes('samantha') || name.includes('siri') || name.includes('karen') || name.includes('victoria') || name.includes('zira') || name.includes('mark'))) {
+                    if (isFemale && (name.includes('female') || name.includes('samantha') || name.includes('karen') || name.includes('zira') || name.includes('victoria') || !name.includes('male'))) {
+                        return v;
+                    }
+                    if (!isFemale && (name.includes('male') || name.includes('mark') || name.includes('george') || name.includes('daniel'))) {
+                        return v;
+                    }
+                    return v;
+                }
+            }
+
+            // Tier 3: Standard language exact match
+            for (const v of voices) {
+                const lang = v.lang.toLowerCase();
+                if (lang === target || lang.startsWith(target)) {
+                    return v;
+                }
+            }
+
+            // Tier 4: Language prefix match
+            const prefixMatch = voices.find(v => v.lang.toLowerCase().startsWith(langPrefix));
+            if (prefixMatch) return prefixMatch;
+
+            return voices[0] || null;
+        }
+
         function initChatVoiceLanguage() {
+            syncRegionalEnglishVoiceProfile();
             try {
                 const saved = localStorage.getItem('herbalist_chat_voice_lang');
                 if (saved && CHAT_VOICE_PROFILES[saved]) {
@@ -5554,18 +5803,12 @@
 
             try {
                 window.speechSynthesis.cancel();
-                let clean = text
-                    .replace(/<[^>]*>?/gm, ' ')
-                    .replace(/[*_#`~>\[\]]/g, ' ')
-                    .replace(/https?:\/\/\S+/g, '')
-                    .replace(/PATIENT_GUEST/g, 'patient')
-                    .replace(/🔊\s*Listen\s*\([^\)]*\)/gi, '')
-                    .replace(/\s+/g, ' ')
-                    .trim();
-
+                
+                // 1. Sanitize text and expand medical terms ("Dr." -> "Doctor", dosages, units)
+                let clean = cleanClinicalTextForNaturalSpeech(text);
                 if (!clean) return;
 
-                // Translate if target language is not English
+                // 2. Translate if target language is not English
                 if (targetLang !== 'en') {
                     try {
                         const res = await fetch('/api/audio/speech-translate', {
@@ -5578,26 +5821,27 @@
                         });
                         if (res.ok) {
                             const data = await res.json();
-                            if (data.translated_text) clean = data.translated_text;
+                            if (data.translated_text) {
+                                clean = cleanClinicalTextForNaturalSpeech(data.translated_text);
+                            }
                         }
                     } catch(translateErr) {
                         console.warn("Notice translating speech audio:", translateErr);
                     }
                 }
 
-                const utter = new SpeechSynthesisUtterance(clean.slice(0, 600));
+                const utter = new SpeechSynthesisUtterance(clean.slice(0, 800));
+                
+                // Natural, warm physician tone & cadence
                 utter.pitch = profile.pitch || 1.0;
-                utter.rate = profile.rate || 0.95;
-                utter.lang = profile.ttsCode || 'en-US';
+                utter.rate = profile.rate || 0.96;
+                utter.lang = profile.ttsCode || 'en-GB';
 
-                // Select best available browser voice
-                const voices = window.speechSynthesis.getVoices() || [];
-                const langPrefix = targetLang.toLowerCase();
-                let matched = voices.find(v => v.lang.toLowerCase().startsWith(profile.ttsCode.toLowerCase()));
-                if (!matched) {
-                    matched = voices.find(v => v.lang.toLowerCase().startsWith(langPrefix));
+                // Select the most natural / human-sounding browser voice available
+                const naturalVoice = getBestNaturalVoice(profile.ttsCode, 'female');
+                if (naturalVoice) {
+                    utter.voice = naturalVoice;
                 }
-                if (matched) utter.voice = matched;
 
                 // Show wave visualizer
                 const waveVis = document.getElementById('voice-wave-visualizer');
@@ -8828,7 +9072,7 @@ ${recipeText}
             if (!text || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
             try {
                 window.speechSynthesis.cancel();
-                let clean = text.replace(/<[^>]*>?/gm, '').replace(/[*_#`]/g, '').trim();
+                let clean = cleanClinicalTextForNaturalSpeech(text);
                 
                 if (langCode && langCode !== 'en') {
                     try {
@@ -8839,7 +9083,7 @@ ${recipeText}
                         });
                         if (res.ok) {
                             const data = await res.json();
-                            if (data.translated_text) clean = data.translated_text;
+                            if (data.translated_text) clean = cleanClinicalTextForNaturalSpeech(data.translated_text);
                         }
                     } catch(err) {
                         console.warn("Speech translation network note:", err);
@@ -8847,7 +9091,7 @@ ${recipeText}
                 }
                 
                 const utterance = new SpeechSynthesisUtterance(clean);
-                utterance.rate = (langCode === 'yo' || langCode === 'ig' || langCode === 'ha') ? 0.92 : 0.98;
+                utterance.rate = 0.96;
                 utterance.pitch = 1.0;
                 
                 const langMap = {
@@ -8858,7 +9102,11 @@ ${recipeText}
                     'fr': 'fr-FR',
                     'en': 'en-GB'
                 };
-                utterance.lang = langMap[langCode] || 'en-US';
+                const ttsCode = langMap[langCode] || 'en-GB';
+                utterance.lang = ttsCode;
+
+                const naturalVoice = getBestNaturalVoice(ttsCode, 'female');
+                if (naturalVoice) utterance.voice = naturalVoice;
                 
                 window.speechSynthesis.speak(utterance);
             } catch (e) {
@@ -8866,7 +9114,7 @@ ${recipeText}
             }
         }
 
-        function speakText(text) {
+        function speakCookText(text) {
             speakTextWithLang(text, currentCookAudioLang || 'en');
         }
 
@@ -8938,7 +9186,7 @@ ${recipeText}
                 } else {
                     pauseKitchenTimer();
                     playKitchenChime();
-                    speakText("Kitchen Timer Complete! Your decoction simmer has finished. Turn off the heat and prepare for straining.");
+                    speakCookText("Kitchen Timer Complete! Your decoction simmer has finished. Turn off the heat and prepare for straining.");
                 }
             }, 1000);
         }
@@ -10356,11 +10604,15 @@ ${recipeText}
             const modalitySelector = document.getElementById('clinical-modality-selector');
             if (modalitySelector) modalitySelector.value = modalityKey;
 
+            if (typeof syncRegionalEnglishVoiceProfile === 'function') {
+                syncRegionalEnglishVoiceProfile();
+            }
+
             const descriptions = {
                 'auto': '🌐 Auto: Global WHO Synthesis active (TCM + Ayurveda + African + Western)',
                 'tcm': '☯️ TCM: Traditional Chinese Medicine active (Yin/Yang, Qi & Meridians)',
                 'ayurveda': '🕉️ Ayurveda: Tridosha (Vata/Pitta/Kapha) balancing active',
-                'african': '🌍 African: Indigenous Ethnobotanical Phytotherapy active',
+                'african': '🌍 African: Indigenous Ethnobotanical Phytotherapy active (Dr. Aisha)',
                 'western': '🌿 Western: Clinical Pharmacology & Active Bioactives active'
             };
 
@@ -10399,6 +10651,7 @@ ${recipeText}
                                 changeClinicalModality(geoData.suggested_modality, false);
                             }
                             updateModalityDropdownLabels(geoData.suggested_modality, geoData.country_name);
+                            if (typeof syncRegionalEnglishVoiceProfile === 'function') syncRegionalEnglishVoiceProfile();
                             return;
                         }
                     }
@@ -10423,7 +10676,11 @@ ${recipeText}
                     detectedModality = 'tcm';
                     countryName = 'East Asia';
                     userLocationData.country_code = 'EA';
-                } else if (tz.includes('New_York') || tz.includes('London') || tz.includes('Berlin') || tz.includes('Paris') || tz.includes('Chicago') || tz.includes('Los_Angeles') || tz.includes('Toronto') || tz.includes('Sydney')) {
+                } else if (tz.includes('New_York') || tz.includes('Chicago') || tz.includes('Los_Angeles') || tz.includes('Denver') || tz.includes('Phoenix') || tz.includes('Detroit') || tz.includes('America')) {
+                    detectedModality = 'western';
+                    countryName = 'United States';
+                    userLocationData.country_code = 'US';
+                } else if (tz.includes('London') || tz.includes('Berlin') || tz.includes('Paris') || tz.includes('Toronto') || tz.includes('Sydney') || tz.includes('Europe')) {
                     detectedModality = 'western';
                     countryName = 'Western Clinical Region';
                     userLocationData.country_code = 'WEST';
@@ -10437,6 +10694,7 @@ ${recipeText}
                 }
 
                 updateModalityDropdownLabels(detectedModality, countryName);
+                if (typeof syncRegionalEnglishVoiceProfile === 'function') syncRegionalEnglishVoiceProfile();
 
             } catch (err) {
                 console.log("[Geolocation Notice]:", err);

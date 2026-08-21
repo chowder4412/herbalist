@@ -987,7 +987,8 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
             modality=body.clinical_modality or "auto"
         )
 
-        doctor_title = "Dr. Aisha" if "nigerian" in (body.clinical_modality or "").lower() else "Dr. Herbalist"
+        mod_val = (body.clinical_modality or "").lower()
+        doctor_title = "Dr. Aisha" if ("african" in mod_val or "nigerian" in mod_val or "ethno" in mod_val or "aisha" in mod_val) else "Dr. Herbalist"
         if "When did you first notice" in demo_msg or demo_msg.strip().endswith("How long have you been experiencing it?"):
             name_greet = f", {name_val}" if name_val else ""
             age_phrase = f"that you are {age_val} years old" if age_val else "your profile details"
@@ -1066,7 +1067,8 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
 
         has_symptoms = any(w in complaint_clean for w in ComplaintClassifier.SYMPTOM_TERMS) or any(p in complaint_clean for p in ComplaintClassifier.SYMPTOM_PATTERNS)
         if not fallback_response and not has_symptoms:
-            doctor_title = "Dr. Aisha" if "nigerian" in (body.clinical_modality or "").lower() else "Dr. Herbalist"
+            mod_val = (body.clinical_modality or "").lower()
+            doctor_title = "Dr. Aisha" if ("african" in mod_val or "nigerian" in mod_val or "ethno" in mod_val or "aisha" in mod_val) else "Dr. Herbalist"
             fallback_response = (
                 f"{emergency_prefix}🩺 **{doctor_title}**: Hello! I am here to assist you with medical consultations, natural herbal remedies, and plant pharmacopeia guidance. 🌿\n\n"
                 f"Could you please share what symptoms or health questions you would like to explore today? For example, feel free to describe how your body is feeling or ask about any medicinal herb."

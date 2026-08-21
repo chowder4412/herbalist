@@ -940,7 +940,7 @@ def generate_conversational_doctor_response(
     if "pidgin" in mod_low or "bovi" in mod_low or "pcm" in mod_low:
         doctor_title = "Dr. Bovi"
         doctor_icon = "🎤"
-    elif "nigerian" in mod_low or "aisha" in mod_low:
+    elif "african" in mod_low or "nigerian" in mod_low or "aisha" in mod_low or "ethno" in mod_low or "africa" in mod_low:
         doctor_title = "Dr. Aisha"
         doctor_icon = "🩺"
     elif "ayurveda" in mod_low or "rajesh" in mod_low or "india" in mod_low:
