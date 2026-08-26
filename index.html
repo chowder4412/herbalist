@@ -10349,102 +10349,14 @@ ${recipeText}
             'female_us': { name: 'Dr. Maya', title: '🌿 Dr. Maya (Empathetic US Clinical Herbalist)', flag: '🇺🇸', lang: 'en-US', langFallback: 'en-US', voiceCode: 'en-US', pitch: 1.08, rate: 0.98, gender: 'female' }
         };
 
-        // Cache and warm up browser speech synthesis voices
-        let availableSpeechVoices = [];
-        function populateSpeechVoices() {
-            if (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis && typeof window.speechSynthesis.getVoices === 'function') {
-                try {
-                    availableSpeechVoices = window.speechSynthesis.getVoices() || [];
-                } catch(e) {
-                    availableSpeechVoices = [];
-                }
-            }
-        }
-        if (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis) {
-            populateSpeechVoices();
-            if ('onvoiceschanged' in window.speechSynthesis || window.speechSynthesis.onvoiceschanged !== undefined) {
-                window.speechSynthesis.onvoiceschanged = populateSpeechVoices;
-            }
-        }
-
-        function getBestNaturalVoice(persona) {
-            if (!('speechSynthesis' in window)) return null;
-            if (!availableSpeechVoices || availableSpeechVoices.length === 0) {
-                populateSpeechVoices();
-            }
-            const voices = availableSpeechVoices;
-            if (!voices || voices.length === 0) return null;
-
-            const isFemale = persona.gender === 'female';
-            const targetCode = (persona.voiceCode || 'en-GB').toLowerCase();
-            const langPrefix = targetCode.split('-')[0];
-
-            // 1. First Tier: Search for Neural / Natural / Online / Enhanced voices
-            const naturalKeywords = ['natural', 'neural', 'online', 'enhanced', 'premium', 'high quality'];
-            for (const v of voices) {
-                const nameLower = v.name.toLowerCase();
-                const langLower = v.lang.toLowerCase();
-                const isNatural = naturalKeywords.some(k => nameLower.includes(k));
-                const matchesLang = langLower.includes(targetCode) || langLower.startsWith(langPrefix);
-
-                if (isNatural && matchesLang) {
-                    if (isFemale && (nameLower.includes('female') || nameLower.includes('samantha') || nameLower.includes('victoria') || nameLower.includes('jenny') || nameLower.includes('aria') || nameLower.includes('sonia') || nameLower.includes('aisha'))) {
-                        return v;
-                    }
-                    if (!isFemale && (nameLower.includes('male') || nameLower.includes('ryan') || nameLower.includes('christopher') || nameLower.includes('guy') || nameLower.includes('daniel') || nameLower.includes('george') || nameLower.includes('david') || nameLower.includes('steffan') || nameLower.includes('oliver') || nameLower.includes('arthur'))) {
-                        return v;
-                    }
-                }
-            }
-
-            // 2. Second Tier: Google or Microsoft Cloud voices (e.g. "Google UK English Male", "Microsoft Ryan Online")
-            for (const v of voices) {
-                const nameLower = v.name.toLowerCase();
-                const langLower = v.lang.toLowerCase();
-                const matchesLang = langLower.includes(targetCode) || langLower.startsWith(langPrefix);
-                if (matchesLang && (nameLower.includes('google') || nameLower.includes('natural') || nameLower.includes('online'))) {
-                    if (isFemale && (nameLower.includes('female') || !nameLower.includes('male'))) return v;
-                    if (!isFemale && (nameLower.includes('male') || !nameLower.includes('female'))) return v;
-                }
-            }
-
-            // 3. Third Tier: Standard gender & language match
-            for (const v of voices) {
-                const nameLower = v.name.toLowerCase();
-                const langLower = v.lang.toLowerCase();
-                if (langLower.includes(targetCode) || langLower.startsWith(langPrefix)) {
-                    if (isFemale && (nameLower.includes('female') || nameLower.includes('zira') || nameLower.includes('samantha') || nameLower.includes('karen'))) return v;
-                    if (!isFemale && (nameLower.includes('male') || nameLower.includes('david') || nameLower.includes('george') || nameLower.includes('james') || nameLower.includes('richard'))) return v;
-                }
-            }
-
-            // 4. Fourth Tier: Any voice matching the language prefix
-            const prefixMatch = voices.find(v => v.lang.toLowerCase().startsWith(langPrefix));
-            if (prefixMatch) return prefixMatch;
-
-            return voices[0];
+        function getTelehealthVoice(persona) {
+            if (!persona) return null;
+            return getBestNaturalVoice(persona.voiceCode || 'en-GB', persona.gender || 'female');
         }
 
         function preprocessTextForNaturalSpeech(text) {
             if (!text) return '';
-            return text
-                .replace(/\*\*Dr\.\s*[A-Za-z]+\*\*:\s*/gi, '')
-                .replace(/[*#_`~>\[\]]/g, '')
-                .replace(/PATIENT_GUEST/g, 'there')
-                .replace(/(\d+)\s*mg\b/gi, '$1 milligrams')
-                .replace(/(\d+)\s*ml\b/gi, '$1 milliliters')
-                .replace(/(\d+)\s*g\b/gi, '$1 grams')
-                .replace(/(\d+)\s*kg\b/gi, '$1 kilograms')
-                .replace(/\bbid\b/gi, 'twice daily')
-                .replace(/\btid\b/gi, 'three times daily')
-                .replace(/\bqd\b/gi, 'once daily')
-                .replace(/\be\.g\.,?/gi, 'for example,')
-                .replace(/\bi\.e\.,?/gi, 'that is,')
-                .replace(/\bRx\b/g, 'prescription')
-                .replace(/\bvs\b\.?/gi, 'versus')
-                .replace(/\s+/g, ' ')
-                .slice(0, 350)
-                .trim();
+            return cleanClinicalTextForNaturalSpeech(text);
         }
 
         function changeTelehealthVoicePersona(personaKey) {
@@ -10533,7 +10445,7 @@ ${recipeText}
             utter.pitch = selectedPersona.pitch || 0.96;
             utter.rate = selectedPersona.rate || 0.94;
 
-            const naturalVoice = getBestNaturalVoice(selectedPersona);
+            const naturalVoice = getTelehealthVoice(selectedPersona);
             if (naturalVoice) {
                 utter.voice = naturalVoice;
             }
