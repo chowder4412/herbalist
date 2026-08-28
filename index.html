@@ -4710,12 +4710,21 @@
             const session = sessions[savedSessionId];
 
             if (session && session.messages && session.messages.length > 0) {
-                // Filter out any stale temporary typing indicators or empty streaming badges from past sessions
+                // Filter out stale temporary typing indicators while keeping ALL genuine patient and doctor messages
                 const cleanMessages = session.messages.filter(msg => {
                     if (!msg || !msg.html) return false;
-                    if (msg.html.includes('typing-dots') || msg.html.includes('analyzing specimen & medical data')) return false;
-                    if (msg.html.includes('LIVE STREAM') && !msg.html.includes('primary_diagnosis') && !msg.html.includes('metric-grid')) return false;
+                    if (msg.html.includes('typing-dots') || msg.html.includes('analyzing specimen & medical data') || msg.html.includes('id="typing-')) return false;
                     return true;
+                }).map(msg => {
+                    if (msg.role === 'doctor' && msg.html) {
+                        // Remove temporary streaming badges if present in saved HTML
+                        let cleaned = msg.html
+                            .replace(/<span id="streaming-badge-[^>]*>[\s\S]*?<\/span>/gi, '')
+                            .replace(/<span class="pulse-anim"[\s\S]*?<\/span>\s*LIVE STREAM/gi, '')
+                            .replace(/LIVE STREAM/gi, '');
+                        return { ...msg, html: cleaned };
+                    }
+                    return msg;
                 });
 
                 if (cleanMessages.length === 0) {
@@ -4749,6 +4758,9 @@
                 });
 
                 renderRecentsList();
+                setTimeout(() => {
+                    if (typeof scrollChatToBottom === 'function') scrollChatToBottom();
+                }, 60);
                 return true;
             }
             return false;
@@ -6604,6 +6616,16 @@
                                     textEl.innerHTML = renderMarkdown(streamTextBuffer);
                                 }
 
+                                // Incrementally keep session synced so refresh mid-stream preserves message
+                                const currentPreviewHtml = formatDoctorBubbleHTML(streamTextBuffer, [], false);
+                                const existingDocIdx = currentChatMessages.findIndex(m => m.msgId === msgId);
+                                if (existingDocIdx !== -1) {
+                                    currentChatMessages[existingDocIdx].html = currentPreviewHtml;
+                                } else {
+                                    currentChatMessages.push({ role: 'doctor', html: currentPreviewHtml, msgId, timestamp: Date.now() });
+                                }
+                                persistActiveChatSession();
+
                                 // Telehealth Low-Latency Speech Streaming
                                 if (sentenceSpeechBuffer.includes('.') || sentenceSpeechBuffer.includes('!') || sentenceSpeechBuffer.includes('?')) {
                                     const parts = sentenceSpeechBuffer.split(/([.!?])/);
@@ -6621,10 +6643,15 @@
 
                                 if (dataObj.session_id) currentSessionId = dataObj.session_id;
 
+                                const badgeEl = document.getElementById(`streaming-badge-${msgId}`);
+                                if (badgeEl) badgeEl.remove();
+
                                 if (dataObj.triage_complete || dataObj.primary_diagnosis) {
                                     // Remove streaming placeholder bubble and render full structured diagnosis
                                     const streamingBubble = document.getElementById(`bubble-inner-${msgId}`)?.closest('.chat-bubble');
                                     if (streamingBubble) streamingBubble.remove();
+
+                                    currentChatMessages = currentChatMessages.filter(m => m.msgId !== msgId);
 
                                     renderFullDiagnosis(dataObj, weight);
                                     loadRecentsFromBackend();
@@ -6637,7 +6664,12 @@
                                     if (streamingBubble) {
                                         streamingBubble.innerHTML = cleanHtml;
                                     }
-                                    currentChatMessages.push({ role: 'doctor', html: cleanHtml, timestamp: Date.now() });
+                                    const existingDocIdx = currentChatMessages.findIndex(m => m.msgId === msgId);
+                                    if (existingDocIdx !== -1) {
+                                        currentChatMessages[existingDocIdx] = { role: 'doctor', html: cleanHtml, msgId, timestamp: Date.now() };
+                                    } else {
+                                        currentChatMessages.push({ role: 'doctor', html: cleanHtml, msgId, timestamp: Date.now() });
+                                    }
                                     persistActiveChatSession();
                                     return;
                                 } else if (dataObj.is_greeting || dataObj.is_knowledge_answer) {
@@ -6646,18 +6678,31 @@
                                     if (streamingBubble) {
                                         streamingBubble.innerHTML = cleanHtml;
                                     }
-                                    currentChatMessages.push({ role: 'doctor', html: cleanHtml, timestamp: Date.now() });
+                                    const existingDocIdx = currentChatMessages.findIndex(m => m.msgId === msgId);
+                                    if (existingDocIdx !== -1) {
+                                        currentChatMessages[existingDocIdx] = { role: 'doctor', html: cleanHtml, msgId, timestamp: Date.now() };
+                                    } else {
+                                        currentChatMessages.push({ role: 'doctor', html: cleanHtml, msgId, timestamp: Date.now() });
+                                    }
                                     persistActiveChatSession();
                                     return;
                                 }
                             } else if (eventType === 'done') {
-                                if (streamTextBuffer && !currentChatMessages.some(m => m.html && m.html.includes(streamTextBuffer.substring(0, 30)))) {
+                                const badgeEl = document.getElementById(`streaming-badge-${msgId}`);
+                                if (badgeEl) badgeEl.remove();
+
+                                if (streamTextBuffer) {
                                     const cleanHtml = formatDoctorBubbleHTML(streamTextBuffer, ['I need a natural remedy for fever.', 'What herbs help with digestion?'], false);
                                     const streamingBubble = document.getElementById(`bubble-inner-${msgId}`)?.closest('.chat-bubble');
                                     if (streamingBubble) {
                                         streamingBubble.innerHTML = cleanHtml;
                                     }
-                                    currentChatMessages.push({ role: 'doctor', html: cleanHtml, timestamp: Date.now() });
+                                    const existingDocIdx = currentChatMessages.findIndex(m => m.msgId === msgId);
+                                    if (existingDocIdx !== -1) {
+                                        currentChatMessages[existingDocIdx] = { role: 'doctor', html: cleanHtml, msgId, timestamp: Date.now() };
+                                    } else {
+                                        currentChatMessages.push({ role: 'doctor', html: cleanHtml, msgId, timestamp: Date.now() });
+                                    }
                                     persistActiveChatSession();
                                 }
                             }
