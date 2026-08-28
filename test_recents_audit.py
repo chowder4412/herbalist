@@ -31,12 +31,10 @@ class RecentsAuditSuite(unittest.TestCase):
 
     def test_02_no_native_dialogs_in_recents(self):
         """Verify that Recents actions use Custom Dialog Engine (zero native confirm/prompt/alert)"""
-        # Look for confirm( or prompt( in recents functions
         recents_section = re.search(r'function getLocalChatSessions[\s\S]*?toggleMobileSidebar', self.html)
         self.assertIsNotNone(recents_section, "Recents section not found")
         section_text = recents_section.group(0)
 
-        # Check for native confirm( or prompt( calls that are not showCustomConfirm / showCustomPrompt
         native_confirms = [m.start() for m in re.finditer(r'(?<!Custom)confirm\(', section_text)]
         native_prompts = [m.start() for m in re.finditer(r'(?<!Custom)prompt\(', section_text)]
 
@@ -64,6 +62,61 @@ class RecentsAuditSuite(unittest.TestCase):
         self.assertIn('replace(/<[^>]*>?/gm', self.html)
         self.assertIn('substring(0, 32)', self.html)
         print("[RECENTS AUDIT 5 PASS] Title sanitization and 32-character boundary truncation verified.")
+
+    def test_06_greeting_and_chat_reload_persistence(self):
+        """Verify restoreActiveSessionOnBoot does NOT discard greeting responses and sanitizes badges"""
+        restore_fn = re.search(r'function restoreActiveSessionOnBoot[\s\S]*?function openContextMenu', self.html)
+        self.assertIsNotNone(restore_fn, "restoreActiveSessionOnBoot function not found")
+        fn_text = restore_fn.group(0)
+
+        # Must NOT contain the old destructive filter
+        self.assertNotIn("if (msg.html.includes('LIVE STREAM') && !msg.html.includes('primary_diagnosis')", fn_text,
+                         "Destructive LIVE STREAM filter still present in restoreActiveSessionOnBoot!")
+        
+        # Must sanitize streaming badges cleanly
+        self.assertIn("streaming-badge-", fn_text)
+        self.assertIn("appendBubble", fn_text)
+        print("[RECENTS AUDIT 6 PASS] Greeting and chat reload persistence verified (no message dropping).")
+
+    def test_07_modern_svg_icons_in_recents_and_context_menu(self):
+        """Verify modern vector SVG icons are used in Recents list, context menu, and guest lock"""
+        # Vector speech bubble
+        self.assertIn('<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"', self.html)
+        # Vector pin
+        self.assertIn('<line x1="12" y1="17" x2="12" y2="22"></line>', self.html)
+        # Context menu action icons
+        self.assertIn('pinIconSvg', self.html)
+        self.assertIn('renameIconSvg', self.html)
+        self.assertIn('shareIconSvg', self.html)
+        self.assertIn('deleteIconSvg', self.html)
+        print("[RECENTS AUDIT 7 PASS] Modern vector SVG icons verified across Recents and Context Menu.")
+
+    def test_08_modern_glassmorphic_toast_engine(self):
+        """Verify showToast implements modern glassmorphic card with vector badge mapping"""
+        toast_fn = re.search(r'function showToast[\s\S]*?window\.showToast\s*=\s*showToast;', self.html)
+        self.assertIsNotNone(toast_fn, "showToast function not found")
+        fn_text = toast_fn.group(0)
+
+        # Must have modern iconBadgeMap
+        self.assertIn('iconBadgeMap', fn_text)
+        self.assertIn('success:', fn_text)
+        self.assertIn('error:', fn_text)
+        self.assertIn('warning:', fn_text)
+        self.assertIn('info:', fn_text)
+        self.assertIn('herbalist-modern-toast', fn_text)
+        self.assertIn('backdrop-filter: blur(16px)', fn_text)
+        print("[RECENTS AUDIT 8 PASS] Modern glassmorphic Toast notification engine verified.")
+
+    def test_09_stream_live_incremental_persistence(self):
+        """Verify submitQuery performs incremental chat message syncing during text streaming"""
+        submit_fn = re.search(r'async function submitQuery[\s\S]*?function renderFullDiagnosis', self.html)
+        self.assertIsNotNone(submit_fn, "submitQuery function not found")
+        fn_text = submit_fn.group(0)
+
+        self.assertIn('streamTextBuffer += dataObj.text', fn_text)
+        self.assertIn('currentChatMessages', fn_text)
+        self.assertIn('persistActiveChatSession()', fn_text)
+        print("[RECENTS AUDIT 9 PASS] Live incremental SSE stream persistence verified.")
 
 if __name__ == '__main__':
     unittest.main()
