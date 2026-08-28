@@ -4382,6 +4382,12 @@
         function showToast(message, type = 'info', duration = 3600) {
             if (!message) return;
 
+            // Automatically clean any raw leading emojis/question-mark artifacts from message string
+            let cleanMsg = String(message)
+                .replace(/^[\s\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F1E0}-\u{1F1FF}💬🌿✨🔔🚨⚠️✅❌ℹ️📋📌✏️🗑️🩺\?]+\s*/u, '')
+                .trim();
+            if (!cleanMsg) cleanMsg = String(message).trim();
+
             let container = document.getElementById('toast-container');
             if (!container) {
                 container = document.createElement('div');
@@ -4452,7 +4458,7 @@
                 <div style="width:34px;height:34px;border-radius:10px;background:${cfg.bg};border:1px solid ${cfg.border};display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 10px ${cfg.glow};">
                     ${cfg.svg}
                 </div>
-                <div style="flex:1;word-break:break-word;font-weight:500;color:#e8f4ec;letter-spacing:-0.15px;">${message}</div>
+                <div style="flex:1;word-break:break-word;font-weight:500;color:#e8f4ec;letter-spacing:-0.15px;">${cleanMsg}</div>
                 <button type="button" aria-label="Close" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);border-radius:8px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;padding:0;flex-shrink:0;transition:all 0.2s;" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.color='rgba(255,255,255,0.6)';this.style.background='rgba(255,255,255,0.06)'" onclick="this.closest('.herbalist-modern-toast').remove()">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
@@ -4515,12 +4521,11 @@
                     return `herbalist_chat_sessions_${cleanId}`;
                 }
             } catch(e) {}
-            return null;
+            return 'herbalist_chat_sessions_guest';
         }
 
         function getLocalChatSessions() {
             const key = getActiveUserStorageKey();
-            if (!key) return {};
             try {
                 const raw = localStorage.getItem(key);
                 return raw ? JSON.parse(raw) : {};
@@ -4531,7 +4536,6 @@
 
         function saveLocalChatSessions(sessions) {
             const key = getActiveUserStorageKey();
-            if (!key) return;
             try {
                 localStorage.setItem(key, JSON.stringify(sessions));
             } catch(e) {
@@ -4557,8 +4561,6 @@
 
         function persistActiveChatSession() {
             if (!currentSessionId || currentChatMessages.length === 0) return;
-            const userKey = getActiveUserStorageKey();
-            if (!userKey) return; // Guest consultations are not persisted into multi-session recents
             try {
                 const sessions = getLocalChatSessions();
                 let sessionTitle = "Botanical Consultation";
@@ -4602,8 +4604,8 @@
             const container = document.getElementById('recents-list');
             if (!container) return;
 
-            const userKey = getActiveUserStorageKey();
-            if (!userKey) {
+            const isGuest = getActiveUserStorageKey() === 'herbalist_chat_sessions_guest';
+            if (isGuest) {
                 // Guest / Unauthenticated: Show modern sign-in prompt with vector lock
                 container.innerHTML = `
                     <div style="color:var(--text-muted);font-size:12px;padding:16px 12px;text-align:center;line-height:1.5;background:radial-gradient(circle at 50% 0%, rgba(46,204,113,0.08) 0%, rgba(255,255,255,0.02) 100%);border-radius:14px;border:1px dashed rgba(46,204,113,0.25);margin:4px;">
@@ -12222,15 +12224,23 @@ ${recipeText}
                         }
                     });
 
-                    // Merge cloud sessions with local session storage
+                    // Merge cloud sessions with local session storage (never drop local messages)
                     const localSessions = getLocalChatSessions();
                     let updated = false;
 
                     for (const [id, cSess] of Object.entries(cloudSessions)) {
                         const lSess = localSessions[id];
-                        if (!lSess || (cSess.updatedAt && (!lSess.updatedAt || cSess.updatedAt > lSess.updatedAt))) {
+                        if (!lSess) {
                             localSessions[id] = cSess;
                             updated = true;
+                        } else {
+                            const cLen = (cSess.messages || []).filter(m => m && m.html).length;
+                            const lLen = (lSess.messages || []).filter(m => m && m.html).length;
+                            // Only update if cloud has more messages or same messages with newer timestamp
+                            if (cLen > lLen || (cLen === lLen && cSess.updatedAt && cSess.updatedAt > (lSess.updatedAt || 0))) {
+                                localSessions[id] = cSess;
+                                updated = true;
+                            }
                         }
                     }
 
@@ -13156,7 +13166,7 @@ ${recipeText}
             checkUserSession();
             renderDynamicPromptChips();
             if (restored) {
-                showToast('💬 Restored previous active consultation session', 'info', 2500);
+                showToast('Restored previous active consultation session', 'info', 2500);
             }
 
             // Auto-open target feature when redirected from welcome or auth (?open=pharmacopeia | ?open=rag | ?open=cookmode | ?open=telehealth | ?open=toolkit | ?open=prescriptions | ?open=consultation)
