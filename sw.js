@@ -1,4 +1,4 @@
-const CACHE_NAME = 'herbalist-pwa-v5.2';
+const CACHE_NAME = 'herbalist-pwa-v5.3';
 const ASSETS_TO_CACHE = [
   '/',
   '/manifest.json',
