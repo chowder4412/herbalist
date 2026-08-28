@@ -7172,6 +7172,24 @@
             }
 
             renderRecentsList();
+
+            // Smooth scroll to latest messages
+            setTimeout(() => {
+                if (typeof scrollChatToBottom === 'function') {
+                    scrollChatToBottom();
+                }
+            }, 60);
+
+            // On mobile / narrow screens, auto-close sidebar drawer upon selecting consultation
+            if (window.innerWidth <= 768) {
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar) {
+                    sidebar.classList.remove('mobile-open');
+                    sidebar.classList.add('collapsed');
+                }
+                const mobileOverlay = document.getElementById('mobile-overlay');
+                if (mobileOverlay) mobileOverlay.classList.remove('active');
+            }
         }
 
         function showEmergencyModal(message) {
