@@ -170,6 +170,12 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 # Register All API Routers
 register_routers(app)
 
+# Mount Static Components Directory
+from fastapi.staticfiles import StaticFiles
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))

@@ -1,7 +1,13 @@
-const CACHE_NAME = 'herbalist-pwa-v4.9';
+const CACHE_NAME = 'herbalist-pwa-v5.0';
 const ASSETS_TO_CACHE = [
   '/',
-  '/manifest.json'
+  '/manifest.json',
+  '/static/css/components.css',
+  '/static/js/components/agent-transparency.js',
+  '/static/js/components/message-actions.js',
+  '/static/js/components/citation-popover.js',
+  '/static/js/components/prescription-pdf.js',
+  '/static/js/components/command-palette.js'
 ];
 
 self.addEventListener('install', (event) => {
