@@ -84,7 +84,11 @@
          * Create floating popover DOM element
          */
         createPopoverElement: function() {
-            if (document.getElementById('clinical-popover')) return;
+            let el = document.getElementById('clinical-popover');
+            if (el) {
+                this.popoverEl = el;
+                return;
+            }
 
             this.popoverEl = document.createElement('div');
             this.popoverEl.id = 'clinical-popover';
@@ -93,7 +97,7 @@
             document.body.appendChild(this.popoverEl);
 
             window.addEventListener('click', (e) => {
-                if (!this.popoverEl.contains(e.target) && !e.target.classList.contains('citation-inline-badge') && !e.target.classList.contains('specimen-chip')) {
+                if (this.popoverEl && !this.popoverEl.contains(e.target) && e.target && e.target.classList && !e.target.classList.contains('citation-inline-badge') && !e.target.classList.contains('specimen-chip')) {
                     this.hide();
                 }
             });

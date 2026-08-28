@@ -42,7 +42,7 @@
         const input = document.getElementById('user-input');
         if (input) {
             input.value = text;
-            input.focus();
+            if (typeof input.focus === 'function') input.focus();
         }
     }
 
@@ -60,7 +60,13 @@
         },
 
         createPaletteDOM: function() {
-            if (document.getElementById('command-palette-overlay')) return;
+            let el = document.getElementById('command-palette-overlay');
+            if (el) {
+                this.overlayEl = el;
+                this.inputEl = document.getElementById('palette-search-input');
+                this.resultsEl = document.getElementById('palette-results-list');
+                return;
+            }
 
             this.overlayEl = document.createElement('div');
             this.overlayEl.id = 'command-palette-overlay';
@@ -81,8 +87,10 @@
             this.inputEl = document.getElementById('palette-search-input');
             this.resultsEl = document.getElementById('palette-results-list');
 
-            this.inputEl.addEventListener('input', (e) => this.onSearch(e.target.value));
-            this.inputEl.addEventListener('keydown', (e) => this.onKeyDown(e));
+            if (this.inputEl) {
+                this.inputEl.addEventListener('input', (e) => this.onSearch(e.target.value));
+                this.inputEl.addEventListener('keydown', (e) => this.onKeyDown(e));
+            }
         },
 
         bindGlobalShortcuts: function() {
@@ -108,7 +116,9 @@
             this.filteredCommands = [...COMMANDS];
             this.selectedIndex = 0;
             this.renderResults();
-            setTimeout(() => this.inputEl.focus(), 50);
+            setTimeout(() => {
+                if (this.inputEl && typeof this.inputEl.focus === 'function') this.inputEl.focus();
+            }, 50);
         },
 
         close: function() {
@@ -227,19 +237,19 @@
             const dropdown = document.getElementById('slash-autocomplete-dropdown');
             if (chatInput) {
                 chatInput.value = exampleText;
-                chatInput.focus();
+                if (typeof chatInput.focus === 'function') chatInput.focus();
             }
             if (dropdown) dropdown.style.display = 'none';
 
             // If it's an immediate action like /clear or /pdf or /call, execute it directly
             if (exampleText === '/clear') {
-                chatInput.value = '';
+                if (chatInput) chatInput.value = '';
                 window.startNewChat?.();
             } else if (exampleText === '/pdf') {
-                chatInput.value = '';
+                if (chatInput) chatInput.value = '';
                 window.PrescriptionPDF?.exportActiveRx();
             } else if (exampleText === '/call') {
-                chatInput.value = '';
+                if (chatInput) chatInput.value = '';
                 window.startTelehealthCall?.();
             }
         }

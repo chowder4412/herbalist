@@ -91,30 +91,38 @@
 
                 // Wire Copy
                 const copyBtn = bar.querySelector('.copy-btn');
-                copyBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    this.copyMessageText(bubble, copyBtn);
-                };
+                if (copyBtn) {
+                    copyBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        this.copyMessageText(bubble, copyBtn);
+                    };
+                }
 
                 // Wire Regenerate
                 const regenBtn = bar.querySelector('.regen-btn');
-                regenBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    this.regenerateLastResponse();
-                };
+                if (regenBtn) {
+                    regenBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        this.regenerateLastResponse();
+                    };
+                }
 
                 // Wire Feedback
                 const upBtn = bar.querySelector('.thumb-up-btn');
-                upBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    this.rateResponse(upBtn, 'up');
-                };
+                if (upBtn) {
+                    upBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        this.rateResponse(upBtn, 'up');
+                    };
+                }
 
                 const downBtn = bar.querySelector('.thumb-down-btn');
-                downBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    this.rateResponse(downBtn, 'down');
-                };
+                if (downBtn) {
+                    downBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        this.rateResponse(downBtn, 'down');
+                    };
+                }
 
                 bubble.appendChild(bar);
             }
