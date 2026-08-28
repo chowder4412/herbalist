@@ -10,10 +10,11 @@
 
     const COMMANDS = [
         { id: 'new_chat', title: 'Start New Consultation', badge: 'Action', icon: '✨', action: () => window.startNewChat?.() },
+        { id: 'live_voice', title: 'Start Hands-Free Live Voice Call (VAD)', badge: 'Voice', icon: '🎙️', action: () => window.LiveVoiceCall?.start() },
+        { id: 'recovery_tracker', title: 'Open Biomarker Recovery Tracker (7/30-Day)', badge: 'Health', icon: '📈', action: () => window.RecoveryTracker?.open() },
+        { id: 'cyp450_matrix', title: 'Open Drug-Herb CYP450 Safety Matrix', badge: 'Safety', icon: '🛡️', action: () => window.CYP450SafetyMatrix?.open() },
         { id: 'export_pdf', title: 'Export Active Prescription to PDF', badge: 'Export', icon: '📄', action: () => window.PrescriptionPDF?.exportActiveRx() },
-        { id: 'telehealth', title: 'Start Telehealth Live Voice Call', badge: 'Voice', icon: '📞', action: () => window.startTelehealthCall?.() },
         { id: 'search_herb', title: 'Lookup Herb Monograph in Pharmacopeia', badge: 'Database', icon: '🌿', action: () => triggerSlashInput('/herb ') },
-        { id: 'safety_check', title: 'Check Drug-Herb Interaction Matrix', badge: 'Safety', icon: '🛡️', action: () => triggerSlashInput('/safety ') },
         { id: 'calc_posology', title: 'Calculate Weight-Adjusted Posology', badge: 'Clinical', icon: '⚖️', action: () => triggerSlashInput('/dosage ') },
         { id: 'lang_hausa', title: 'Switch Voice to Hausa (Dr. Amina)', badge: 'Language', icon: '🇳🇬', action: () => setVoiceLang('ha') },
         { id: 'lang_yoruba', title: 'Switch Voice to Yoruba (Dr. Adebayo)', badge: 'Language', icon: '🇳🇬', action: () => setVoiceLang('yo') },
@@ -25,9 +26,11 @@
         { cmd: '/herb', desc: 'Lookup plant phytochemicals and dosage (e.g. /herb bitter leaf)', example: '/herb ' },
         { cmd: '/safety', desc: 'Check herb-drug safety matrix (e.g. /safety metformin bitter leaf)', example: '/safety ' },
         { cmd: '/dosage', desc: 'Calculate weight-adjusted decoction posology', example: '/dosage ' },
+        { cmd: '/live', desc: 'Launch hands-free live voice call with VAD', example: '/live' },
+        { cmd: '/tracker', desc: 'Open 7/30-day health diary & recovery charts', example: '/tracker' },
+        { cmd: '/matrix', desc: 'Open interactive CYP450 drug-herb safety matrix', example: '/matrix' },
         { cmd: '/pdf', desc: 'Generate printable clinical prescription PDF', example: '/pdf' },
-        { cmd: '/clear', desc: 'Start a clean new consultation session', example: '/clear' },
-        { cmd: '/call', desc: 'Launch live telehealth voice consultation', example: '/call' }
+        { cmd: '/clear', desc: 'Start a clean new consultation session', example: '/clear' }
     ];
 
     function setVoiceLang(code) {

@@ -2601,6 +2601,18 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                     <span>Consult Herbalist</span>
                 </li>
+                <li class="nav-item" onclick="if(window.LiveVoiceCall) window.LiveVoiceCall.start(); else if(window.startTelehealthCall) window.startTelehealthCall();" style="color:var(--accent-green);">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                    <span>Live Call (Hands-Free)</span>
+                </li>
+                <li class="nav-item" onclick="if(window.RecoveryTracker) window.RecoveryTracker.open();">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                    <span>Recovery Tracker</span>
+                </li>
+                <li class="nav-item" onclick="if(window.CYP450SafetyMatrix) window.CYP450SafetyMatrix.open(); else openSafetyCheckerModal();">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    <span>CYP450 Safety Matrix</span>
+                </li>
                 <li class="nav-item" onclick="showSection('pharmacopeia')">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
                     <span>Botanical Pharmacopeia</span>
@@ -2608,10 +2620,6 @@
                 <li class="nav-item" onclick="showSection('prescriptions')">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 1-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
                     <span>Saved Prescriptions</span>
-                </li>
-                <li class="nav-item" onclick="openSafetyCheckerModal()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                    <span>Herb-Drug & Substitutes</span>
                 </li>
                 <li class="nav-item" onclick="openPatientCareToolkitModal()">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f39c12" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
@@ -13203,5 +13211,8 @@ ${recipeText}
     <script src="/static/js/components/citation-popover.js"></script>
     <script src="/static/js/components/prescription-pdf.js"></script>
     <script src="/static/js/components/command-palette.js"></script>
+    <script src="/static/js/components/live-voice-call.js"></script>
+    <script src="/static/js/components/recovery-tracker.js"></script>
+    <script src="/static/js/components/cyp450-safety-matrix.js"></script>
 </body>
 </html>
