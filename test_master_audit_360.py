@@ -59,10 +59,12 @@ test("Auto-login & redirect to destination on verification", 'getResolvedRedirec
 print("\nSECTION 3: Main Consultation Workspace & Deep Linking (index.html)")
 with open("index.html", "r", encoding="utf-8") as f:
     index_html = f.read()
+with open("static/js/modules/auth-ui-controls.js", "r", encoding="utf-8") as f:
+    auth_ui_controls = f.read()
 
 test("DOMContentLoaded auto-opens target feature on ?open=", 'urlParams.get(\'open\')' in index_html and 'showSection(\'pharmacopeia\')' in index_html)
 test("Email verification check status in index.html", 'handleCheckEmailVerificationStatus' in index_html and 'check-verified-btn' in index_html)
-test("Modern eye toggle in index.html", 'toggleAuthPasswordVisibility' in index_html and 'SVG_EYE_OPEN_INDEX' in index_html)
+test("Modern eye toggle in index.html", 'toggleAuthPasswordVisibility' in index_html and 'const eyeOpen = `<svg' in auth_ui_controls)
 test("Mobile top-bar modality selector options fit screen", 'African Ethno' in index_html and 'Chinese TCM' in index_html)
 
 # -------------------------------------------------------------

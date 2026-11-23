@@ -15,3 +15,7 @@ clinical_memory.db
 # Node / JS
 node_modules/
 npm-debug.log*
+
+# Backups
+*.backup
+

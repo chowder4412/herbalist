@@ -19,6 +19,8 @@ class GreetingAndToastConfirmationSuite(unittest.TestCase):
     def setUpClass(cls):
         with open('index.html', 'r', encoding='utf-8') as f:
             cls.html = f.read()
+        with open('static/js/modules/toast-dialog.js', 'r', encoding='utf-8') as f:
+            cls.toast_module = f.read()
 
     def test_01_no_raw_emojis_in_restore_toast(self):
         """Verify restore toast in index.html contains clean text and no raw 💬 emoji"""
@@ -28,8 +30,8 @@ class GreetingAndToastConfirmationSuite(unittest.TestCase):
 
     def test_02_show_toast_sanitizer_regex_present(self):
         """Verify showToast contains automatic leading emoji sanitizer regex"""
-        self.assertIn('cleanMsg = String(message)', self.html)
-        self.assertIn('.herbalist-modern-toast', self.html)
+        self.assertIn('cleanMsg = String(message)', self.toast_module)
+        self.assertIn('.herbalist-modern-toast', self.toast_module)
         print("[CONFIRMATION 2 PASS] showToast automatic emoji sanitizer is verified in source code.")
 
     def test_03_firestore_snapshot_safety_guard_present(self):
@@ -88,17 +90,13 @@ class GreetingAndToastConfirmationSuite(unittest.TestCase):
         };
 
         const fs = require('fs');
-        const html = fs.readFileSync('index.html', 'utf8');
-
-        // Extract showToast function from html
-        const toastMatch = html.match(/function showToast\([\\s\\S]*?^ {8}\\}/m);
-        if (!toastMatch) throw new Error("Could not extract showToast");
-        eval(toastMatch[0]);
+        eval(fs.readFileSync('static/js/modules/toast-dialog.js', 'utf8'));
+        if (typeof window.showToast !== 'function') throw new Error("Could not load modular showToast");
 
         // Test showToast emoji sanitizer with various emoji inputs
-        showToast('💬 Restored previous active consultation session', 'info');
-        showToast('🌿 Prescription saved!', 'success');
-        showToast('🚨 Critical Medical Alert', 'error');
+        window.showToast('💬 Restored previous active consultation session', 'info');
+        window.showToast('🌿 Prescription saved!', 'success');
+        window.showToast('🚨 Critical Medical Alert', 'error');
 
         const toastContainer = document.getElementById('toast-container');
         const toasts = toastContainer.children;

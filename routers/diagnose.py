@@ -22,10 +22,13 @@ from .triage_helpers import (
     generate_knowledge_medical_answer
 )
 from botanical_anatomy_engine import check_toxic_lookalikes, get_plant_anatomy_profile
+from core.dietary_engine import ClinicalDietaryEngine
+from .common import rate_limiter
 
 router = APIRouter(tags=["Diagnosis & Triage"])
 memory_store = ClinicalMemoryStore()
 doctor = AIDoctor()
+dietary_engine = ClinicalDietaryEngine()
 
 session_manager = SessionStore()
 session_manager._gemini_engine = doctor.gemini_engine
@@ -578,6 +581,7 @@ async def upload_lab_results(body: LabUploadRequest, request: Request):
 
 @router.post("/api/diagnose")
 async def diagnose_patient(body: DiagnoseRequest, request: Request):
+    rate_limiter.enforce(request, scope_prefix="ai_diagnose", max_requests=30, window_seconds=60)
     complaint = body.complaint
     session_id = body.session_id
 
@@ -610,6 +614,12 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
                 }
             complaint = f"{complaint}\n\n[Uploaded Medical Lab Test Report Scan]:\n{vision_analysis}"
 
+    # Auto-recover active session if user_id is authenticated but session_id wasn't passed
+    if not session_id and patient_user_id:
+        cand_id = f"SESS_{patient_user_id.replace('USER_', '')}"
+        if session_manager.get_session(cand_id):
+            session_id = cand_id
+
     # 1. NON-BLOCKING INLINE EMERGENCY SAFETY ALERT
     is_emergency, emergency_msg = AIDoctor.check_emergency_red_flags(complaint)
     emergency_prefix = f"{emergency_msg}\n\n---\n\n" if (is_emergency and emergency_msg) else ""
@@ -621,76 +631,70 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
             next_question, session, is_ready = session_manager.advance_session(session_id, complaint)
 
             if is_ready:
+                is_followup = session.pop("_is_followup", False)
+                followup_message = session.pop("_followup_message", "")
+
+                if is_followup and followup_message:
+                    conv_history = session.get("conversation", [])
+                    history_str = "\n".join([
+                        f"[{t.get('role', 'user').title()}]: {t.get('text', '')}"
+                        for t in conv_history[-10:]
+                    ])
+                    diag_context = session.get("primary_diagnosis") or session.get("condition_topic") or session.get("complaint") or ""
+
+                    followup_response = None
+                    if doctor and getattr(doctor, 'gemini_engine', None) and doctor.gemini_engine.api_key:
+                        try:
+                            followup_prompt = (
+                                "You are Dr. Herbalist (Dr. Aisha), a world-class Integrative Medical Doctor and Botanical Phytotherapy Specialist.\n"
+                                "You are in an active ongoing clinical conversation with your patient.\n\n"
+                                f"PRIMARY DIAGNOSIS / CLINICAL CONTEXT: {diag_context}\n\n"
+                                f"CONVERSATION HISTORY:\n{history_str}\n\n"
+                                f"PATIENT'S LATEST MESSAGE: \"{followup_message}\"\n\n"
+                                "CLINICAL GUIDELINES:\n"
+                                "1. Contextually answer the patient's statement, question, or clarification directly.\n"
+                                "2. Maintain full memory of what was already discussed and prescribed. Do NOT restart the conversation or give a generic greeting.\n"
+                                "3. If the patient clarifies something (e.g. \"I said no\", \"I don't have fever\", \"I took paracetamol\"), acknowledge it warmly and give precise advice based on that update.\n"
+                                "4. Format with clean markdown headers and bullet points. Complete every sentence fully."
+                            )
+                            followup_response = doctor.gemini_engine.generate_text(
+                                followup_prompt, max_tokens=2048, temperature=0.4
+                            )
+                        except Exception as fe:
+                            print(f"[Herbalist AI] Follow-up AI generation notice: {fe}")
+
+                    if not followup_response or len(followup_response.strip()) < 20:
+                        fl = followup_message.strip().lower()
+                        if any(w in fl for w in ["i said no", "said no", "no"]):
+                            followup_response = (
+                                f"🩺 **Dr. Aisha**: Thank you for confirming that you are not taking any other medications! 🌿\n\n"
+                                f"Since you aren't on pharmaceutical drugs, your system is clear of potential herb-drug interactions. "
+                                f"You can proceed safely with the recommended botanical teas and kitchen preparation protocol."
+                            )
+                        elif any(w in fl for w in ["not feeling", "no symptom", "don't have", "just curious", "curiosity", "just asking", "just want to know", "no i don't", "i'm fine", "not sick"]):
+                            followup_response = (
+                                f"🩺 **Dr. Aisha**: That's wonderful to hear! 🌿 Knowledge is the best preventive medicine. "
+                                f"Feel free to ask me anything else about herbal remedies, nutrition, or wellness."
+                            )
+                        else:
+                            followup_response = (
+                                f"🩺 **Dr. Aisha**: Thank you for sharing that! 🌿 Regarding your question about {diag_context or 'your consultation'}, "
+                                f"let me know if you would like me to adjust the recipe dosage, explain the active bioactives, or provide additional dietary tips."
+                            )
+
+                    session["conversation"].append({"role": "doctor", "text": followup_response})
+                    session_manager._save_session(session_id, session)
+
+                    return {
+                        "status": "success",
+                        "session_id": session_id,
+                        "is_greeting": False,
+                        "is_knowledge_answer": True,
+                        "conversational_message": followup_response,
+                        "follow_up_suggestions": ["How should I store this herbal tea?", "Can I take this with raw honey?", "Tell me about moringa benefits", "Start a new consultation"],
+                    }
+
                 if session and session.get("info_mode"):
-                    # FOLLOW-UP DETECTION: If the user sent a conversational reply
-                    # (e.g., "I'm not feeling symptoms, just curious"), use AI with
-                    # full conversation history to respond contextually — NOT the
-                    # original monograph again.
-                    is_followup = session.pop("_is_followup", False)
-                    followup_message = session.pop("_followup_message", "")
-
-                    if is_followup and followup_message:
-                        conv_history = session.get("conversation", [])
-                        history_str = "\n".join([
-                            f"[{t.get('role', 'user').title()}]: {t.get('text', '')}"
-                            for t in conv_history[-8:]
-                        ])
-
-                        followup_response = None
-                        if doctor and getattr(doctor, 'gemini_engine', None) and doctor.gemini_engine.api_key:
-                            try:
-                                followup_prompt = (
-                                    "You are Dr. Herbalist (or Dr. Aisha), a Senior Integrative Medical Doctor and Botanical Phytotherapy Specialist.\n"
-                                    "You provide comprehensive botanical phytotherapy care and evidence-based herbal prescriptions utilizing WHO-standard medicinal plant monographs and African Pharmacopeia compendiums.\n\n"
-                                    "CONVERSATION HISTORY (most recent exchanges):\n"
-                                    f"{history_str}\n\n"
-                                    f"PATIENT'S LATEST MESSAGE: \"{followup_message}\"\n\n"
-                                    "CLINICAL GUIDELINES:\n"
-                                    "1. Directly provide your full botanical consultation and monographed herbal prescription for the patient's condition.\n"
-                                    "2. 🌿 **Clinical Botanical Prescription**: Prescribe 3-4 top proven WHO/Pharmacopeia medicinal herbs (e.g. Sweet Annie / Artemisia annua, Ghanaian Quinine / Cryptolepis sanguinolenta, Bitter Leaf / Vernonia amygdalina, Neem / Azadirachta indica, Moringa, Ginger, Papaya Leaf) with their active bioactives and therapeutic actions.\n"
-                                    "3. 🍵 **Step-by-Step Preparation & Brewing**: Provide clear kitchen preparation instructions (water volume in Liters, boiling/steeping minutes) and exact teacup dosages (e.g. 1 teacup [150 mL] warm, 2-3 times daily after meals for 5–7 days).\n"
-                                    "4. 💡 **Dietary & Home Supportive Care**: Practical recovery foods, hydration, and resting tips that support natural healing.\n"
-                                    "5. ⚠️ **Safety Precautions**: Mention emergency red-flag complications (e.g. convulsions, persistent vomiting) as a standard medical precaution.\n\n"
-                                    "Format with clean Markdown headers (##), bold text, bullet points. Complete every sentence fully."
-                                )
-                                followup_response = doctor.gemini_engine.generate_text(
-                                    followup_prompt, max_tokens=8192, temperature=0.4
-                                )
-                            except Exception as fe:
-                                print(f"[Herbalist AI] Follow-up AI generation notice: {fe}")
-
-                        if not followup_response or len(followup_response.strip()) < 20:
-                            # Smart deterministic fallback for common follow-up patterns
-                            fl = followup_message.strip().lower()
-                            if any(w in fl for w in ["not feeling", "no symptom", "don't have", "just curious",
-                                                      "curiosity", "just asking", "just want to know",
-                                                      "just wanted to know", "no i don't", "i'm fine",
-                                                      "i am fine", "not sick", "i'm okay", "i am okay"]):
-                                followup_response = (
-                                    f"🩺 **Dr. Herbalist**: That's wonderful to hear that you're doing well! 🌿\n\n"
-                                    f"I love that you're proactively learning about health and herbal medicine — "
-                                    f"knowledge is the best preventive medicine! Feel free to ask me anything else "
-                                    f"about herbal remedies, nutrition, or wellness. I'm here for you!"
-                                )
-                            else:
-                                followup_response = (
-                                    f"🩺 **Dr. Herbalist**: Thank you for sharing that! 🌿\n\n"
-                                    f"Is there anything else you'd like to know about herbal medicine, "
-                                    f"natural remedies, or health wellness? I'm here to help!"
-                                )
-
-                        session["conversation"].append({"role": "doctor", "text": followup_response})
-                        session_manager._save_session(session_id, session)
-
-                        return {
-                            "status": "success",
-                            "session_id": session_id,
-                            "is_greeting": False,
-                            "is_knowledge_answer": True,
-                            "conversational_message": followup_response,
-                            "follow_up_suggestions": ["Tell me about moringa benefits", "What herbs help with sleep?", "Natural remedies for stress", "Start a new consultation"],
-                        }
-
                     # FIRST-TIME knowledge answer (not a follow-up)
                     condition_topic = session.get("condition_topic") or ComplaintClassifier.extract_condition_topic(complaint) or complaint
                     original_question = session.get("original_question") or complaint
@@ -751,7 +755,12 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
                         weight_kg=session["weight_kg"]
                     )
 
-                    diagnosis = doctor.comprehensive_medical_analysis(patient, enriched_complaint)
+                    active_modality = body.clinical_modality or session.get("clinical_modality") or "auto"
+                    diagnosis = doctor.comprehensive_medical_analysis(
+                        patient,
+                        enriched_complaint,
+                        clinical_modality=active_modality
+                    )
 
                     formulation_name = diagnosis.natural_formulation.formulation_name if diagnosis.natural_formulation else ""
                     match_score = diagnosis.natural_formulation.bioactive_match_score if diagnosis.natural_formulation else 95.0
@@ -852,7 +861,17 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
                                 "abstract": f"Clinical investigation of {c.title} demonstrated significant therapeutic efficacy ({c.evidence_level}) with robust biomarker modulation. Key finding: {c.key_findings}"
                             })
 
-                    session_manager.delete_session(session_id)
+                    # Retain session in memory for post-diagnosis questions and conversational follow-ups
+                    session["phase"] = "post_diagnosis"
+                    session["triage_complete"] = True
+                    session["primary_diagnosis"] = diagnosis.primary_diagnosis
+                    session["prescription_card"] = diagnosis.prescription_card
+                    session["formulation"] = formulation_data
+                    session["conversation"].append({
+                        "role": "doctor",
+                        "text": f"Diagnosis: {diagnosis.primary_diagnosis}. Prescribed: {formulation_data.get('formulation_name', 'Botanical Synergy') if formulation_data else 'Formulation'}"
+                    })
+                    session_manager._save_session(session_id, session)
 
                     safety_eval = evaluate_maternal_pediatric_safety(
                         complaint=collected.get("complaint", ""),
@@ -861,6 +880,20 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
                         is_lactating=bool(body.is_lactating),
                         formulation_data=formulation_data
                     )
+
+                    dietary_plan = None
+                    try:
+                        dietary_plan = dietary_engine.generate_dietary_prescription(
+                            condition=diagnosis.primary_diagnosis or collected.get("complaint", ""),
+                            patient_profile={
+                                "age": int(session.get("age") or body.age),
+                                "weight_kg": float(session.get("weight_kg", 70.0)),
+                                "known_allergies": session.get("allergies", [])
+                            },
+                            formulation=formulation_data
+                        )
+                    except Exception as _de:
+                        print(f"[Herbalist AI] Dietary engine notice: {_de}")
 
                     return {
                         "status": "success",
@@ -876,6 +909,7 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
                         "safety_lock": safety_eval,
                         "prescription_card": f"{emergency_prefix}{diagnosis.prescription_card}" if diagnosis.prescription_card else None,
                         "formulation": formulation_data,
+                        "dietary_guidance": dietary_plan,
                         "pubmed_citations": citations_data,
                         "pharmacopeia_matches": matching_herbs[:8],
                         "new_herbs_learned": new_herbs,
@@ -940,6 +974,20 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
             "status": "success",
             "is_greeting": True,
             "conversational_message": out_msg
+        }
+
+    # Medication Clarifications / Disclaimers (e.g. "I meant I have not taken any medication", "I said no")
+    if query_category == "medication_clarification":
+        med_msg = (
+            f"🩺 **Dr. Aisha**: Understood! Thank you for clarifying that you are not taking any pharmaceutical medications! 🌿\n\n"
+            f"Since your system is clear of potential herb-drug interactions, could you share what main symptoms or health concerns "
+            f"you are experiencing right now? I'll formulate a personalized botanical remedy for you."
+        )
+        return {
+            "status": "success",
+            "is_greeting": False,
+            "conversational_message": med_msg,
+            "follow_up_suggestions": ["I have a fever and body pain", "I have a cough and sore throat", "I have stomach cramps", "Herbs for vitality"]
         }
 
     # Greeting
@@ -1109,7 +1157,11 @@ async def diagnose_patient(body: DiagnoseRequest, request: Request):
                 previous_diagnoses=[],
                 weight_kg=body.weight_kg
             )
-            diagnosis = doctor.comprehensive_medical_analysis(patient, complaint)
+            diagnosis = doctor.comprehensive_medical_analysis(
+                patient,
+                complaint,
+                clinical_modality=body.clinical_modality or "auto"
+            )
             
             formulation_name = diagnosis.natural_formulation.formulation_name if diagnosis.natural_formulation else ""
             match_score = diagnosis.natural_formulation.bioactive_match_score if diagnosis.natural_formulation else 95.0

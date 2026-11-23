@@ -7,15 +7,45 @@ import time
 import tempfile
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Request, Depends
 from fastapi.responses import FileResponse
 
 from clinical_memory import ClinicalMemoryStore
 from qdrant_memory import QdrantVectorStore
+from routers.auth import verify_jwt_token, get_auth_token_from_request
 
 router = APIRouter(tags=["Admin"])
 memory_store = ClinicalMemoryStore()
 vector_store = QdrantVectorStore()
+
+async def require_admin_role(request: Request) -> dict:
+    """Enforces authentication and admin role privileges on administrative endpoints"""
+    token = get_auth_token_from_request(request)
+    if not token:
+        # Check custom admin API key header for automated cron/testing
+        admin_key = request.headers.get("X-Admin-Key", "")
+        expected_key = os.getenv("ADMIN_API_KEY", "").strip()
+        if expected_key and admin_key == expected_key:
+            return {"role": "admin", "username": "admin_api_key"}
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required: Missing or invalid administrator token."
+        )
+    payload = verify_jwt_token(token)
+    if not payload:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication failed: Expired or invalid administrative session."
+        )
+    role = payload.get("role", "")
+    email = payload.get("email", "").lower()
+    admin_emails = os.getenv("ADMIN_EMAILS", "admin@herbalist.ai,chowder4412@gmail.com").lower().split(",")
+    if role != "admin" and email not in [e.strip() for e in admin_emails]:
+        raise HTTPException(
+            status_code=403,
+            detail="Forbidden: Administrative access privileges required."
+        )
+    return payload
 
 # Request Schemas
 class RagIngestRequest(BaseModel):
@@ -78,14 +108,14 @@ async def get_admin_dashboard():
 
 
 @router.get("/api/admin/users")
-async def get_admin_users():
+async def get_admin_users(admin_user: dict = Depends(require_admin_role)):
     """Fetch all registered patient accounts with Patient ID, DOB, and calculated Age for Admin Control Center"""
     users = memory_store.get_all_users()
     return {"status": "success", "total": len(users), "users": users}
 
 
 @router.post("/api/admin/rag/ingest")
-async def admin_ingest_rag(body: RagIngestRequest):
+async def admin_ingest_rag(body: RagIngestRequest, admin_user: dict = Depends(require_admin_role)):
     """Ingest new PubMed clinical trial or WHO monograph into Qdrant Cloud 128D Vector DB"""
     citation = body.dict()
     for idx, c in enumerate(ADMIN_RAG_CITATIONS):
@@ -114,7 +144,7 @@ async def admin_ingest_rag(body: RagIngestRequest):
 
 
 @router.delete("/api/admin/rag/citation/{pmid}")
-async def admin_delete_rag_citation(pmid: str):
+async def admin_delete_rag_citation(pmid: str, admin_user: dict = Depends(require_admin_role)):
     """Delete PubMed citation from Admin control center and Qdrant Cloud"""
     global ADMIN_RAG_CITATIONS
     ADMIN_RAG_CITATIONS = [c for c in ADMIN_RAG_CITATIONS if c["pmid"] != pmid]
@@ -143,13 +173,13 @@ async def get_feature_flags():
 
 
 @router.post("/api/admin/feature-flags")
-async def update_feature_flags(body: FeatureFlagRequest):
+async def update_feature_flags(body: FeatureFlagRequest, admin_user: dict = Depends(require_admin_role)):
     GLOBAL_FEATURE_FLAGS[body.flag_name] = body.enabled
     return {"status": "success", "flags": GLOBAL_FEATURE_FLAGS}
 
 
 @router.post("/api/admin/import-pharmacopeia")
-async def trigger_pharmacopeia_import():
+async def trigger_pharmacopeia_import(admin_user: dict = Depends(require_admin_role)):
     """Trigger automated import & seeding of WHO, USDA Dr. Duke's, IMPPAT & African Phytotherapy datasets"""
     import import_pharmacopeia
     count = import_pharmacopeia.seed_database()
@@ -157,7 +187,7 @@ async def trigger_pharmacopeia_import():
 
 
 @router.post("/api/admin/upload-dataset")
-async def upload_custom_dataset(file: UploadFile = File(...)):
+async def upload_custom_dataset(file: UploadFile = File(...), admin_user: dict = Depends(require_admin_role)):
     """Upload custom CSV or JSON dataset from Admin UI and parse into semantic pharmacopeia database"""
     import import_pharmacopeia
     

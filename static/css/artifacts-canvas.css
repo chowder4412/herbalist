@@ -1,0 +1,125 @@
+/* ═══════════════════════════════════════════════════════════════════
+   HERBALIST AI — ARTIFACTS CANVAS & COMPASS WORKSPACE
+   Split workspace, reactive compounding canvas, batch slider, checklist.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* DYNAMIC SPLIT-SCREEN ARTIFACTS CANVAS (CLAUDE/CHATGPT STYLE) */
+.workspace-split-wrapper {
+    display: flex;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    position: relative;
+}
+
+.chat-pane {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.artifacts-canvas-pane {
+    width: 480px;
+    height: 100%;
+    background: rgba(10, 18, 14, 0.95);
+    border-left: 1px solid var(--card-border);
+    display: flex;
+    flex-direction: column;
+    box-shadow: -10px 0 40px rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(25px);
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 90;
+    position: relative;
+}
+
+.artifacts-canvas-pane.collapsed {
+    width: 0 !important;
+    opacity: 0;
+    pointer-events: none;
+    border-left: none;
+    overflow: hidden;
+    display: none !important;
+}
+
+.artifacts-canvas-pane.fullscreen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100% !important;
+    z-index: 500;
+}
+
+.canvas-header {
+    padding: 16px 20px;
+    background: rgba(0, 0, 0, 0.4);
+    border-bottom: 1px solid var(--card-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.canvas-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.canvas-pill-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.canvas-pill-btn:hover {
+    background: rgba(46, 204, 113, 0.15);
+    border-color: var(--accent-green);
+    color: var(--accent-green);
+}
+
+.herb-check-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(46, 204, 113, 0.18);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.herb-check-item:hover {
+    background: rgba(46, 204, 113, 0.06);
+    border-color: var(--accent-green);
+}
+
+.herb-check-item.checked {
+    opacity: 0.55;
+    background: rgba(0, 0, 0, 0.35);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.herb-check-item.checked .herb-check-title {
+    text-decoration: line-through;
+    color: var(--text-muted);
+}

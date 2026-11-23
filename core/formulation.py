@@ -81,7 +81,10 @@ class NaturalFormulationEngine:
         adjusted_daily_bioactive_need_mg = round(raw_daily_need_mg * age_factor * organ_clearance_factor, 1)
         
         teacup_ml = 150.0
-        if weight_kg < 35.0:
+        if weight_kg < 20.0 or (hasattr(patient, 'age') and patient.age and patient.age < 6):
+            teacup_ml = 35.0
+            schedule = f"Quarter teacup (approx. 35 mL) twice daily"
+        elif weight_kg < 35.0 or (hasattr(patient, 'age') and patient.age and patient.age < 12):
             teacup_ml = 75.0
             schedule = f"Half teacup (approx. 75 mL) twice daily"
         elif adjusted_daily_bioactive_need_mg > 220.0:
@@ -323,13 +326,19 @@ class NaturalFormulationEngine:
             )
         }
 
-    def dynamic_bioactive_match(self, patient: MedicalProfile, primary_diagnosis: str) -> Tuple[List[str], str, float, float, int]:
-        """Dynamically score pharmacopeia ingredients against ANY un-hardcoded illness profile and calculate body-requirement dosage math"""
+    def dynamic_bioactive_match(self, patient: MedicalProfile, primary_diagnosis: str, clinical_modality: str = "auto") -> Tuple[List[str], str, float, float, int]:
+        """Dynamically score pharmacopeia ingredients against ANY un-hardcoded illness profile and patient regional tradition (African, Ayurveda, TCM, Western, WHO)."""
         self.sync_semantic_pharmacopeia()
+        modality = (clinical_modality or "auto").lower()
         
         all_patient_text = f"{primary_diagnosis} {' '.join(patient.current_symptoms)} {' '.join(patient.medical_history)} {' '.join(patient.risk_factors)}".lower()
         words = [w for w in all_patient_text.replace(',', ' ').replace('-', ' ').split() if len(w) > 2]
         
+        african_keys = {"bitter_leaf", "moringa_leaf", "scent_leaf", "guava_leaf", "neem_leaf", "hibiscus_flower", "papaya_leaf", "ginger_rhizome", "turmeric_root"}
+        ayurvedic_keys = {"ashwagandha_root", "turmeric_root", "ginger_rhizome", "cinnamon_bark", "moringa_leaf"}
+        tcm_keys = {"ginger_rhizome", "cinnamon_bark", "turmeric_root"}
+        western_keys = {"willow_bark", "ginger_rhizome", "turmeric_root", "cinnamon_bark"}
+
         ingredient_scores = {}
         for key, ing in self.pharmacopeia.items():
             score = 0.0
@@ -345,6 +354,16 @@ class NaturalFormulationEngine:
                 score += 1.5
             elif any(term in all_patient_text for term in ["pain", "joint", "headache", "inflammation"]) and ing.category == "Spice/Bark/Resin":
                 score += 1.5
+
+            # Boost regional tradition availability
+            if "african" in modality and key in african_keys:
+                score += 4.0
+            elif "ayurveda" in modality and key in ayurvedic_keys:
+                score += 4.0
+            elif "tcm" in modality and key in tcm_keys:
+                score += 4.0
+            elif "western" in modality and key in western_keys:
+                score += 4.0
                 
             ingredient_scores[key] = score
             
@@ -364,24 +383,37 @@ class NaturalFormulationEngine:
         daily_body_bioactive_need_mg = round(base_body_need_mg * age_multiplier * severity_multiplier, 1)
         teacups_per_day = 3 if daily_body_bioactive_need_mg > 200.0 else 2
         
-        selected_nutrients = [self.pharmacopeia[k].layman_nutrient_name for k in top_keys if self.pharmacopeia[k].layman_nutrient_name]
-        food_sources = list(set([src for k in top_keys for src in (self.pharmacopeia[k].common_food_sources or [])]))
+        clean_herbs = [self.pharmacopeia[k].common_name for k in top_keys if k in self.pharmacopeia]
+        herb_str = ", ".join(clean_herbs[:3]) if clean_herbs else "restorative botanical herbs"
         
-        body_summary = (f"What Your Body Needs: Based on your clinical evaluation ({primary_diagnosis}, age {patient.age} yrs), "
-                        f"your body requires approximately {daily_body_bioactive_need_mg} mg of active natural bioactives per day "
-                        f"({', '.join(selected_nutrients[:3])}). Instead of synthetic drugs, your body can obtain these exact quantities "
-                        f"naturally from fresh {', '.join(food_sources[:3])} prepared in a 2-liter pot.")
+        tradition_label = (
+            "African Ethnomedicine" if "african" in modality else (
+                "Ayurvedic Herbalism" if "ayurveda" in modality else (
+                    "Traditional Chinese Medicine" if "tcm" in modality else (
+                        "Western Clinical Herbalism" if "western" in modality else "WHO Evidence-Based Botanical Medicine"
+                    )
+                )
+            )
+        )
+
+        body_summary = (
+            f"Based on your symptoms and clinical evaluation for {primary_diagnosis}, your body needs gentle, natural support "
+            f"to ease discomfort, soothe inflammation, and restore your vitality. Using evidence-based {tradition_label}, we have selected proven healing botanicals "
+            f"({herb_str}) that work together in harmony. These ingredients are brewed into a simple, nourishing kitchen herbal tea "
+            f"that is gentle on your stomach and easy to take throughout the day."
+        )
                         
         return top_keys, body_summary, match_confidence, daily_body_bioactive_need_mg, teacups_per_day
 
-    def formulate_medicine_mixture(self, patient: MedicalProfile, primary_diagnosis: str, severity: int = 7) -> NaturalFormulation:
-        """Create a targeted multi-ingredient botanical formulation with dynamic volume and dosing scaled by clinical severity (1-10) and body mass (kg)."""
+    def formulate_medicine_mixture(self, patient: MedicalProfile, primary_diagnosis: str, severity: int = 7, clinical_modality: str = "auto") -> NaturalFormulation:
+        """Create a targeted multi-ingredient botanical formulation with dynamic volume and dosing scaled by clinical severity (1-10), body mass (kg), and regional tradition."""
         
-        selected_keys, layman_exp, match_score, daily_need_mg, teacups_day = self.dynamic_bioactive_match(patient, primary_diagnosis)
+        selected_keys, layman_exp, match_score, daily_need_mg, teacups_day = self.dynamic_bioactive_match(patient, primary_diagnosis, clinical_modality=clinical_modality)
         
         severity_score = max(1, min(10, severity))
         weight_kg = getattr(patient, 'weight_kg', 72.0)
         weight_factor = max(0.5, min(2.0, weight_kg / 70.0))
+        modality = (clinical_modality or "auto").lower()
         
         # DYNAMIC CLINICAL BATCH VOLUME & DOSING COMPUTATION BASED ON SEVERITY (1-10) & WEIGHT (kg)
         if severity_score <= 3:
@@ -405,14 +437,26 @@ class NaturalFormulationEngine:
         else:
             total_volume = round(4000.0 * weight_factor, -2)  # 4.0 L (Critical/Acute 9-10)
             pot_label = "4-Liter or 5-Liter large cooking vessel"
-            dos_vol = 250.0                                    # 250 mL (1 large mug)
+            dos_vol = 200.0                                    # 200 mL (Full Mug)
             freq_times = 4
-            duration = "21 consecutive days (Acute High-Potency Saturation)"
+            duration = "21 to 28 consecutive days (Intensive Recovery Protocol)"
             
-        freq = f"1 cup (approx. {int(dos_vol)} mL) warm {freq_times} times daily after meals"
+        freq_str = f"1 teacup ({int(dos_vol)} mL) {freq_times} times daily after meals"
+        
+        # Build formulation name with tradition prefix
+        trad_prefix = (
+            "African Ethnobotanical" if "african" in modality else (
+                "Ayurvedic Rasayana" if "ayurveda" in modality else (
+                    "TCM Synergy" if "tcm" in modality else (
+                        "Western Clinical" if "western" in modality else "WHO Botanical"
+                    )
+                )
+            )
+        )
+        rx_name = f"{trad_prefix} Elixir for {primary_diagnosis}"
         total_weight_g = round(50.0 * (total_volume / 1000.0), 1)  # Raw plant mass scales proportionally (50g per Liter)
         
-        form_name = f"Custom Botanical Synergy Elixir ({primary_diagnosis} - Severity {severity_score}/10)"
+        form_name = f"{rx_name} ({severity_score}/10 Severity)"
         prep_method = f"Household {pot_label} Kitchen Boil & Cellular Extraction ({total_volume/1000.0:.1f}L Batch)"
         
         num_herbs = len(selected_keys)
@@ -458,7 +502,7 @@ class NaturalFormulationEngine:
             f"STEP 3 (POT BOILING): Place all the washed ingredients into your {pot_label}. Pour in exactly {vol_liters:.1f} Liters of clean drinking water.",
             f"STEP 4 (SIMMER): Put the pot on your kitchen stove over medium heat. Bring to a gentle boil, then turn heat to low and let it simmer for 25 to 30 minutes until the liquid reduces into a rich herbal decoction.",
             "STEP 5 (STRAIN & COOL): Turn off heat. Let the pot cool down until warm. Strain out the solid leaves and roots using a clean kitchen sieve or cloth.",
-            f"STEP 6 (STORAGE & DOSING): Pour the clear liquid medicine into a clean glass jar or bottle. Store refrigerated. Drink {freq}."
+            f"STEP 6 (STORAGE & DOSING): Pour the clear liquid medicine into a clean glass jar or bottle. Store refrigerated. Drink {freq_str}."
         ]
         
         storage_safety = [
@@ -478,13 +522,13 @@ class NaturalFormulationEngine:
             concentration_mg_per_ml=conc_mg_per_ml,
             concentration_percentage_wv=conc_percentage_wv,
             dosage_volume_ml=dos_vol,
-            dosing_frequency=freq,
+            dosing_frequency=freq_str,
             treatment_duration=duration,
             preparation_recipe_steps=recipe_steps,
             storage_and_safety=storage_safety,
             layman_explanation=layman_exp,
             household_kitchen_recipe=household_recipe,
-            household_dose_schedule=freq,
+            household_dose_schedule=freq_str,
             body_requirement_summary=f"Clinical Severity: {severity_score}/10 | Dynamic Scaled Batch Volume: {vol_liters:.1f} Liters ({int(total_volume)} mL) | Daily Bioactive Need: {daily_need_mg} mg active bioactives across {freq_times} cups daily ({int(dos_vol)} mL/dose).",
             bioactive_match_score=match_score
         )

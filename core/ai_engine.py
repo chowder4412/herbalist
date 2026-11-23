@@ -15,20 +15,25 @@ class GeminiClinicalEngine:
     def __init__(self, api_key: str = None):
         self.api_key = (api_key or os.environ.get("GEMINI_API_KEY", "")).strip()
         self.groq_api_key = os.environ.get("GROQ_API_KEY", "").strip()
-        self.models = ["gemini-3.5-flash", "gemini-flash-latest"]
-        self.groq_models = ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.6-27b", "groq/compound"]
+        self.models = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"]
+        self.groq_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768", "gemma2-9b-it"]
         self.gemini_disabled = False if (self.api_key and len(self.api_key) > 15) else True
+        self.groq_disabled = False if (self.groq_api_key and len(self.groq_api_key) > 10) else True
 
-    def _call_groq_fallback(self, prompt: str, is_json: bool = False, max_tokens: int = 8192, temperature: float = 0.2) -> Optional[Any]:
+    def _call_groq_fallback(self, prompt: str, is_json: bool = False, max_tokens: int = 2048, temperature: float = 0.2) -> Optional[Any]:
         """
-        Automatic Failover Engine using Groq Cloud (openai/gpt-oss-120b, openai/gpt-oss-20b, qwen/qwen3.6-27b).
+        Automatic Failover Engine using Groq Cloud (llama-3.3-70b-versatile, llama-3.1-8b-instant).
         Triggers automatically if Gemini API key is missing or hits rate limits.
         """
-        groq_key = self.groq_api_key or os.environ.get("GROQ_API_KEY", "")
-        if not groq_key:
+        if self.groq_disabled:
             return None
 
-        actual_max_tokens = max(max_tokens, 8192)
+        groq_key = self.groq_api_key or os.environ.get("GROQ_API_KEY", "")
+        if not groq_key:
+            self.groq_disabled = True
+            return None
+
+        actual_max_tokens = min(max_tokens, 2048)
 
         system_msg = (
             "You are Dr. Herbalist (Dr. Aisha), a world-class Integrative Medical Doctor & Botanical Phytotherapist. "
@@ -66,7 +71,7 @@ class GeminiClinicalEngine:
             )
 
             try:
-                with urllib.request.urlopen(req, timeout=30) as resp:
+                with urllib.request.urlopen(req, timeout=4) as resp:
                     result = json.loads(resp.read().decode('utf-8'))
                     text_content = result['choices'][0]['message']['content'].strip()
                     
@@ -77,20 +82,62 @@ class GeminiClinicalEngine:
                         if clean_json.startswith("json"): clean_json = clean_json[4:].strip()
                         return json.loads(clean_json)
                     return text_content
+            except urllib.error.HTTPError as he:
+                if he.code in (401, 403, 404):
+                    self.groq_disabled = True
+                    break
+                print(f"[Groq Engine notice on {model}] HTTP {he.code}: {he.reason}")
             except Exception as e:
                 print(f"[Groq Engine notice on {model}] {e}")
                 continue
 
         return None
 
-    def diagnose_case(self, complaint: str, age: int, gender: str, weight_kg: float, severity: int = 5) -> Optional[dict]:
+    def analyze_clinical_case(self, complaint: str, weight_kg: float = 70.0, age: int = 35, gender: str = "Unspecified", severity: int = 5, clinical_modality: str = "auto") -> Optional[dict]:
+        """Alias for diagnose_case to match AIDoctor call signature with regional modality weighting"""
+        return self.diagnose_case(complaint=complaint, age=age, gender=gender, weight_kg=weight_kg, severity=severity, clinical_modality=clinical_modality)
+
+    def diagnose_case(self, complaint: str, age: int, gender: str, weight_kg: float, severity: int = 5, clinical_modality: str = "auto") -> Optional[dict]:
         """
         Primary clinical diagnostics method. Calls Gemini first, then falls back to Groq Cloud.
+        Dynamically adapts botanical recommendations to patient's regional modality/tradition.
         """
+        mod_clean = (clinical_modality or "auto").lower()
+        trad_guide = ""
+        if "african" in mod_clean:
+            trad_guide = "\nREGIONAL MEDICAL TRADITION: African Ethnomedicine. Prioritize indigenous African healing botanicals (e.g. Bitter Leaf, Moringa, Guava Leaf, Scent Leaf / Efirin, Neem, Utazi, Hibiscus / Zobo, Ginger, Turmeric) locally accessible in African regions."
+        elif "ayurveda" in mod_clean:
+            trad_guide = "\nREGIONAL MEDICAL TRADITION: Ayurveda (India & South Asia). Prioritize Ayurvedic herbs & rasayanas (e.g. Ashwagandha, Holy Basil / Tulsi, Triphala, Turmeric / Haridra, Brahmi, Guduchi, Ginger) and Tridosha balancing."
+        elif "tcm" in mod_clean:
+            trad_guide = "\nREGIONAL MEDICAL TRADITION: Traditional Chinese Medicine (East Asia). Prioritize TCM botanicals (e.g. Ginseng, Astragalus, Ginger, Licorice, Cinnamon Bark, Green Tea) and Qi/Yin-Yang harmony."
+        elif "western" in mod_clean:
+            trad_guide = "\nREGIONAL MEDICAL TRADITION: Western Clinical Herbalism (US & Europe). Prioritize Western pharmacognosy herbs (e.g. Willow Bark, Chamomile, Peppermint, Milk Thistle, Elderberry, Valerian, Echinacea)."
+        else:
+            trad_guide = "\nREGIONAL MEDICAL TRADITION: WHO Global Evidence-Based Botanical Synthesis."
+
         system_instruction = (
-            f"You are Dr. Herbalist, a Senior Medical Doctor & Phytotherapy Specialist. Analyze this patient case:\n"
-            f"Chief Complaint: {complaint}\nAge: {age}, Gender: {gender}, Body Weight: {weight_kg} kg, Severity: {severity}/10.\n\n"
-            f"Respond ONLY with a raw valid JSON string following the expected medical schema."
+            f"You are Dr. Herbalist (Dr. Aisha), an empathetic Integrative Medical Doctor & Botanical Phytotherapist.\n"
+            f"Analyze this patient case and formulate a personalized botanical herbal remedy:\n"
+            f"Chief Complaint: {complaint}\n"
+            f"Age: {age} years, Gender: {gender}, Body Weight: {weight_kg} kg, Severity: {severity}/10.{trad_guide}\n\n"
+            f"CRITICAL COMMUNICATION & LAYMAN LANGUAGE RULES:\n"
+            f"1. In 'layman_explanation', write in warm, clear, compassionate everyday 6th-grade English. Speak directly to the patient.\n"
+            f"   - Explain in simple words what is going on with their body.\n"
+            f"   - Explain WHY each herb is chosen using everyday common names (e.g. Ginger, Turmeric, Chamomile, Lemongrass, Moringa).\n"
+            f"   - Explain HOW this warm tea will soothe their symptoms and help them recover.\n"
+            f"   - Do NOT use obscure chemical formulas, robotic math strings, or intimidating medical jargon.\n"
+            f"2. In 'kitchen_recipe_steps', provide simple step-by-step cooking instructions (boiling water, adding washed herbs, simmering, straining).\n\n"
+            f"Respond ONLY with a valid JSON object matching this schema:\n"
+            f'{{\n'
+            f'  "primary_diagnosis": "Clear Diagnosis Title",\n'
+            f'  "confidence_score": 95.0,\n'
+            f'  "differential_diagnoses": ["Alternative condition 1", "Alternative condition 2"],\n'
+            f'  "target_plants": ["Common Herb 1", "Common Herb 2", "Common Herb 3"],\n'
+            f'  "layman_explanation": "Warm, compassionate, simple 2-3 sentence explanation of what is going on and how these herbs help.",\n'
+            f'  "kitchen_recipe_steps": ["1. Measure 2 liters of fresh water...", "2. Add washed herbs...", "3. Simmer covered on low heat for 20 minutes...", "4. Strain and drink warm."],\n'
+            f'  "dosing_schedule": "1 teacup (150 mL) 3 times daily after meals",\n'
+            f'  "safety_warnings": ["Safety precautions or none"]\n'
+            f'}}'
         )
 
         if self.api_key and not self.gemini_disabled:
@@ -104,7 +151,7 @@ class GeminiClinicalEngine:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.api_key}"
                 req = urllib.request.Request(url, data=data_bytes, headers={'Content-Type': 'application/json'})
                 try:
-                    with urllib.request.urlopen(req, timeout=25) as resp:
+                    with urllib.request.urlopen(req, timeout=6) as resp:
                         result = json.loads(resp.read().decode('utf-8'))
                         text_content = result['candidates'][0]['content']['parts'][0]['text']
                         clean_json = text_content.strip()
@@ -116,8 +163,8 @@ class GeminiClinicalEngine:
                     if he.code == 429:
                         print(f"[Gemini Clinical Engine] Rate limit (HTTP 429) on model {model}, trying next model...")
                         continue
-                    elif he.code in (400, 403, 404):
-                        print(f"[Gemini Clinical Engine] API Key Error (HTTP {he.code}). Routing to Groq failover engine.")
+                    elif he.code in (400, 401, 403, 404):
+                        print(f"[Gemini Clinical Engine] API Key Error (HTTP {he.code}). Routing to failover engine.")
                         self.gemini_disabled = True
                         break
                     else:

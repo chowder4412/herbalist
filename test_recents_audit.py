@@ -7,6 +7,17 @@ class RecentsAuditSuite(unittest.TestCase):
     def setUpClass(cls):
         with open('index.html', 'r', encoding='utf-8') as f:
             cls.html = f.read()
+        module_paths = {
+            'core': 'static/js/modules/core-state.js',
+            'title': 'static/js/modules/chat-session-title.js',
+            'restore': 'static/js/modules/chat-session-restore.js',
+            'ui': 'static/js/modules/recents-guest-prompt-ui.js',
+            'toast': 'static/js/modules/toast-dialog.js',
+        }
+        cls.modules = {}
+        for name, path in module_paths.items():
+            with open(path, 'r', encoding='utf-8') as f:
+                cls.modules[name] = f.read()
 
     def test_01_recents_core_functions_exist(self):
         """Verify all Recents CRUD and UI lifecycle functions exist"""
@@ -26,12 +37,14 @@ class RecentsAuditSuite(unittest.TestCase):
         ]
         for fn in functions:
             match = re.search(r'(function\s+' + fn + r'|async\s+function\s+' + fn + r'|' + fn + r'\s*=\s*)', self.html)
+            if fn in ('getLocalChatSessions', 'saveLocalChatSessions'):
+                match = match or re.search(r'window\.' + fn + r'\s*=', self.modules['core'])
             self.assertIsNotNone(match, f"Missing required Recents function: {fn}")
         print("\n[RECENTS AUDIT 1 PASS] All 12 Recents functions are present and exported.")
 
     def test_02_no_native_dialogs_in_recents(self):
         """Verify that Recents actions use Custom Dialog Engine (zero native confirm/prompt/alert)"""
-        recents_section = re.search(r'function getLocalChatSessions[\s\S]*?toggleMobileSidebar', self.html)
+        recents_section = re.search(r'function persistActiveChatSession[\s\S]*?function legacyShareConversation', self.html)
         self.assertIsNotNone(recents_section, "Recents section not found")
         section_text = recents_section.group(0)
 
@@ -46,21 +59,21 @@ class RecentsAuditSuite(unittest.TestCase):
 
     def test_03_multi_user_storage_isolation(self):
         """Verify user storage key uses isolated per-user namespace"""
-        self.assertIn('getActiveUserStorageKey', self.html)
-        self.assertIn('herbalist_chat_sessions_', self.html)
+        self.assertIn('getActiveUserStorageKey', self.modules['core'])
+        self.assertIn('herbalist_chat_sessions_', self.modules['core'])
         print("[RECENTS AUDIT 3 PASS] Multi-user session isolation is strictly enforced via namespaced keys.")
 
     def test_04_pinned_sorting_and_active_state(self):
         """Verify pinned items sort to top and active items receive .active styling"""
         self.assertIn('isPinned', self.html)
         self.assertIn('recent-item', self.html)
-        self.assertIn("${isActive ? 'active' : ''}", self.html)
+        self.assertIn("${isActive ? 'active' : ''}", self.modules['ui'])
         print("[RECENTS AUDIT 4 PASS] Pinned sorting & active item highlight logic verified.")
 
     def test_05_sanitized_title_truncation(self):
         """Verify first user query is cleaned of HTML/emojis and truncated properly"""
-        self.assertIn('replace(/<[^>]*>?/gm', self.html)
-        self.assertIn('substring(0, 32)', self.html)
+        self.assertIn('replace(/<[^>]*>?/gm', self.modules['title'])
+        self.assertIn('substring(0, 32)', self.modules['title'])
         print("[RECENTS AUDIT 5 PASS] Title sanitization and 32-character boundary truncation verified.")
 
     def test_06_greeting_and_chat_reload_persistence(self):
@@ -74,14 +87,15 @@ class RecentsAuditSuite(unittest.TestCase):
                          "Destructive LIVE STREAM filter still present in restoreActiveSessionOnBoot!")
         
         # Must sanitize streaming badges cleanly
-        self.assertIn("streaming-badge-", fn_text)
+        self.assertIn("HerbalistChatSessionRestore.sanitizeRestoredMessages", fn_text)
+        self.assertIn("streaming-badge-", self.modules['restore'])
         self.assertIn("appendBubble", fn_text)
         print("[RECENTS AUDIT 6 PASS] Greeting and chat reload persistence verified (no message dropping).")
 
     def test_07_modern_svg_icons_in_recents_and_context_menu(self):
         """Verify modern vector SVG icons are used in Recents list, context menu, and guest lock"""
         # Vector speech bubble
-        self.assertIn('<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"', self.html)
+        self.assertIn('<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"', self.modules['ui'])
         # Vector pin
         self.assertIn('<line x1="12" y1="17" x2="12" y2="22"></line>', self.html)
         # Context menu action icons
@@ -93,7 +107,7 @@ class RecentsAuditSuite(unittest.TestCase):
 
     def test_08_modern_glassmorphic_toast_engine(self):
         """Verify showToast implements modern glassmorphic card with vector badge mapping"""
-        toast_fn = re.search(r'function showToast[\s\S]*?window\.showToast\s*=\s*showToast;', self.html)
+        toast_fn = re.search(r'function showToast[\s\S]*?window\.showToast\s*=\s*showToast;', self.modules['toast'])
         self.assertIsNotNone(toast_fn, "showToast function not found")
         fn_text = toast_fn.group(0)
 

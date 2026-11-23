@@ -22,12 +22,25 @@ except ImportError:
     jwt = None
     PYJWT_AVAILABLE = False
 
+import secrets
 from clinical_memory import ClinicalMemoryStore
+from routers.common import rate_limiter
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 memory_store = ClinicalMemoryStore()
 
-JWT_SECRET = os.getenv("JWT_SECRET", "herbalist_jwt_secret_key_2026_enterprise")
+def _get_secure_jwt_secret() -> str:
+    env_secret = os.getenv("JWT_SECRET", "").strip()
+    if env_secret:
+        return env_secret
+    if not hasattr(_get_secure_jwt_secret, "_ephemeral_secret"):
+        _get_secure_jwt_secret._ephemeral_secret = secrets.token_hex(32)
+        logging.getLogger("herbalist.auth").warning(
+            "[Security Notice] JWT_SECRET not configured in .env. Generated dynamic 256-bit ephemeral cryptographic key."
+        )
+    return _get_secure_jwt_secret._ephemeral_secret
+
+JWT_SECRET = _get_secure_jwt_secret()
 
 
 # ══════════════════════════════════════════════════════════════
@@ -147,8 +160,9 @@ def get_auth_token_from_request(request: Request) -> str:
 # Auth Route Handlers
 # ══════════════════════════════════════════════════════════════
 @router.post("/register")
-async def register_user(body: RegisterRequest, background_tasks: BackgroundTasks):
+async def register_user(body: RegisterRequest, request: Request, background_tasks: BackgroundTasks):
     """Initiate user registration, generate 6-digit OTP verification code, and dispatch email in background"""
+    rate_limiter.enforce(request, scope_prefix="auth_register", max_requests=10, window_seconds=60)
     if len(body.password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters long")
     
@@ -192,8 +206,9 @@ async def register_user(body: RegisterRequest, background_tasks: BackgroundTasks
 
 
 @router.post("/verify-otp")
-async def verify_otp(body: VerifyOtpRequest, response: Response):
+async def verify_otp(body: VerifyOtpRequest, request: Request, response: Response):
     """Verify 6-digit OTP code, activate user account in database, and set HttpOnly Secure Cookie"""
+    rate_limiter.enforce(request, scope_prefix="auth_verify_otp", max_requests=10, window_seconds=60)
     user = memory_store.verify_and_activate_otp(body.email, body.otp_code)
     if not user:
         raise HTTPException(status_code=400, detail="Invalid or expired 6-digit verification code. Please request a new code.")
@@ -209,8 +224,9 @@ async def verify_otp(body: VerifyOtpRequest, response: Response):
 
 
 @router.post("/resend-otp")
-async def resend_otp(body: ResendOtpRequest, background_tasks: BackgroundTasks):
+async def resend_otp(body: ResendOtpRequest, request: Request, background_tasks: BackgroundTasks):
     """Resend a fresh 6-digit OTP verification code in background"""
+    rate_limiter.enforce(request, scope_prefix="auth_resend_otp", max_requests=6, window_seconds=60)
     conn = memory_store.get_connection()
     cursor = conn.cursor()
     cursor.execute('SELECT full_name FROM pending_otps WHERE email = ?', (body.email.lower().strip(),))
@@ -234,8 +250,9 @@ async def resend_otp(body: ResendOtpRequest, background_tasks: BackgroundTasks):
 
 
 @router.post("/forgot-password")
-async def forgot_password(body: ForgotPasswordRequest, background_tasks: BackgroundTasks):
+async def forgot_password(body: ForgotPasswordRequest, request: Request, background_tasks: BackgroundTasks):
     """Initiate password reset, generate 6-digit OTP, and dispatch email in background"""
+    rate_limiter.enforce(request, scope_prefix="auth_forgot_password", max_requests=6, window_seconds=60)
     email_clean = body.email.lower().strip()
     otp_code = memory_store.store_password_reset_otp(email_clean)
     if not otp_code:
@@ -247,8 +264,9 @@ async def forgot_password(body: ForgotPasswordRequest, background_tasks: Backgro
 
 
 @router.post("/reset-password")
-async def reset_password(body: ResetPasswordRequest, response: Response):
+async def reset_password(body: ResetPasswordRequest, request: Request, response: Response):
     """Verify 6-digit OTP, update password, set HttpOnly cookie, and log user in"""
+    rate_limiter.enforce(request, scope_prefix="auth_reset_password", max_requests=10, window_seconds=60)
     if len(body.new_password) < 6:
         raise HTTPException(status_code=400, detail="New password must be at least 6 characters long")
         
@@ -268,8 +286,9 @@ async def reset_password(body: ResetPasswordRequest, response: Response):
 
 
 @router.post("/login")
-async def login_user(body: LoginRequest, response: Response):
+async def login_user(body: LoginRequest, request: Request, response: Response):
     """Authenticate user credentials and set HttpOnly Secure Cookie with detailed diagnostic messages"""
+    rate_limiter.enforce(request, scope_prefix="auth_login", max_requests=10, window_seconds=60)
     email_clean = body.email.lower().strip()
     if not re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", email_clean):
         raise HTTPException(status_code=400, detail="Please enter a valid email address (e.g. name@domain.com).")

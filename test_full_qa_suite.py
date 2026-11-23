@@ -21,6 +21,14 @@ class FullQAAndAuditSuite(unittest.TestCase):
     def setUpClass(cls):
         with open('index.html', 'r', encoding='utf-8') as f:
             cls.html = f.read()
+        cls.modules = {}
+        for mod, rel_path in {
+            'toast': 'static/js/modules/toast-dialog.js',
+            'dialogs': 'static/js/modules/custom-dialogs.js',
+        }.items():
+            if os.path.exists(rel_path):
+                with open(rel_path, 'r', encoding='utf-8') as f:
+                    cls.modules[mod] = f.read()
 
     def test_01_static_assets_mime_types_and_headers(self):
         """QA 1: Verify all 5 components & CSS are served with correct MIME types and HTTP 200"""
@@ -221,9 +229,11 @@ class FullQAAndAuditSuite(unittest.TestCase):
         """QA 4: Verify existing chat history, voices, and core diagnostic lifecycles remain 100% intact"""
         self.assertIn('function restoreActiveSessionOnBoot', self.html)
         self.assertIn('function renderRecentsList', self.html)
-        self.assertIn('function showToast', self.html)
-        self.assertIn('function showCustomConfirm', self.html)
-        self.assertIn('function showCustomPrompt', self.html)
+        toast_src = self.modules.get('toast', '')
+        dialogs_src = self.modules.get('dialogs', '')
+        self.assertTrue('function showToast' in self.html or 'function showToast' in toast_src, "showToast missing from html and module")
+        self.assertTrue('function showCustomConfirm' in self.html or 'function showCustomConfirm' in dialogs_src, "showCustomConfirm missing from html and module")
+        self.assertTrue('function showCustomPrompt' in self.html or 'function showCustomPrompt' in dialogs_src, "showCustomPrompt missing from html and module")
         self.assertIn('CHAT_VOICE_PROFILES', self.html)
         print("[QA 4 PASS] Zero regressions verified on existing chat sessions, voice profiles, and custom modals.")
 

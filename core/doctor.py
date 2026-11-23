@@ -163,11 +163,11 @@ Let's begin with your comprehensive evaluation. What brings you to see me today?
         
         return consultation_greeting
     
-    def comprehensive_medical_analysis(self, patient: MedicalProfile, chief_complaint: str) -> MedicalDiagnosis:
-        """Perform comprehensive medical analysis and diagnosis"""
+    def comprehensive_medical_analysis(self, patient: MedicalProfile, chief_complaint: str, clinical_modality: str = "auto") -> MedicalDiagnosis:
+        """Perform comprehensive medical analysis and diagnosis with regional botanical modality weighting (African, Ayurveda, TCM, Western, WHO)."""
         
         # AI diagnostic reasoning process
-        safe_print(f"\n[Herbalist AI] DIAGNOSTIC ANALYSIS IN PROGRESS")
+        safe_print(f"\n[Herbalist AI] DIAGNOSTIC ANALYSIS IN PROGRESS (Modality: {clinical_modality})")
         safe_print(f"Chief Complaint: {chief_complaint}")
         safe_print(f"Patient Age: {patient.age}, Medical History: {', '.join(patient.medical_history) if patient.medical_history else 'None'}")
         
@@ -189,8 +189,8 @@ Let's begin with your comprehensive evaluation. What brings you to see me today?
         # Identify red flags
         red_flags = self._identify_red_flags(patient, primary_diagnosis)
         
-        # Phytotherapy & Herbal Medicine Evaluation
-        recommended_herbs = self.phytotherapy_specialist.recommend_herbal_remedies(patient.current_symptoms, patient.medical_history)
+        # Phytotherapy & Herbal Medicine Evaluation with Region/Tradition weighting
+        recommended_herbs = self.phytotherapy_specialist.recommend_herbal_remedies(patient.current_symptoms, patient.medical_history, clinical_modality=clinical_modality)
         proposed_herb_names = [h.common_name for h in recommended_herbs]
         
         # 1. Deterministic Herb-Drug Interaction (HDI) Cross-Check
@@ -238,7 +238,8 @@ Let's begin with your comprehensive evaluation. What brings you to see me today?
             weight_kg=getattr(patient, 'weight_kg', 72.0),
             age=patient.age,
             gender=patient.gender,
-            severity=extracted_severity
+            severity=extracted_severity,
+            clinical_modality=clinical_modality
         )
 
         if gemini_data:
@@ -284,9 +285,19 @@ Let's begin with your comprehensive evaluation. What brings you to see me today?
                     "role": actions[0] if isinstance(actions, list) and actions else "Therapeutic Active"
                 })
 
+            mod_label = (
+                "African Ethnobotanical" if "african" in clinical_modality.lower() else (
+                    "Ayurvedic Rasayana" if "ayurveda" in clinical_modality.lower() else (
+                        "TCM Synergy" if "tcm" in clinical_modality.lower() else (
+                            "Western Clinical" if "western" in clinical_modality.lower() else "WHO Botanical"
+                        )
+                    )
+                )
+            )
+
             natural_formulation = NaturalFormulation(
                 formulation_id=f"FORM-{int(time.time())}",
-                formulation_name=f"WHO-Grade Botanical Synergy ({', '.join(gemini_data.get('target_plants', ['Medicinal Herbs'])[:2])} - Severity {extracted_severity}/10)",
+                formulation_name=f"{mod_label} Elixir ({', '.join(gemini_data.get('target_plants', ['Medicinal Herbs'])[:2])} - Severity {extracted_severity}/10)",
                 target_condition=primary_diagnosis,
                 ingredients=parsed_ingredients,
                 preparation_method=kitchen_recipe,
@@ -328,8 +339,12 @@ Let's begin with your comprehensive evaluation. What brings you to see me today?
             prescription_card = self.natural_formulator.generate_prescription_card(patient, primary_diagnosis, natural_formulation, safety_warns, pubmed_citations, alt_substitutes)
 
         else:
-            # High-Intelligence Local Phytotherapy Formulation Engine (when Gemini API is offline/rate-limited)
-            natural_formulation = self.natural_formulator.formulate_medicine_mixture(patient, primary_diagnosis, severity=extracted_severity)
+            # High-Intelligence Local Phytotherapy Formulation Engine with clinical_modality support
+            natural_formulation = self.natural_formulator.formulate_medicine_mixture(patient, primary_diagnosis, severity=extracted_severity, clinical_modality=clinical_modality)
+            natural_formulation.dosing_frequency = dosing_calc["dosing_schedule"]
+            natural_formulation.household_kitchen_recipe = dosing_calc["pot_recipe_instructions"]
+            pubmed_citations = self.pubmed_rag.retrieve_citations(primary_diagnosis)
+            prescription_card = self.natural_formulator.generate_prescription_card(patient, primary_diagnosis, natural_formulation, safety_warns, pubmed_citations)
             natural_formulation.dosing_frequency = dosing_calc["dosing_schedule"]
             natural_formulation.household_kitchen_recipe = dosing_calc["pot_recipe_instructions"]
             pubmed_citations = self.pubmed_rag.retrieve_citations(primary_diagnosis)

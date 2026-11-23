@@ -23,6 +23,14 @@ class FullSystemAuditSuite(unittest.TestCase):
         """Audit 1: Verify all 20 interactive frontend functions & JS syntax integrity"""
         with open("index.html", "r", encoding="utf-8") as f:
             html_content = f.read()
+        with open("static/js/modules/textarea-autoexpand.js", "r", encoding="utf-8") as f:
+            textarea_controls = f.read()
+        with open("static/js/modules/core-state.js", "r", encoding="utf-8") as f:
+            core_state = f.read()
+        with open("static/js/modules/canvas-controller.js", "r", encoding="utf-8") as f:
+            canvas_controls = f.read()
+        with open("static/js/modules/cook-mode-controller.js", "r", encoding="utf-8") as f:
+            cook_mode_controls = f.read()
 
         required_functions = [
             "handleKeyPress",
@@ -48,8 +56,16 @@ class FullSystemAuditSuite(unittest.TestCase):
         ]
 
         for fn in required_functions:
+            module_exports = {
+                "autoExpandTextarea": "window.autoExpandTextarea = autoExpandTextarea" in textarea_controls,
+                "getLocalChatSessions": "window.getLocalChatSessions = function()" in core_state,
+                "saveLocalChatSessions": "window.saveLocalChatSessions = function(sessions)" in core_state,
+                "openArtifactsCanvas": "window.openArtifactsCanvas = openArtifactsCanvas" in canvas_controls,
+                "openKitchenCookMode": "window.openKitchenCookMode = openKitchenCookMode" in cook_mode_controls,
+            }
+            module_owns_function = module_exports.get(fn, False)
             self.assertTrue(
-                f"function {fn}" in html_content or f"{fn} = " in html_content,
+                f"function {fn}" in html_content or f"{fn} = " in html_content or module_owns_function,
                 f"Missing frontend function: {fn}"
             )
         print("\n[AUDIT 1 PASS] All 20 frontend lifecycle functions are properly declared.")

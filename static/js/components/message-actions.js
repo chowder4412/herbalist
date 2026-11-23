@@ -69,10 +69,14 @@
                 };
                 bubble.appendChild(editBtn);
             } else {
-                // Doctor Bubble: Attach Full Action Bar (Copy, Regenerate, Thumbs Up/Down, PDF)
+                // Doctor Bubble: Attach Full Action Bar (Listen, Copy, Regenerate, Thumbs Up/Down, PDF)
                 const bar = document.createElement('div');
                 bar.className = 'msg-actions-bar';
                 bar.innerHTML = `
+                    <button class="msg-action-btn listen-btn" title="Listen to doctor's response in Studio Neural HD Audio">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                        <span>Listen</span>
+                    </button>
                     <button class="msg-action-btn copy-btn" title="Copy response to clipboard">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                         <span>Copy</span>
@@ -88,6 +92,17 @@
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>
                     </button>
                 `;
+
+                // Wire Listen
+                const listenBtn = bar.querySelector('.listen-btn');
+                if (listenBtn) {
+                    listenBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        if (typeof window.speakDoctorMessageInSelectedLanguage === 'function') {
+                            window.speakDoctorMessageInSelectedLanguage(bubble.innerText);
+                        }
+                    };
+                }
 
                 // Wire Copy
                 const copyBtn = bar.querySelector('.copy-btn');
@@ -166,26 +181,47 @@
         },
 
         /**
-         * Regenerate clinical response
+         * Regenerate clinical response intelligently
          */
         regenerateLastResponse: function() {
-            // Find the last patient query
-            const patientBubbles = Array.from(document.querySelectorAll('.chat-bubble')).filter(b => b.style.alignSelf === 'flex-end');
-            if (patientBubbles.length === 0) {
+            let targetText = '';
+            
+            // 1. Check if there is an active diagnosis / prescription in context
+            if (typeof activePrescriptionPayload !== 'undefined' && activePrescriptionPayload) {
+                targetText = activePrescriptionPayload.complaint || activePrescriptionPayload.primary_diagnosis || '';
+            } else if (typeof canvasActivePrescription !== 'undefined' && canvasActivePrescription) {
+                targetText = canvasActivePrescription.complaint || canvasActivePrescription.primary_diagnosis || '';
+            }
+
+            // 2. If not found from active prescription, search patient bubbles backwards for the actual symptom query (skipping 1-word answers like 'no', 'yes', 'none', 'ok')
+            if (!targetText) {
+                const patientBubbles = Array.from(document.querySelectorAll('.chat-bubble')).filter(b => b.style.alignSelf === 'flex-end');
+                for (let i = patientBubbles.length - 1; i >= 0; i--) {
+                    const txt = (patientBubbles[i].innerText || '').trim();
+                    const words = txt.split(/\s+/).filter(w => w.length > 0);
+                    if (words.length >= 2 && !['no', 'yes', 'none', 'ok', 'okay', 'nope', 'yep'].includes(txt.toLowerCase())) {
+                        targetText = txt;
+                        break;
+                    }
+                }
+                if (!targetText && patientBubbles.length > 0) {
+                    targetText = (patientBubbles[0].innerText || '').trim();
+                }
+            }
+
+            if (!targetText) {
                 if (typeof window.showToast === 'function') {
-                    window.showToast('No recent patient query to regenerate', 'warning', 2000);
+                    window.showToast('No recent clinical symptom found to regenerate', 'warning', 2000);
                 }
                 return;
             }
 
-            const lastPatientBubble = patientBubbles[patientBubbles.length - 1];
-            const lastText = (lastPatientBubble.innerText || '').trim();
-
             const input = document.getElementById('user-input');
             if (input && typeof window.submitQuery === 'function') {
-                input.value = lastText;
+                input.value = targetText;
+                const activeMod = (typeof currentClinicalModality !== 'undefined' && currentClinicalModality) ? currentClinicalModality.toUpperCase() : 'AUTO';
                 if (typeof window.showToast === 'function') {
-                    window.showToast('Regenerating botanical clinical consultation...', 'info', 2200);
+                    window.showToast(`Regenerating prescription (${activeMod} Modality)...`, 'info', 2200);
                 }
                 window.submitQuery();
             }

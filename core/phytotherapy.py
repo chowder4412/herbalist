@@ -872,20 +872,53 @@ class PhytotherapySpecialist:
                         
         return flagged_interactions
 
-    def recommend_herbal_remedies(self, symptoms: List[str], medical_history: List[str]) -> List[HerbalRemedy]:
-        """Recommend evidence-based botanical remedies based on clinical symptoms and history"""
+    def recommend_herbal_remedies(self, symptoms: List[str], medical_history: List[str], clinical_modality: str = "auto") -> List[HerbalRemedy]:
+        """Recommend evidence-based botanical remedies dynamically weighted by clinical symptoms, history, and patient regional tradition (African Ethno, Ayurveda, TCM, Western, or WHO Auto)."""
         recommendations = []
         all_indicators = " ".join([s.lower() for s in symptoms + medical_history])
-        
+        modality = (clinical_modality or "auto").lower()
+
+        # Regional tradition botanical tags
+        african_keys = {"bitter_leaf", "moringa", "scent_leaf", "guava_leaf", "neem", "utazi", "bitter_kola", "hibiscus", "ringworm_bush", "papaya_leaf", "stonebreaker", "ginger", "turmeric"}
+        ayurvedic_keys = {"ashwagandha", "tulsi", "triphala", "turmeric", "brahmi", "guduchi", "ginger", "cloves", "moringa"}
+        tcm_keys = {"ginseng", "astragalus", "ginger", "licorice", "cinnamon", "green_tea", "turmeric"}
+        western_keys = {"willow_bark", "chamomile", "peppermint", "milk_thistle", "elderberry", "valerian", "echinacea", "st_johns_wort", "ginger", "turmeric"}
+
+        scored_remedies = []
         for key, remedy in self.herbal_database.items():
-            for indication in remedy.clinical_indications:
-                if any(word in all_indicators for word in indication.lower().split() if len(word) > 3):
-                    if remedy not in recommendations:
-                        recommendations.append(remedy)
-                        break
-                        
-        if not recommendations:
-            recommendations.append(self.herbal_database["turmeric"])
-            recommendations.append(self.herbal_database["ashwagandha"])
+            score = 0.0
+            remedy_text = f"{remedy.common_name} {remedy.botanical_name} {' '.join(remedy.clinical_indications)} {' '.join(remedy.therapeutic_actions)}".lower()
             
-        return recommendations
+            for word in all_indicators.replace(',', ' ').replace('-', ' ').split():
+                if len(word) > 2 and word in remedy_text:
+                    score += 2.0
+
+            # Boost score based on active regional tradition / location
+            if "african" in modality and key in african_keys:
+                score += 3.0
+            elif "ayurveda" in modality and key in ayurvedic_keys:
+                score += 3.0
+            elif "tcm" in modality and key in tcm_keys:
+                score += 3.0
+            elif "western" in modality and key in western_keys:
+                score += 3.0
+
+            if score > 0:
+                scored_remedies.append((score, remedy))
+
+        scored_remedies.sort(key=lambda x: x[0], reverse=True)
+        recommendations = [r[1] for r in scored_remedies[:5]]
+
+        if not recommendations:
+            if "african" in modality:
+                recommendations = [self.herbal_database.get("bitter_leaf") or self.herbal_database["turmeric"], self.herbal_database.get("moringa") or self.herbal_database["ashwagandha"]]
+            elif "ayurveda" in modality:
+                recommendations = [self.herbal_database["ashwagandha"], self.herbal_database["turmeric"]]
+            elif "tcm" in modality:
+                recommendations = [self.herbal_database.get("ginseng") or self.herbal_database["turmeric"], self.herbal_database["ginger"]]
+            elif "western" in modality:
+                recommendations = [self.herbal_database.get("chamomile") or self.herbal_database["turmeric"], self.herbal_database.get("peppermint") or self.herbal_database["ginger"]]
+            else:
+                recommendations = [self.herbal_database["turmeric"], self.herbal_database["ashwagandha"]]
+
+        return [r for r in recommendations if r is not None]

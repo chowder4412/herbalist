@@ -65,8 +65,8 @@ class TestForgotAndPasswordRecents(unittest.TestCase):
         self.assertIn("access_token", new_login.json())
         print(f"\n[OK 100% VERIFIED] Forgot Password & Reset Flow passed perfectly for {self.test_email}!")
 
-    def test_new_consultation_added_to_recents(self):
-        """Confirm that starting a consultation automatically populates the Recents list"""
+    def test_anonymous_consultation_does_not_leak_into_backend_recents(self):
+        """Guest diagnoses must not expose server-side history without an authenticated user."""
         symptom_text = f"Severe chronic stomach pain and indigestion since last week {int(time.time())}"
         
         # Step 1: Submit new consultation
@@ -84,12 +84,9 @@ class TestForgotAndPasswordRecents(unittest.TestCase):
         recents_data = recents_resp.json()
         self.assertIn("recents", recents_data)
         
-        recents_list = recents_data["recents"]
-        self.assertGreater(len(recents_list), 0, "Recents list should not be empty after submitting a consultation")
-        
-        found = any(r["symptoms"] == symptom_text or symptom_text[:30] in r["symptoms"] for r in recents_list)
-        self.assertTrue(found, "The newly created consultation was not found in the Recents list!")
-        print(f"\n[OK 100% VERIFIED] New consultation successfully appended to Recents list ({len(recents_list)} items in Recents)!")
+        self.assertFalse(recents_data["is_authenticated"])
+        self.assertEqual(recents_data["recents"], [], "Anonymous calls must not receive server-side consultation history")
+        print("\n[OK 100% VERIFIED] Anonymous consultation history remains private; guest recents stay browser-local.")
 
 if __name__ == "__main__":
     unittest.main()

@@ -300,6 +300,21 @@ class ComplaintClassifier:
         demographics = cls.extract_demographics(complaint)
         has_symptom_kw = any(w in c_clean for w in cls.SYMPTOM_TERMS)
 
+        # Fast Check: Medication Clarifications / Disclaimers (e.g. "I said no", "I meant I have not taken any medication")
+        med_disclaimer_patterns = [
+            "i said no", "i meant", "i have not taken", "have not taken", "havent taken",
+            "haven't taken", "not taken any", "no medication", "no medications",
+            "not on any medication", "not taking any medication", "no drugs", "no medicine",
+            "don't take any medicine", "dont take any medicine", "i take no medication", "never taken medication"
+        ]
+        if any(p in c_clean for p in med_disclaimer_patterns) and not has_symptom_kw:
+            return {
+                "category": "medication_clarification",
+                "condition_topic": "",
+                "demographics": demographics,
+                "source": "medication_clarification_rule"
+            }
+
         if demographics and not has_symptom_kw:
             return {
                 "category": "demographics",
@@ -543,11 +558,9 @@ class SessionStore:
             return None, session, True
 
         # 2. CONVERSATIONAL FOLLOW-UP DETECTION
-        # If the session is already in info_mode + ready (knowledge answer was already given),
-        # and the user sends a casual follow-up (e.g., "I'm not feeling any symptoms, just curious"),
-        # mark this as a conversational follow-up so the system uses AI + conversation history
-        # instead of blindly regenerating the same knowledge monograph.
-        if current_phase == "ready" and session.get("info_mode"):
+        # If the session has already completed a diagnosis or knowledge answer,
+        # and the user continues chatting (e.g., "I said no", "Can I take with honey?"):
+        if current_phase in ("ready", "post_diagnosis") or session.get("triage_complete") or session.get("info_mode"):
             session["conversation"].append({"role": "patient", "text": user_answer})
             session["_is_followup"] = True  # Signal to diagnose.py that this is a follow-up, not a repeat
             session["_followup_message"] = user_answer  # The actual current message

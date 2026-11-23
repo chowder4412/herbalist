@@ -152,13 +152,19 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS Configuration
-allowed_origins_raw = os.getenv("CORS_ALLOWED_ORIGINS", "*")
-allowed_origins = [o.strip() for o in allowed_origins_raw.split(",")]
+# CORS Configuration — Production Safe
+allowed_origins_raw = os.getenv("CORS_ALLOWED_ORIGINS", "")
+if allowed_origins_raw and allowed_origins_raw != "*":
+    allowed_origins = [o.strip() for o in allowed_origins_raw.split(",") if o.strip()]
+    allow_origin_regex = None
+else:
+    allowed_origins = []
+    allow_origin_regex = r"^https?://(localhost|127\.0\.0\.1|.*\.onrender\.com|.*\.firebaseapp\.com|.*\.web\.app)(:\d+)?$"
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=allowed_origins if allowed_origins else ["*"],
+    allow_origin_regex=allow_origin_regex if not allowed_origins else None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -166,6 +172,16 @@ app.add_middleware(
 
 # GZip HTTP Compression
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+# Defense-in-Depth HTTP Security Headers Middleware
+@app.middleware("http")
+async def add_security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
 
 # Register All API Routers
 register_routers(app)

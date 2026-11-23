@@ -29,7 +29,7 @@ class QdrantVectorStore:
 
         if QDRANT_AVAILABLE and self.url and self.api_key:
             try:
-                self.client = QdrantClient(url=self.url, api_key=self.api_key, timeout=10)
+                self.client = QdrantClient(url=self.url, api_key=self.api_key, timeout=3, check_compatibility=False)
                 self._ensure_collection_exists()
                 self.is_connected = True
                 print(f"[Qdrant Cloud] Successfully connected to cluster {self.url[:35]}...")

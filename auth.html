@@ -615,6 +615,27 @@
 
   <script>
     // ══════════════════════════════════════════════════════════════
+    // FIREBASE INITIALIZATION
+    // ══════════════════════════════════════════════════════════════
+    const firebaseConfig = window.firebaseConfig || {
+      apiKey: "AIzaSyBGzNZev9X52inCZuwi3Sp7aeOwREenVNQ",
+      authDomain: "herbalist-bf00f.firebaseapp.com",
+      projectId: "herbalist-bf00f",
+      storageBucket: "herbalist-bf00f.firebasestorage.app",
+      messagingSenderId: "346145916005",
+      appId: "1:346145916005:web:340383cad158f99738328c",
+      measurementId: "G-Y3102N1KS7"
+    };
+
+    if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+      try {
+        firebase.initializeApp(firebaseConfig);
+      } catch(e) {
+        console.log("[Firebase Init Notice]", e);
+      }
+    }
+
+    // ══════════════════════════════════════════════════════════════
     // STATE & ROUTE PARAMS INITIALIZATION
     // ══════════════════════════════════════════════════════════════
     let currentAuthMode = 'login'; // 'login' | 'register'
@@ -786,11 +807,17 @@
                   submitBtn.innerText = 'Sign In to Account';
                   return;
                 }
-                localStorage.setItem('herbalist_user_profile', JSON.stringify({
+                const uProfile = {
                   email: cred.user.email,
                   full_name: cred.user.displayName || email.split('@')[0],
-                  uid: cred.user.uid
-                }));
+                  displayName: cred.user.displayName || email.split('@')[0],
+                  uid: cred.user.uid,
+                  id: cred.user.uid
+                };
+                localStorage.setItem('herbalist_user_profile', JSON.stringify(uProfile));
+                localStorage.setItem('herbalist_user', JSON.stringify(uProfile));
+                localStorage.setItem('herbalist_jwt_token', cred.user.accessToken || 'firebase_token_' + Date.now());
+                localStorage.setItem('herbalist_token', cred.user.accessToken || 'firebase_token_' + Date.now());
                 showAlert('Signed in successfully! Launching feature workspace...', 'success');
                 setTimeout(() => {
                   window.location.href = getResolvedRedirectUrl();
@@ -823,8 +850,14 @@
             throw new Error(data.detail || data.message || 'Invalid email or password.');
           }
 
-          if (data.token) localStorage.setItem('herbalist_auth_token', data.token);
-          if (data.user) localStorage.setItem('herbalist_user_profile', JSON.stringify(data.user));
+          const userObj = data.user || { email, full_name: email.split('@')[0], displayName: email.split('@')[0], id: 'u_' + Date.now() };
+          if (data.token) {
+            localStorage.setItem('herbalist_auth_token', data.token);
+            localStorage.setItem('herbalist_jwt_token', data.token);
+            localStorage.setItem('herbalist_token', data.token);
+          }
+          localStorage.setItem('herbalist_user_profile', JSON.stringify(userObj));
+          localStorage.setItem('herbalist_user', JSON.stringify(userObj));
 
           showAlert('Signed in successfully! Launching feature workspace...', 'success');
           setTimeout(() => {

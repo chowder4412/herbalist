@@ -42,7 +42,14 @@ from .rag_engine import PubMedRAGEngine, VisionAIScanner
 
 from .ai_engine import GeminiClinicalEngine
 
-from .doctor import AIDoctor, safe_print, demo_ai_medical_doctor
+from .dietary_engine import ClinicalDietaryEngine
+from .dietary_monographs import DIETARY_MONOGRAPHS, WHO_2023_DIETARY_GUIDELINES
+
+from .doctor import (
+    AIDoctor,
+    safe_print,
+    demo_ai_medical_doctor,
+)
 
 __all__ = [
     # Models
